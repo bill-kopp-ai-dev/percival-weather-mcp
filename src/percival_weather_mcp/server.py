@@ -54,7 +54,15 @@ tool_handlers: Dict[str, ToolHandler] = {}
 
 # Backward-compatible tool aliases
 TOOL_NAME_ALIASES: Dict[str, str] = {
-    "get_weather_byDateTimeRange": "get_weather_by_datetime_range",
+    "get_weather_byDateTimeRange": "weather_get_by_range",
+    "get_weather_by_datetime_range": "weather_get_by_range",
+    "get_current_weather": "weather_get_current",
+    "get_weather_details": "weather_get_details",
+    "get_current_datetime": "weather_get_time",
+    "get_timezone_info": "weather_get_timezone",
+    "convert_time": "weather_convert_time",
+    "get_air_quality": "weather_get_air_quality",
+    "get_air_quality_details": "weather_get_air_quality_details",
 }
 
 
@@ -534,6 +542,12 @@ async def run_server(
         )
     else:
         raise ValueError(f"Unknown mode: {mode}")
+
+
+@app.tool("weather_get_status")
+def get_status() -> str:
+    """Check the operational status of the weather server."""
+    return f"Percival Weather MCP Server operational. Name: {SERVER_NAME}"
 
 
 async def main() -> None:

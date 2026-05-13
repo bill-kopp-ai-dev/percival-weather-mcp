@@ -1,201 +1,83 @@
-# percival-weather-mcp
+# 🤖 Percival Weather - percival.OS MCP
 
-MCP server for weather, air quality, and time tools, refactored for practical **Nanobot** usage and standardized with **uv + pyproject.toml + FastMCP**.
+**Version 0.0.2**
 
-## Original Project (Reference)
+[![Python](https://img.shields.io/badge/python-3.10+-yellow.svg)]()
+[![MCP](https://img.shields.io/badge/mcp-server-blue.svg)]()
+[![percival.OS](https://img.shields.io/badge/percival.OS-ecosystem-orange.svg)](https://github.com/bill-kopp-ai-dev/percival.OS)
 
-This project is an evolution of the original repository:
+## 📋 Description
+**Percival Weather** is an MCP server for weather, air quality, and time tools, refactored for practical Nanobot usage and standardized with **FastMCP**.
 
-- Original: [isdaniel/mcp_weather_server](https://github.com/isdaniel/mcp_weather_server)
+This server is part of the **percival.OS** ecosystem, a Personal Agentic Operating System designed for autonomy, security, and absolute privacy.
 
-Core functionality was preserved, while architecture, operational security, and agent integration were significantly improved.
+---
 
-## What Changed in This Refactor
+## 🛡️ percival.OS Principles
+Like all components of `percival.OS`, this MCP server strictly follows our core principles:
 
-### 1. Modern MCP Architecture
-- Structural migration to **FastMCP** as the primary runtime.
-- Tool registration through FastMCP public APIs.
-- Unified transport support for:
-  - `stdio` (default for local agents)
-  - `sse`
-  - `streamable-http`
+- **Privacy & Transparency**: Weather queries are made via open APIs (Open-Meteo) without the need for invasive API keys or tracking.
+- **Data Sovereignty**: Your location queries for weather forecasts are processed and presented only to you and your agent.
+- **Hardened Security**: Input sanitization and validation (city names, variables, dates) to prevent malicious executions.
+- **Transparency**: Based on the `isdaniel/mcp_weather_server` project, but with modernized architecture and deep integration with the Percival ecosystem.
 
-### 2. More Stable Tool Contract for Agents
-- Standardized tool names in `snake_case`.
-- Backward-compatible alias for legacy calls (`get_weather_byDateTimeRange` -> `get_weather_by_datetime_range`).
-- Improved docstrings and schema descriptions for better LLM understanding.
+---
 
-### 3. Better Response Design
-- Clear separation between compact and detailed tools:
-  - compact: optimized for agent reasoning
-  - detailed: structured/raw JSON for automation pipelines
+## 🚀 Features & Tools
 
-### 4. Performance and Robustness
-- Explicit per-call HTTP timeouts.
-- Shared HTTP client reuse in composed flows (for example: geocoding + air quality in the same call).
-- TTL cache for geocoding to reduce repeated latency and API calls.
+### Weather & Forecast
+- `weather_get_current`: Get the current weather for a location.
+- `weather_get_by_range`: Query history or forecasts by date range.
+- `weather_get_details`: Detailed meteorological information.
 
-### 5. Operational Security
-- Input sanitization and validation (city names, variables, dates, etc.).
-- Safer remote HTTP execution:
-  - remote bind blocked by default
-  - token required for non-loopback exposure
-  - support for `Authorization: Bearer` and `x-mcp-auth-token`
+### Air Quality
+- `weather_get_air_quality`: Current air quality index.
+- `weather_get_air_quality_details`: Breakdown of pollutants and metrics.
 
-### 6. Packaging and Naming
-- Distribution/project name: **`percival-weather-mcp`**.
-- Canonical Python namespace: **`percival_weather_mcp`**.
-- Backward compatibility layer preserved for legacy usage:
-  - `python -m mcp_weather_server`
-  - imports from `mcp_weather_server.*`
+### Time & Timezone
+- `weather_get_time`: Get local time from anywhere in the world.
+- `weather_get_timezone`: Identify the timezone of coordinates or cities.
+- `weather_convert_time`: Convert times between different timezones.
 
-## Nanobot Optimization Highlights
+---
 
-This version is tuned for real Nanobot workflows:
-(https://github.com/HKUDS/nanobot)
-
-- `stdio`-first operation
-- stable tool contract for consistent tool selection
-- compact outputs to reduce token usage and tool-calling loops
-- native support for `enabled_tools` and `tool_timeout`
-- execution with a **shared root virtual environment** (no per-server `.venv`)
-
-### Nanobot Configuration Example
-
-In `config_ex.json`:
+## ⚙️ Configuration in percival.OS (Nanobot)
+Add the following configuration to your `~/.nanobot/config.json`:
 
 ```json
-"weather": {
-  "command": "/home/<user>/.../percival.OS_Dev/.venv/bin/python",
-  "args": ["-m", "percival_weather_mcp"],
-  "enabled_tools": [
-    "get_current_weather",
-    "get_weather_by_datetime_range",
-    "get_weather_details",
-    "get_current_datetime",
-    "get_timezone_info",
-    "convert_time",
-    "get_air_quality",
-    "get_air_quality_details"
-  ],
-  "tool_timeout": 45
+{
+  "tools": {
+    "mcpServers": {
+      "weather": {
+        "command": "/path/to/percival.OS_Dev/.venv/bin/python",
+        "args": ["-m", "percival_weather_mcp"],
+        "tool_timeout": 45
+      }
+    }
+  }
 }
 ```
 
-## Available Tools
+---
 
-### Weather
-- `get_current_weather`
-- `get_weather_by_datetime_range`
-- `get_weather_details`
-
-### Air Quality
-- `get_air_quality`
-- `get_air_quality_details`
-
-### Time and Timezone
-- `get_current_datetime`
-- `get_timezone_info`
-- `convert_time`
-
-## Installation
-
-### Requirements
-- Python `>=3.10`
-- `uv`
-
-### Install in the project environment
+## 🛠️ Development & Testing
+This project uses `uv` for dependency management.
 
 ```bash
-cd mcp_servers/percival-weather-mcp
-uv sync --dev
-```
+# Installation in shared environment
+uv pip install -e ./mcp_servers/percival-weather-mcp
 
-### Install in the shared workspace environment (recommended for Nanobot)
-
-```bash
-UV_CACHE_DIR=/tmp/uv-cache uv pip install \
-  --python /home/<user>/.../percival.OS_Dev/.venv/bin/python \
-  -e /home/<user>/.../percival.OS_Dev/mcp_servers/percival-weather-mcp
-```
-
-## Running
-
-### Canonical namespace (recommended)
-
-```bash
-python -m percival_weather_mcp --mode stdio
-```
-
-With `uv`:
-
-```bash
+# Manual execution
 uv run -m percival_weather_mcp --mode stdio
 ```
 
-### Legacy compatibility
+---
 
-```bash
-python -m mcp_weather_server --mode stdio
-```
+## 📚 About the Project
+This server is an integral module of the **percival.OS** project. It provides essential environmental data so that Nanobot can assist in decisions based on weather and time.
 
-## HTTP Modes
+- **Main Repository**: [https://github.com/bill-kopp-ai-dev/percival.OS](https://github.com/bill-kopp-ai-dev/percival.OS)
+- **License**: MIT
 
-### SSE
-
-```bash
-python -m percival_weather_mcp --mode sse --host 127.0.0.1 --port 8080
-```
-
-### Streamable HTTP
-
-```bash
-python -m percival_weather_mcp --mode streamable-http --host 127.0.0.1 --port 8080
-```
-
-### Remote exposure (secured)
-
-For non-loopback binding, both are required:
-- `--allow-remote-http`
-- auth token in environment (default: `MCP_WEATHER_AUTH_TOKEN`)
-
-Example:
-
-```bash
-export MCP_WEATHER_AUTH_TOKEN="replace-this-token"
-python -m percival_weather_mcp \
-  --mode streamable-http \
-  --host 0.0.0.0 \
-  --port 8080 \
-  --allow-remote-http
-```
-
-## Compatibility and Migration
-
-If you are coming from the previous project/namespace:
-
-- old `-m mcp_weather_server` still works
-- new recommended form: `-m percival_weather_mcp`
-- new script: `percival-weather-mcp`
-
-Recommendation: migrate configs and automations gradually to the canonical namespace.
-
-## Project Structure
-
-```text
-percival-weather-mcp/
-├── pyproject.toml
-├── uv.lock
-└── src/
-    ├── percival_weather_mcp/      # canonical namespace
-    └── mcp_weather_server/        # compatibility layer
-```
-
-## Data Sources
-
-- Weather/Forecast: [Open-Meteo](https://open-meteo.com/)
-- Air Quality: [Open-Meteo Air Quality](https://open-meteo.com/en/docs/air-quality-api)
-
-## License
-
-Maintained according to the upstream project terms. See [LICENSE](./LICENSE).
+---
+*Developed with ❤️ by the percival.OS Team*

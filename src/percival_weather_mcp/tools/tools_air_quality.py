@@ -53,7 +53,7 @@ class GetAirQualityToolHandler(ToolHandler):
     """
 
     def __init__(self):
-        super().__init__("get_air_quality")
+        super().__init__("weather_get_air_quality")
         self.air_quality_service = AirQualityService()
         self.weather_service = WeatherService()  # For geocoding
 
@@ -171,7 +171,7 @@ class GetAirQualityDetailsToolHandler(ToolHandler):
     """
 
     def __init__(self):
-        super().__init__("get_air_quality_details")
+        super().__init__("weather_get_air_quality_details")
         self.air_quality_service = AirQualityService()
         self.weather_service = WeatherService()  # For geocoding
 

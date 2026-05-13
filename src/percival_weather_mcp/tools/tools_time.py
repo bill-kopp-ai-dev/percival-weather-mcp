@@ -21,7 +21,7 @@ class GetCurrentDateTimeToolHandler(ToolHandler):
     """
 
     def __init__(self):
-        super().__init__("get_current_datetime")
+        super().__init__("weather_get_time")
 
     def get_tool_description(self) -> Tool:
         """
@@ -90,7 +90,7 @@ class GetTimeZoneInfoToolHandler(ToolHandler):
     """
 
     def __init__(self):
-        super().__init__("get_timezone_info")
+        super().__init__("weather_get_timezone")
 
     def get_tool_description(self) -> Tool:
         """
@@ -166,7 +166,7 @@ class ConvertTimeToolHandler(ToolHandler):
     """
 
     def __init__(self):
-        super().__init__("convert_time")
+        super().__init__("weather_convert_time")
 
     def get_tool_description(self) -> Tool:
         """

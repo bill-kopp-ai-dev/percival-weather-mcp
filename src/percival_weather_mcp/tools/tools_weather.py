@@ -20,7 +20,7 @@ class GetCurrentWeatherToolHandler(ToolHandler):
     """
     
     def __init__(self):
-        super().__init__("get_current_weather")
+        super().__init__("weather_get_current")
         self.weather_service = WeatherService()
     
     def get_tool_description(self) -> Tool:
@@ -87,7 +87,7 @@ class GetWeatherByDateRangeToolHandler(ToolHandler):
     """
     
     def __init__(self):
-        super().__init__("get_weather_by_datetime_range")
+        super().__init__("weather_get_by_range")
         self.weather_service = WeatherService()
     
     def get_tool_description(self) -> Tool:
@@ -177,7 +177,7 @@ class GetWeatherDetailsToolHandler(ToolHandler):
     """
     
     def __init__(self):
-        super().__init__("get_weather_details")
+        super().__init__("weather_get_details")
         self.weather_service = WeatherService()
     
     def get_tool_description(self) -> Tool:
