@@ -1,0 +1,237 @@
+{
+  "server": "percival-weather-mcp",
+  "version": "0.7.0",
+  "tool_count": 8,
+  "tools": [
+    {
+      "name": "weather_convert_time",
+      "description": "Convert a datetime from one timezone to another. Accepts 'now' or ISO 8601 input; supports offset-aware strings (including trailing 'Z').",
+      "input_schema": {
+        "properties": {
+          "datetime_str": {
+            "description": "Datetime to convert: 'now' or ISO 8601 string (for example: '2026-03-28T14:30:00' or '2026-03-28T14:30:00Z'). If timezone is omitted, it is interpreted in from_timezone.",
+            "title": "Datetime Str",
+            "type": "string"
+          },
+          "from_timezone": {
+            "description": "Source timezone (IANA name).",
+            "title": "From Timezone",
+            "type": "string"
+          },
+          "to_timezone": {
+            "description": "Target timezone (IANA name).",
+            "title": "To Timezone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "datetime_str",
+          "from_timezone",
+          "to_timezone"
+        ],
+        "title": "ConvertTimeInput",
+        "type": "object"
+      }
+    },
+    {
+      "name": "weather_get_air_quality",
+      "description": "Get compact air quality information for a city. Returns agent-friendly JSON text with current conditions, summary statistics, and a short hourly sample. Use this for concise analysis.",
+      "input_schema": {
+        "properties": {
+          "city": {
+            "description": "City name in English, optionally with region/country to disambiguate.",
+            "title": "City",
+            "type": "string"
+          },
+          "variables": {
+            "anyOf": [
+              {
+                "items": {
+                  "enum": [
+                    "pm10",
+                    "pm2_5",
+                    "carbon_monoxide",
+                    "nitrogen_dioxide",
+                    "ozone",
+                    "sulphur_dioxide",
+                    "ammonia",
+                    "dust",
+                    "aerosol_optical_depth"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional subset of pollutant variables. If omitted, defaults to: pm10, pm2_5, ozone, nitrogen_dioxide, carbon_monoxide.",
+            "title": "Variables"
+          }
+        },
+        "required": [
+          "city"
+        ],
+        "title": "GetAirQualityInput",
+        "type": "object"
+      }
+    },
+    {
+      "name": "weather_get_air_quality_details",
+      "description": "Get detailed air quality data for a city as structured JSON text. Use this tool when downstream logic needs raw API-like fields in 'full_data'.",
+      "input_schema": {
+        "properties": {
+          "city": {
+            "description": "City name in English, optionally with region/country to disambiguate.",
+            "title": "City",
+            "type": "string"
+          },
+          "variables": {
+            "anyOf": [
+              {
+                "items": {
+                  "enum": [
+                    "pm10",
+                    "pm2_5",
+                    "carbon_monoxide",
+                    "nitrogen_dioxide",
+                    "ozone",
+                    "sulphur_dioxide",
+                    "ammonia",
+                    "dust",
+                    "aerosol_optical_depth"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional pollutant list. If omitted, uses an extended default set covering major pollutants and particulates.",
+            "title": "Variables"
+          }
+        },
+        "required": [
+          "city"
+        ],
+        "title": "GetAirQualityDetailsInput",
+        "type": "object"
+      }
+    },
+    {
+      "name": "weather_get_by_range",
+      "description": "Get weather data for a city between two calendar dates (inclusive). Returns a compact JSON payload optimized for agent analysis, including period metadata, summary statistics, and an hourly sample.",
+      "input_schema": {
+        "properties": {
+          "city": {
+            "description": "City name in English, optionally with region/country to disambiguate.",
+            "title": "City",
+            "type": "string"
+          },
+          "start_date": {
+            "description": "Start date in ISO 8601 calendar format: YYYY-MM-DD.",
+            "title": "Start Date",
+            "type": "string"
+          },
+          "end_date": {
+            "description": "End date in ISO 8601 calendar format: YYYY-MM-DD. Must be the same day or after start_date.",
+            "title": "End Date",
+            "type": "string"
+          }
+        },
+        "required": [
+          "city",
+          "start_date",
+          "end_date"
+        ],
+        "title": "GetWeatherByDateRangeInput",
+        "type": "object"
+      }
+    },
+    {
+      "name": "weather_get_current",
+      "description": "Get a concise, human-readable snapshot of current weather for a city. Use this tool when you need a short summary (temperature, humidity, wind, precipitation context, pressure, clouds, UV, visibility), not raw datasets.",
+      "input_schema": {
+        "properties": {
+          "city": {
+            "description": "City name in English, optionally with region/country to disambiguate (for example: 'Springfield, US' or 'London, UK').",
+            "title": "City",
+            "type": "string"
+          }
+        },
+        "required": [
+          "city"
+        ],
+        "title": "GetCurrentWeatherInput",
+        "type": "object"
+      }
+    },
+    {
+      "name": "weather_get_details",
+      "description": "Get detailed structured JSON weather data for a city. Use this when you need raw fields for downstream processing. Optionally include a short forecast window.",
+      "input_schema": {
+        "properties": {
+          "city": {
+            "description": "City name in English, optionally with region/country to disambiguate.",
+            "title": "City",
+            "type": "string"
+          },
+          "include_forecast": {
+            "default": false,
+            "description": "If true, include the next ~24 hours under the 'forecast' key. Defaults to false for smaller responses.",
+            "title": "Include Forecast",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "city"
+        ],
+        "title": "GetWeatherDetailsInput",
+        "type": "object"
+      }
+    },
+    {
+      "name": "weather_get_time",
+      "description": "Get the current local datetime for a specific IANA timezone. Returns structured JSON with timezone and ISO 8601 datetime.",
+      "input_schema": {
+        "properties": {
+          "timezone_name": {
+            "description": "IANA timezone name (for example: 'America/New_York', 'Europe/London', 'UTC').",
+            "minLength": 1,
+            "title": "Timezone Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "timezone_name"
+        ],
+        "title": "GetCurrentDateTimeInput",
+        "type": "object"
+      }
+    },
+    {
+      "name": "weather_get_timezone",
+      "description": "Get timezone metadata for an IANA timezone: current local time, UTC time, offset in hours, DST flag, and timezone abbreviation.",
+      "input_schema": {
+        "properties": {
+          "timezone_name": {
+            "description": "IANA timezone name (for example: 'America/Sao_Paulo', 'Asia/Tokyo').",
+            "minLength": 1,
+            "title": "Timezone Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "timezone_name"
+        ],
+        "title": "GetTimeZoneInfoInput",
+        "type": "object"
+      }
+    }
+  ]
+}

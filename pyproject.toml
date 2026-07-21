@@ -4,11 +4,12 @@ build-backend = "hatchling.build"
 
 [project]
 name = "percival-weather-mcp"
-version = "0.6.1"
+version = "0.7.0"
 authors = [
   { name = "danielshih", email = "dog830228@gmail.com" },
+  { name = "percival.OS Team" },
 ]
-description = "An MCP server for weather information"
+description = "An MCP server for weather, air quality and time information (percival.OS)"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -19,6 +20,13 @@ dependencies = [
   "starlette>=0.27.0",
   "uvicorn>=0.20.0",
   "tzdata>=2025.2",
+  "prometheus-client>=0.20.0",
+]
+
+[project.optional-dependencies]
+otel = [
+  "opentelemetry-api>=1.27.0",
+  "opentelemetry-sdk>=1.27.0",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -28,8 +36,44 @@ packages = ["src/percival_weather_mcp", "src/mcp_weather_server"]
 dev = [
   "pytest>=8.3.0",
   "pytest-asyncio>=0.24.0",
+  "pytest-cov>=5.0.0",
+  "ruff>=0.6.0",
+  "mypy>=1.10.0",
+  "respx>=0.21.1",
 ]
 
 [project.scripts]
 percival-weather-mcp = "percival_weather_mcp:main"
-mcp_weather_server = "mcp_weather_server:main"
+
+# ---------------------------------------------------------------------------
+# Tooling
+# ---------------------------------------------------------------------------
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF", "N", "ASYNC"]
+ignore = ["E501", "B008", "RUF012"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["N802", "N803"]
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+check_untyped_defs = true
+disallow_incomplete_defs = true
+no_implicit_optional = true
+
+[[tool.mypy.overrides]]
+module = ["mcp.*", "starlette.*", "uvicorn.*", "prometheus_client.*", "dateutil.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-q"

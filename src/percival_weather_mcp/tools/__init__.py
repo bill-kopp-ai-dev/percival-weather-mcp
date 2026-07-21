@@ -1,8 +1,6 @@
-"""Tools package for MCP Weather Server."""
+"""Tools package for the Percival Weather MCP server.
 
-from .toolhandler import *
-from .tools_time import *
-from .tools_weather import *
-from .weather_service import *
-
-__all__ = []
+Importers should reference the explicit submodules (e.g.
+``percival_weather_mcp.tools.tools_weather``) rather than relying on re-exports
+from this package.
+"""

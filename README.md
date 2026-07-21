@@ -1,6 +1,6 @@
 # 🤖 Percival Weather - percival.OS MCP
 
-**Version 0.0.2**
+**Version 0.7.0**
 
 [![Python](https://img.shields.io/badge/python-3.10+-yellow.svg)]()
 [![MCP](https://img.shields.io/badge/mcp-server-blue.svg)]()
@@ -57,6 +57,44 @@ Add the following configuration to your `~/.nanobot/config.json`:
   }
 }
 ```
+
+### HTTP transport
+
+```bash
+# Streamable HTTP with bearer token (recommended for production)
+export MCP_WEATHER_AUTH_TOKEN="$(openssl rand -hex 32)"
+percival-weather-mcp --mode streamable-http \
+    --host 0.0.0.0 \
+    --port 8080 \
+    --allow-remote-http
+
+# Optional: enable TLS directly (or front the server with Caddy/Nginx)
+percival-weather-mcp --mode streamable-http \
+    --host 0.0.0.0 --port 8443 \
+    --allow-remote-http \
+    --ssl-keyfile ./certs/key.pem \
+    --ssl-certfile ./certs/cert.pem
+```
+
+Health and metrics probes are exposed at `/healthz`, `/health` and
+`/metrics` and bypass authentication to integrate with orchestrators.
+
+### Environment variables
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `PORT` | `8080` | Listening port for HTTP transports. |
+| `MCP_WEATHER_HOST` | `127.0.0.1` | Bind host. |
+| `MCP_WEATHER_AUTH_TOKEN_ENV` | `MCP_WEATHER_AUTH_TOKEN` | Name of the env var holding the bearer token. |
+| `MCP_WEATHER_HTTP_TIMEOUT` | `15.0` | Per-request timeout (seconds). |
+| `MCP_WEATHER_HTTP_MAX_RETRIES` | `2` | Retry attempts beyond the first try. |
+| `MCP_WEATHER_HTTP_BACKOFF_BASE` | `0.3` | Base delay (seconds) for exponential backoff. |
+| `MCP_WEATHER_HTTP_BACKOFF_CAP` | `2.0` | Maximum delay (seconds) between retries. |
+| `MCP_WEATHER_HTTP_MAX_CONCURRENCY` | `16` | Maximum in-flight outbound HTTP requests. |
+| `MCP_WEATHER_RATE_LIMIT_PER_MINUTE` | `120` | Per-IP request budget. |
+| `MCP_WEATHER_LOG_FORMAT` | `text` | `text` or `json`. |
+| `MCP_WEATHER_ENABLE_METRICS` | `true` | Toggle Prometheus export. |
+| `MCP_WEATHER_ENABLE_TRACING` | `false` | Enable OpenTelemetry tracing (requires `otel` extra). |
 
 ---
 

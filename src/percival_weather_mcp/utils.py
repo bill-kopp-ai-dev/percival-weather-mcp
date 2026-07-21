@@ -1,14 +1,16 @@
 
-from datetime import datetime, timezone
 import json
 import re
-from typing import List, Any
-from zoneinfo import ZoneInfo
 from collections import Counter
-from mcp.types import ErrorData
-from mcp import McpError
-from pydantic import BaseModel
+from datetime import datetime, timezone
+from typing import Any
+from zoneinfo import ZoneInfo
+
 from dateutil import parser
+from mcp import McpError
+from mcp.types import ErrorData
+from pydantic import BaseModel
+
 
 class TimeResult(BaseModel):
     timezone: str
@@ -16,9 +18,11 @@ class TimeResult(BaseModel):
 
 
 MAX_CITY_NAME_LENGTH = 120
+MAX_TIMEZONE_NAME_LENGTH = 64
 _CONTROL_CHARS_RE = re.compile(r"[\x00-\x1f\x7f]")
 _MULTISPACE_RE = re.compile(r"\s+")
 _CITY_FORBIDDEN_CHARS_RE = re.compile(r"[<>{}\[\]`$|\\]")
+_TIMEZONE_FORBIDDEN_CHARS_RE = re.compile(r"[^A-Za-z0-9/_+\-]")
 
 
 def normalize_city_name(city: str) -> str:
@@ -55,13 +59,28 @@ def safe_inline_text(value: str, *, max_length: int = 140) -> str:
 
 
 def get_zoneinfo(timezone_name: str) -> ZoneInfo:
-    try:
-        return ZoneInfo(timezone_name)
-    except Exception:
+    if not isinstance(timezone_name, str):
         error_data = ErrorData(code=-1, message="Invalid timezone")
         raise McpError(error_data)
 
-def format_get_weather_bytime(data_result) -> str:
+    cleaned = _CONTROL_CHARS_RE.sub("", timezone_name).strip()
+    if not cleaned:
+        error_data = ErrorData(code=-1, message="Invalid timezone")
+        raise McpError(error_data)
+    if len(cleaned) > MAX_TIMEZONE_NAME_LENGTH:
+        error_data = ErrorData(code=-1, message="Invalid timezone")
+        raise McpError(error_data)
+    if _TIMEZONE_FORBIDDEN_CHARS_RE.search(cleaned):
+        error_data = ErrorData(code=-1, message="Invalid timezone")
+        raise McpError(error_data)
+
+    try:
+        return ZoneInfo(cleaned)
+    except Exception as err:
+        error_data = ErrorData(code=-1, message="Invalid timezone")
+        raise McpError(error_data) from err
+
+def format_get_weather_bytime(data_result: Any) -> str:
     """
     Format weather data into a compact, agent-friendly payload.
 
@@ -73,15 +92,15 @@ def format_get_weather_bytime(data_result) -> str:
     """
     weather_data = data_result.get("weather_data", []) or []
 
-    def _numeric_series(key: str) -> List[float]:
-        values: List[float] = []
+    def _numeric_series(key: str) -> list[float]:
+        values: list[float] = []
         for row in weather_data:
             value = row.get(key)
             if isinstance(value, (int, float)):
                 values.append(float(value))
         return values
 
-    def _stats(values: List[float]) -> dict[str, float | None]:
+    def _stats(values: list[float]) -> dict[str, float | None]:
         if not values:
             return {"min": None, "max": None, "avg": None}
         return {
@@ -117,7 +136,7 @@ def format_get_weather_bytime(data_result) -> str:
     }
     return json.dumps(payload, indent=2)
 
-def format_air_quality_data(data_result) -> str:
+def format_air_quality_data(data_result: Any) -> str:
     """
     Format air quality data into a compact, agent-friendly payload.
 
@@ -131,17 +150,17 @@ def format_air_quality_data(data_result) -> str:
     hourly = full_data.get("hourly", {}) if isinstance(full_data, dict) else {}
     times = hourly.get("time", []) if isinstance(hourly.get("time", []), list) else []
 
-    def _numeric_series(key: str) -> List[float]:
+    def _numeric_series(key: str) -> list[float]:
         raw_values = hourly.get(key, [])
         if not isinstance(raw_values, list):
             return []
-        values: List[float] = []
+        values: list[float] = []
         for value in raw_values:
             if isinstance(value, (int, float)):
                 values.append(float(value))
         return values
 
-    def _stats(values: List[float]) -> dict[str, float | None]:
+    def _stats(values: list[float]) -> dict[str, float | None]:
         if not values:
             return {"min": None, "max": None, "avg": None}
         return {
@@ -188,7 +207,7 @@ def format_air_quality_data(data_result) -> str:
     }
     return json.dumps(payload, indent=2)
 
-def get_closest_utc_index(hourly_times: List[str]) -> int:
+def get_closest_utc_index(hourly_times: list[str]) -> int:
     """
     Returns the index of the datetime in `hourly_times` closest to the current UTC time
     or a provided datetime.

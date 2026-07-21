@@ -1,177 +1,126 @@
-"""
-Time-related tool handlers for the MCP weather server.
-This module contains time and timezone-related tool implementations.
-"""
+"""Time-related tool handlers for the MCP weather server."""
+
+from __future__ import annotations
 
 import json
 import logging
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
+from typing import cast
+
 from mcp import McpError
-from mcp.types import Tool, TextContent, ImageContent, EmbeddedResource
-from .toolhandler import ToolHandler
+from mcp.types import EmbeddedResource, ImageContent, TextContent, Tool
+
 from .. import utils
+from ..models import (
+    ConvertTimeInput,
+    GetCurrentDateTimeInput,
+    GetTimeZoneInfoInput,
+)
+from .toolhandler import ToolHandler
 
 logger = logging.getLogger("mcp-weather")
 
 
 class GetCurrentDateTimeToolHandler(ToolHandler):
-    """
-    Tool handler for getting current date and time in a specified timezone.
-    """
+    """Current datetime in a given IANA timezone."""
 
-    def __init__(self):
+    input_model = GetCurrentDateTimeInput
+
+    def __init__(self) -> None:
         super().__init__("weather_get_time")
 
     def get_tool_description(self) -> Tool:
-        """
-        Return the MCP contract for current datetime in a target timezone.
-        """
         return Tool(
             name=self.name,
             description=(
                 "Get the current local datetime for a specific IANA timezone. "
                 "Returns structured JSON with timezone and ISO 8601 datetime."
             ),
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "timezone_name": {
-                        "type": "string",
-                        "description": (
-                            "IANA timezone name (for example: 'America/New_York', "
-                            "'Europe/London', 'UTC')."
-                        ),
-                    }
-                },
-                "required": ["timezone_name"]
-            }
+            inputSchema=GetCurrentDateTimeInput.model_json_schema(),
         )
 
     async def run_tool(self, args: dict) -> Sequence[TextContent | ImageContent | EmbeddedResource]:
-        """
-        Execute current datetime lookup and return JSON text.
-        """
         try:
             self.validate_required_args(args, ["timezone_name"])
-
-            timezone_name = args["timezone_name"]
-            logger.info(f"Getting current time for timezone: {timezone_name}")
-
-            # Get timezone info
-            timezone = utils.get_zoneinfo(timezone_name)
-            current_time = datetime.now(timezone)
-
-            # Create time result
+            payload = cast(GetCurrentDateTimeInput, self.parse_args(args))
+            tz = utils.get_zoneinfo(payload.timezone_name)
+            current_time = datetime.now(tz)
             time_result = utils.TimeResult(
-                timezone=timezone_name,
+                timezone=payload.timezone_name,
                 datetime=current_time.isoformat(timespec="seconds"),
             )
-
-            return [
-                TextContent(
-                    type="text",
-                    text=json.dumps(time_result.model_dump(), indent=2)
-                )
-            ]
+            return [TextContent(type="text", text=json.dumps(time_result.model_dump(), indent=2))]
         except RuntimeError:
             raise
-        except McpError as e:
-            logger.warning("Invalid timezone in get_current_datetime: %s", e)
-            raise RuntimeError("Invalid timezone") from e
+        except McpError as exc:
+            logger.warning("Invalid timezone in get_current_datetime: %s", exc)
+            raise RuntimeError("Invalid timezone") from exc
         except Exception:
             logger.exception("Unexpected error in get_current_datetime")
-            raise RuntimeError("Datetime service is temporarily unavailable. Please retry.") from None
+            raise RuntimeError(
+                "Datetime service is temporarily unavailable. Please retry."
+            ) from None
 
 
 class GetTimeZoneInfoToolHandler(ToolHandler):
-    """
-    Tool handler for getting information about timezones.
-    """
+    """Timezone metadata (offset, DST, abbreviation) for an IANA timezone."""
 
-    def __init__(self):
+    input_model = GetTimeZoneInfoInput
+
+    def __init__(self) -> None:
         super().__init__("weather_get_timezone")
 
     def get_tool_description(self) -> Tool:
-        """
-        Return the MCP contract for timezone metadata lookup.
-        """
         return Tool(
             name=self.name,
             description=(
                 "Get timezone metadata for an IANA timezone: current local time, UTC time, "
                 "offset in hours, DST flag, and timezone abbreviation."
             ),
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "timezone_name": {
-                        "type": "string",
-                        "description": (
-                            "IANA timezone name (for example: 'America/Sao_Paulo', 'Asia/Tokyo')."
-                        ),
-                    }
-                },
-                "required": ["timezone_name"]
-            }
+            inputSchema=GetTimeZoneInfoInput.model_json_schema(),
         )
 
     async def run_tool(self, args: dict) -> Sequence[TextContent | ImageContent | EmbeddedResource]:
-        """
-        Execute timezone metadata lookup and return JSON text.
-        """
         try:
             self.validate_required_args(args, ["timezone_name"])
-
-            timezone_name = args["timezone_name"]
-            logger.info(f"Getting timezone info for: {timezone_name}")
-
-            # Get timezone info
-            timezone = utils.get_zoneinfo(timezone_name)
-            current_time = datetime.now(timezone)
-            utc_time = datetime.utcnow()
-
-            # Calculate UTC offset
+            payload = cast(GetTimeZoneInfoInput, self.parse_args(args))
+            tz = utils.get_zoneinfo(payload.timezone_name)
+            current_time = datetime.now(tz)
+            utc_time = datetime.now(timezone.utc)
             offset = current_time.utcoffset()
             offset_hours = offset.total_seconds() / 3600 if offset else 0
-
-            timezone_info = {
-                "timezone_name": timezone_name,
+            dst = current_time.dst()
+            info = {
+                "timezone_name": payload.timezone_name,
                 "current_local_time": current_time.isoformat(timespec="seconds"),
                 "current_utc_time": utc_time.isoformat(timespec="seconds"),
                 "utc_offset_hours": offset_hours,
-                "is_dst": current_time.dst() is not None and current_time.dst().total_seconds() > 0,
+                "is_dst": dst is not None and dst.total_seconds() > 0,
                 "timezone_abbreviation": current_time.strftime("%Z"),
             }
-
-            return [
-                TextContent(
-                    type="text",
-                    text=json.dumps(timezone_info, indent=2)
-                )
-            ]
+            return [TextContent(type="text", text=json.dumps(info, indent=2))]
         except RuntimeError:
             raise
-        except McpError as e:
-            logger.warning("Invalid timezone in get_timezone_info: %s", e)
-            raise RuntimeError("Invalid timezone") from e
+        except McpError as exc:
+            logger.warning("Invalid timezone in get_timezone_info: %s", exc)
+            raise RuntimeError("Invalid timezone") from exc
         except Exception:
             logger.exception("Unexpected error in get_timezone_info")
-            raise RuntimeError("Timezone service is temporarily unavailable. Please retry.") from None
+            raise RuntimeError(
+                "Timezone service is temporarily unavailable. Please retry."
+            ) from None
 
 
 class ConvertTimeToolHandler(ToolHandler):
-    """
-    Tool handler for converting time between different timezones.
-    """
+    """Timezone-aware datetime conversion."""
 
-    def __init__(self):
+    input_model = ConvertTimeInput
+
+    def __init__(self) -> None:
         super().__init__("weather_convert_time")
 
     def get_tool_description(self) -> Tool:
-        """
-        Return the MCP contract for timezone-aware datetime conversion.
-        """
         return Tool(
             name=self.name,
             description=(
@@ -179,87 +128,49 @@ class ConvertTimeToolHandler(ToolHandler):
                 "Accepts 'now' or ISO 8601 input; supports offset-aware strings "
                 "(including trailing 'Z')."
             ),
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "datetime_str": {
-                        "type": "string",
-                        "description": (
-                            "Datetime to convert: 'now' or ISO 8601 string "
-                            "(for example: '2026-03-28T14:30:00' or '2026-03-28T14:30:00Z'). "
-                            "If timezone is omitted, it is interpreted in from_timezone."
-                        ),
-                    },
-                    "from_timezone": {
-                        "type": "string",
-                        "description": "Source timezone (IANA name).",
-                    },
-                    "to_timezone": {
-                        "type": "string",
-                        "description": "Target timezone (IANA name).",
-                    }
-                },
-                "required": ["datetime_str", "from_timezone", "to_timezone"]
-            }
+            inputSchema=ConvertTimeInput.model_json_schema(),
         )
 
     async def run_tool(self, args: dict) -> Sequence[TextContent | ImageContent | EmbeddedResource]:
-        """
-        Execute timezone conversion and return JSON with original/converted values.
-        """
         try:
             self.validate_required_args(args, ["datetime_str", "from_timezone", "to_timezone"])
+            payload = cast(ConvertTimeInput, self.parse_args(args))
+            from_tz = utils.get_zoneinfo(payload.from_timezone)
+            to_tz = utils.get_zoneinfo(payload.to_timezone)
 
-            datetime_str = args["datetime_str"]
-            from_timezone_name = args["from_timezone"]
-            to_timezone_name = args["to_timezone"]
-
-            logger.info(f"Converting time '{datetime_str}' from {from_timezone_name} to {to_timezone_name}")
-
-            # Get timezone objects
-            from_timezone = utils.get_zoneinfo(from_timezone_name)
-            to_timezone = utils.get_zoneinfo(to_timezone_name)
-
-            # Parse the datetime.
-            # If input is offset-aware (for example with a trailing 'Z'),
-            # interpret it as an absolute timestamp, then represent it in from_timezone.
-            if datetime_str.lower() == "now":
-                source_time = datetime.now(from_timezone)
+            if payload.datetime_str.lower() == "now":
+                source_time = datetime.now(from_tz)
             else:
-                normalized_datetime_str = datetime_str.replace("Z", "+00:00")
-                parsed_time = datetime.fromisoformat(normalized_datetime_str)
-                if parsed_time.tzinfo is None:
-                    # Naive input: assume it belongs to from_timezone
-                    source_time = parsed_time.replace(tzinfo=from_timezone)
+                normalised = payload.datetime_str.replace("Z", "+00:00")
+                parsed = datetime.fromisoformat(normalised)
+                if parsed.tzinfo is None:
+                    source_time = parsed.replace(tzinfo=from_tz)
                 else:
-                    # Aware input: keep the same instant and express it in from_timezone
-                    source_time = parsed_time.astimezone(from_timezone)
+                    source_time = parsed.astimezone(from_tz)
 
-            # Convert to target timezone
-            target_time = source_time.astimezone(to_timezone)
-
-            conversion_result = {
+            target_time = source_time.astimezone(to_tz)
+            src_offset = source_time.utcoffset() or timedelta(0)
+            tgt_offset = target_time.utcoffset() or timedelta(0)
+            result = {
                 "original_datetime": source_time.isoformat(timespec="seconds"),
-                "original_timezone": from_timezone_name,
+                "original_timezone": payload.from_timezone,
                 "converted_datetime": target_time.isoformat(timespec="seconds"),
-                "converted_timezone": to_timezone_name,
-                "time_difference_hours": (target_time.utcoffset().total_seconds() - source_time.utcoffset().total_seconds()) / 3600
+                "converted_timezone": payload.to_timezone,
+                "time_difference_hours": (
+                    tgt_offset.total_seconds() - src_offset.total_seconds()
+                ) / 3600,
             }
-
-            return [
-                TextContent(
-                    type="text",
-                    text=json.dumps(conversion_result, indent=2)
-                )
-            ]
+            return [TextContent(type="text", text=json.dumps(result, indent=2))]
         except RuntimeError:
             raise
-        except McpError as e:
-            logger.warning("Invalid timezone in convert_time: %s", e)
-            raise RuntimeError("Invalid timezone") from e
-        except ValueError as e:
-            logger.warning("Invalid datetime input in convert_time: %s", e)
-            raise RuntimeError("Invalid datetime format") from e
+        except McpError as exc:
+            logger.warning("Invalid timezone in convert_time: %s", exc)
+            raise RuntimeError("Invalid timezone") from exc
+        except ValueError as exc:
+            logger.warning("Invalid datetime input in convert_time: %s", exc)
+            raise RuntimeError("Invalid datetime format") from exc
         except Exception:
             logger.exception("Unexpected error in convert_time")
-            raise RuntimeError("Time conversion service is temporarily unavailable. Please retry.") from None
+            raise RuntimeError(
+                "Time conversion service is temporarily unavailable. Please retry."
+            ) from None
