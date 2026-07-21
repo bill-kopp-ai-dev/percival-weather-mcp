@@ -59,12 +59,42 @@ def aqi_table() -> dict[str, list[dict[str, object]]]:
     """
     return {
         "pm2_5": [
-            {"min": 0, "max": 12, "label": "Good", "advice": "Air quality is good. Safe for outdoor activities."},
-            {"min": 12.1, "max": 35.4, "label": "Moderate", "advice": "Acceptable; sensitive groups should monitor symptoms."},
-            {"min": 35.5, "max": 55.4, "label": "Unhealthy for Sensitive Groups", "advice": "Sensitive groups should limit prolonged outdoor exertion."},
-            {"min": 55.5, "max": 150.4, "label": "Unhealthy", "advice": "Everyone should reduce outdoor activity; sensitive groups should stay indoors."},
-            {"min": 150.5, "max": 250.4, "label": "Very Unhealthy", "advice": "Everyone should avoid outdoor exertion; sensitive groups remain indoors."},
-            {"min": 250.5, "max": 500.4, "label": "Hazardous", "advice": "Health alert: avoid all outdoor activity."},
+            {
+                "min": 0,
+                "max": 12,
+                "label": "Good",
+                "advice": "Air quality is good. Safe for outdoor activities.",
+            },
+            {
+                "min": 12.1,
+                "max": 35.4,
+                "label": "Moderate",
+                "advice": "Acceptable; sensitive groups should monitor symptoms.",
+            },
+            {
+                "min": 35.5,
+                "max": 55.4,
+                "label": "Unhealthy for Sensitive Groups",
+                "advice": "Sensitive groups should limit prolonged outdoor exertion.",
+            },
+            {
+                "min": 55.5,
+                "max": 150.4,
+                "label": "Unhealthy",
+                "advice": "Everyone should reduce outdoor activity; sensitive groups should stay indoors.",
+            },
+            {
+                "min": 150.5,
+                "max": 250.4,
+                "label": "Very Unhealthy",
+                "advice": "Everyone should avoid outdoor exertion; sensitive groups remain indoors.",
+            },
+            {
+                "min": 250.5,
+                "max": 500.4,
+                "label": "Hazardous",
+                "advice": "Health alert: avoid all outdoor activity.",
+            },
         ],
         "pm10": [
             {"min": 0, "max": 54, "label": "Good"},

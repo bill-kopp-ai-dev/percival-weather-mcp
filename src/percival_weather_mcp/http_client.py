@@ -135,9 +135,7 @@ class ResilientHttpClient:
                     await self._sleep_backoff(attempt)
                     continue
                 if status != 200:
-                    raise ValueError(
-                        f"{self._name} returned HTTP {status} for {url}"
-                    )
+                    raise ValueError(f"{self._name} returned HTTP {status} for {url}")
 
                 if breaker is not None:
                     await breaker.record_success()

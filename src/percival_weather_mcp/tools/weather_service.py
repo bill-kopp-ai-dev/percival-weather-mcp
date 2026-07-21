@@ -228,9 +228,7 @@ class WeatherService:
             "precipitation_mm": _value("precipitation", current_index),
             "rain_mm": _value("rain", current_index),
             "snowfall_cm": _value("snowfall", current_index),
-            "precipitation_probability_percent": _value(
-                "precipitation_probability", current_index
-            ),
+            "precipitation_probability_percent": _value("precipitation_probability", current_index),
             "pressure_hpa": _value("pressure_msl", current_index),
             "cloud_cover_percent": _value("cloud_cover", current_index),
             "uv_index": _value("uv_index", current_index),
@@ -359,9 +357,7 @@ class WeatherService:
                     "uv_index": (hourly.get("uv_index") or [None])[i]
                     if i < len(hourly.get("uv_index") or [])
                     else None,
-                    "apparent_temperature_c": (
-                        hourly.get("apparent_temperature") or [None]
-                    )[i]
+                    "apparent_temperature_c": (hourly.get("apparent_temperature") or [None])[i]
                     if i < len(hourly.get("apparent_temperature") or [])
                     else None,
                     "visibility_m": (hourly.get("visibility") or [None])[i]

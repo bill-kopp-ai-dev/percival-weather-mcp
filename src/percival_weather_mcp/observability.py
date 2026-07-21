@@ -135,15 +135,11 @@ def track_tool(tool_name: str) -> Iterator[dict[str, Any]]:
         metrics.tool_calls.labels(tool=tool_name, status="ok").inc()
     except Exception as exc:
         metrics.tool_calls.labels(tool=tool_name, status="error").inc()
-        metrics.tool_errors.labels(
-            tool=tool_name, exception=type(exc).__name__
-        ).inc()
+        metrics.tool_errors.labels(tool=tool_name, exception=type(exc).__name__).inc()
         state["exception"] = exc
         raise
     finally:
-        metrics.tool_latency.labels(tool=tool_name).observe(
-            time.perf_counter() - start
-        )
+        metrics.tool_latency.labels(tool=tool_name).observe(time.perf_counter() - start)
 
 
 @contextlib.asynccontextmanager
@@ -163,15 +159,11 @@ async def track_tool_async(tool_name: str) -> AsyncIterator[dict[str, Any]]:
         metrics.tool_calls.labels(tool=tool_name, status="ok").inc()
     except BaseException as exc:
         metrics.tool_calls.labels(tool=tool_name, status="error").inc()
-        metrics.tool_errors.labels(
-            tool=tool_name, exception=type(exc).__name__
-        ).inc()
+        metrics.tool_errors.labels(tool=tool_name, exception=type(exc).__name__).inc()
         state["exception"] = exc
         raise
     finally:
-        metrics.tool_latency.labels(tool=tool_name).observe(
-            time.perf_counter() - start
-        )
+        metrics.tool_latency.labels(tool=tool_name).observe(time.perf_counter() - start)
 
 
 def record_http_request(upstream: str, status: str) -> None:
@@ -179,6 +171,4 @@ def record_http_request(upstream: str, status: str) -> None:
 
 
 def record_http_error(upstream: str, exc: BaseException) -> None:
-    get_metrics().http_errors.labels(
-        upstream=upstream, exception=type(exc).__name__
-    ).inc()
+    get_metrics().http_errors.labels(upstream=upstream, exception=type(exc).__name__).inc()

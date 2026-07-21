@@ -80,14 +80,10 @@ class Settings:
                 os.environ.get("MCP_WEATHER_HTTP_BACKOFF_CAP", DEFAULT_HTTP_BACKOFF_CAP)
             ),
             "http_max_concurrency": int(
-                os.environ.get(
-                    "MCP_WEATHER_HTTP_MAX_CONCURRENCY", DEFAULT_HTTP_MAX_CONCURRENCY
-                )
+                os.environ.get("MCP_WEATHER_HTTP_MAX_CONCURRENCY", DEFAULT_HTTP_MAX_CONCURRENCY)
             ),
             "rate_limit_per_minute": int(
-                os.environ.get(
-                    "MCP_WEATHER_RATE_LIMIT_PER_MINUTE", RATE_LIMIT_DEFAULT_PER_MINUTE
-                )
+                os.environ.get("MCP_WEATHER_RATE_LIMIT_PER_MINUTE", RATE_LIMIT_DEFAULT_PER_MINUTE)
             ),
             "log_format": os.environ.get("MCP_WEATHER_LOG_FORMAT", "text").lower(),
             "enable_metrics": _env_bool("MCP_WEATHER_ENABLE_METRICS", True),

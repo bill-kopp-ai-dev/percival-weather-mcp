@@ -29,11 +29,17 @@ from percival_weather_mcp.tools.tools_weather import (
     "model_cls,valid",
     [
         (GetCurrentWeatherInput, {"city": "London"}),
-        (GetWeatherByDateRangeInput, {"city": "London", "start_date": "2026-01-01", "end_date": "2026-01-02"}),
+        (
+            GetWeatherByDateRangeInput,
+            {"city": "London", "start_date": "2026-01-01", "end_date": "2026-01-02"},
+        ),
         (GetWeatherDetailsInput, {"city": "London"}),
         (GetCurrentDateTimeInput, {"timezone_name": "UTC"}),
         (GetTimeZoneInfoInput, {"timezone_name": "UTC"}),
-        (ConvertTimeInput, {"datetime_str": "now", "from_timezone": "UTC", "to_timezone": "America/Sao_Paulo"}),
+        (
+            ConvertTimeInput,
+            {"datetime_str": "now", "from_timezone": "UTC", "to_timezone": "America/Sao_Paulo"},
+        ),
         (GetAirQualityInput, {"city": "London"}),
         (GetAirQualityDetailsInput, {"city": "London"}),
     ],

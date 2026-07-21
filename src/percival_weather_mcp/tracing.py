@@ -41,15 +41,11 @@ def configure_tracing() -> None:
     if not settings.enable_tracing:
         return
     if not _OTEL_AVAILABLE:
-        logger.warning(
-            "MCP_WEATHER_ENABLE_TRACING=true but the 'otel' extra is not installed."
-        )
+        logger.warning("MCP_WEATHER_ENABLE_TRACING=true but the 'otel' extra is not installed.")
         return
     if _initialised:
         return
-    provider = TracerProvider(
-        resource=Resource.create({"service.name": "percival-weather-mcp"})
-    )
+    provider = TracerProvider(resource=Resource.create({"service.name": "percival-weather-mcp"}))
     provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
     trace.set_tracer_provider(provider)
     _initialised = True

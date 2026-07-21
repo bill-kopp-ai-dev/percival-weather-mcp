@@ -1,4 +1,3 @@
-
 import json
 import re
 from collections import Counter
@@ -80,6 +79,7 @@ def get_zoneinfo(timezone_name: str) -> ZoneInfo:
         error_data = ErrorData(code=-1, message="Invalid timezone")
         raise McpError(error_data) from err
 
+
 def format_get_weather_bytime(data_result: Any) -> str:
     """
     Format weather data into a compact, agent-friendly payload.
@@ -135,6 +135,7 @@ def format_get_weather_bytime(data_result: Any) -> str:
         "hourly_sample": weather_data[:12],
     }
     return json.dumps(payload, indent=2)
+
 
 def format_air_quality_data(data_result: Any) -> str:
     """
@@ -207,6 +208,7 @@ def format_air_quality_data(data_result: Any) -> str:
     }
     return json.dumps(payload, indent=2)
 
+
 def get_closest_utc_index(hourly_times: list[str]) -> int:
     """
     Returns the index of the datetime in `hourly_times` closest to the current UTC time
@@ -218,12 +220,14 @@ def get_closest_utc_index(hourly_times: list[str]) -> int:
 
     current_time = datetime.now(timezone.utc)
     parsed_times = [
-        parser.isoparse(t).replace(tzinfo=timezone.utc) if parser.isoparse(t).tzinfo is None
+        parser.isoparse(t).replace(tzinfo=timezone.utc)
+        if parser.isoparse(t).tzinfo is None
         else parser.isoparse(t).astimezone(timezone.utc)
         for t in hourly_times
     ]
 
     return min(range(len(parsed_times)), key=lambda i: abs(parsed_times[i] - current_time))
+
 
 # Weather code descriptions (from Open-Meteo documentation)
 weather_descriptions = {

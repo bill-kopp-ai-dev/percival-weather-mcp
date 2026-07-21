@@ -46,9 +46,7 @@ class ToolHandler(ABC):
         raise NotImplementedError("Each tool handler must implement get_tool_description")
 
     @abstractmethod
-    async def run_tool(
-        self, args: dict
-    ) -> Sequence[TextContent | ImageContent | EmbeddedResource]:
+    async def run_tool(self, args: dict) -> Sequence[TextContent | ImageContent | EmbeddedResource]:
         """Execute the tool with the provided arguments (already validated)."""
         raise NotImplementedError("Each tool handler must implement run_tool")
 

@@ -64,9 +64,7 @@ async def test_record_http_request_counts_all_status_codes(monkeypatch):
             with pytest.raises(ValueError):
                 await client.get_json("https://example.test/boom")
 
-    value = metrics.http_requests.labels(
-        upstream="recording-test", status="500"
-    )._value.get()
+    value = metrics.http_requests.labels(upstream="recording-test", status="500")._value.get()
     assert value >= 1, "5xx requests must be counted in the HTTP metrics"
     observability.reset_metrics()
 

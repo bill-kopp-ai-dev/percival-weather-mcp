@@ -42,31 +42,43 @@ def _serialise(payload: object) -> str:
 def register_resources(mcp_server: FastMCP) -> None:
     """Attach every static resource to the given FastMCP server."""
 
-    @mcp_server.resource(f"{RESOURCE_PREFIX}codes", name="weather_codes", description=(
-        "WMO weather code reference table used by the Open-Meteo API. "
-        "Each entry has a numeric ``code`` and a human-readable ``description``. "
-        "Consult this resource whenever the agent needs to translate a numeric "
-        "code returned by ``weather_get_details`` or ``weather_get_by_range`` "
-        "into plain text (e.g. code 95 → 'Thunderstorm: slight or moderate')."
-    ))
+    @mcp_server.resource(
+        f"{RESOURCE_PREFIX}codes",
+        name="weather_codes",
+        description=(
+            "WMO weather code reference table used by the Open-Meteo API. "
+            "Each entry has a numeric ``code`` and a human-readable ``description``. "
+            "Consult this resource whenever the agent needs to translate a numeric "
+            "code returned by ``weather_get_details`` or ``weather_get_by_range`` "
+            "into plain text (e.g. code 95 → 'Thunderstorm: slight or moderate')."
+        ),
+    )
     def weather_codes() -> str:
         return _serialise({"codes": weather_code_table()})
 
-    @mcp_server.resource(f"{RESOURCE_PREFIX}aqi", name="weather_aqi", description=(
-        "Air-quality risk bands per pollutant (PM2.5, PM10, ozone, NO2, SO2, CO) "
-        "following WHO 2021 / EPA breakpoints. Each band has ``min``, ``max``, "
-        "``label`` and an optional ``advice`` recommendation. Use this resource "
-        "when the user asks whether the air is safe for outdoor activity."
-    ))
+    @mcp_server.resource(
+        f"{RESOURCE_PREFIX}aqi",
+        name="weather_aqi",
+        description=(
+            "Air-quality risk bands per pollutant (PM2.5, PM10, ozone, NO2, SO2, CO) "
+            "following WHO 2021 / EPA breakpoints. Each band has ``min``, ``max``, "
+            "``label`` and an optional ``advice`` recommendation. Use this resource "
+            "when the user asks whether the air is safe for outdoor activity."
+        ),
+    )
     def weather_aqi() -> str:
         return _serialise({"bands": aqi_table()})
 
-    @mcp_server.resource(f"{RESOURCE_PREFIX}timezones", name="weather_timezones", description=(
-        "Curated list of commonly-used IANA timezone names with display label "
-        "and typical UTC offset (DST-aware ranges shown as ``+HH:MM/+HH:MM``). "
-        "Use this resource whenever the agent must choose an IANA name for "
-        "``weather_convert_time`` or ``weather_get_time``."
-    ))
+    @mcp_server.resource(
+        f"{RESOURCE_PREFIX}timezones",
+        name="weather_timezones",
+        description=(
+            "Curated list of commonly-used IANA timezone names with display label "
+            "and typical UTC offset (DST-aware ranges shown as ``+HH:MM/+HH:MM``). "
+            "Use this resource whenever the agent must choose an IANA name for "
+            "``weather_convert_time`` or ``weather_get_time``."
+        ),
+    )
     def weather_timezones() -> str:
         return _serialise({"timezones": timezone_table()})
 

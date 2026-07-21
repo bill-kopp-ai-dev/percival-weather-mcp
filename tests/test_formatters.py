@@ -32,9 +32,7 @@ def _weather_payload(**overrides):
 
 
 def test_weather_formatter_basic():
-    out = WeatherFormatter().format_current(
-        _weather_payload(apparent_temperature_c=6)
-    )
+    out = WeatherFormatter().format_current(_weather_payload(apparent_temperature_c=6))
     assert "London" in out
     assert "Light rain" in out
     assert "10°C" in out

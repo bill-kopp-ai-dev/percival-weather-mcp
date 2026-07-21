@@ -81,13 +81,9 @@ async def test_circuit_breaker_opens_and_short_circuits():
         async with ResilientHttpClient(name="geo") as client:
             for _ in range(2):
                 with pytest.raises(ValueError):
-                    await client.get_json(
-                        "https://example.test/geo", breaker=breaker
-                    )
+                    await client.get_json("https://example.test/geo", breaker=breaker)
             with pytest.raises(CircuitOpenError):
-                await client.get_json(
-                    "https://example.test/geo", breaker=breaker
-                )
+                await client.get_json("https://example.test/geo", breaker=breaker)
 
 
 @pytest.mark.asyncio
@@ -103,13 +99,9 @@ async def test_breaker_resets_after_window():
         )
         async with ResilientHttpClient(name="geo") as client:
             with pytest.raises(ValueError):
-                await client.get_json(
-                    "https://example.test/geo", breaker=breaker
-                )
+                await client.get_json("https://example.test/geo", breaker=breaker)
             await asyncio.sleep(0.25)
-            data = await client.get_json(
-                "https://example.test/geo", breaker=breaker
-            )
+            data = await client.get_json("https://example.test/geo", breaker=breaker)
         assert data == {"ok": True}
         assert route.call_count == 3
 
@@ -139,4 +131,3 @@ async def test_breaker_does_not_extend_cooldown_on_repeated_failures():
                 await client.get_json("https://example.test/geo", breaker=breaker)
 
         assert breaker._opened_at == first_opened
-

@@ -77,17 +77,14 @@ def _expected_field_names(model_cls) -> set[str]:
 def test_proxy_for_current_weather_exposes_real_fields():
     tool = _register(GetCurrentWeatherToolHandler())
     fields = set(tool.input_schema.get("properties", {}).keys())
-    assert "kwargs" not in fields, (
-        "Schema regressed to the legacy kwargs-only bug"
-    )
+    assert "kwargs" not in fields, "Schema regressed to the legacy kwargs-only bug"
     assert fields == _expected_field_names(GetCurrentWeatherInput)
 
 
 def test_proxy_for_weather_range_exposes_real_fields():
-    handler_cls = (
-        __import__("percival_weather_mcp.tools.tools_weather", fromlist=["X"])
-        .GetWeatherByDateRangeToolHandler
-    )
+    handler_cls = __import__(
+        "percival_weather_mcp.tools.tools_weather", fromlist=["X"]
+    ).GetWeatherByDateRangeToolHandler
     tool = _register(handler_cls())
     fields = set(tool.input_schema.get("properties", {}).keys())
     assert "kwargs" not in fields
@@ -97,10 +94,9 @@ def test_proxy_for_weather_range_exposes_real_fields():
 
 
 def test_proxy_for_weather_details_exposes_real_fields():
-    handler_cls = (
-        __import__("percival_weather_mcp.tools.tools_weather", fromlist=["X"])
-        .GetWeatherDetailsToolHandler
-    )
+    handler_cls = __import__(
+        "percival_weather_mcp.tools.tools_weather", fromlist=["X"]
+    ).GetWeatherDetailsToolHandler
     tool = _register(handler_cls())
     fields = set(tool.input_schema.get("properties", {}).keys())
     assert "kwargs" not in fields

@@ -85,9 +85,7 @@ class GetAirQualityToolHandler(_BaseAirQualityHandler):
             self.validate_required_args(args, ["city"])
             payload = cast(GetAirQualityInput, self.parse_args(args))
             city = utils.normalize_city_name(payload.city)
-            variables = _normalize_aq_variables(
-                payload.variables, DEFAULT_AIR_QUALITY_VARIABLES
-            )
+            variables = _normalize_aq_variables(payload.variables, DEFAULT_AIR_QUALITY_VARIABLES)
 
             logger.info("Getting air quality for city=%s variables=%s", city, variables)
 
@@ -145,9 +143,7 @@ class GetAirQualityDetailsToolHandler(_BaseAirQualityHandler):
             self.validate_required_args(args, ["city"])
             payload = cast(GetAirQualityDetailsInput, self.parse_args(args))
             city = utils.normalize_city_name(payload.city)
-            variables = _normalize_aq_variables(
-                payload.variables, EXTENDED_AIR_QUALITY_VARIABLES
-            )
+            variables = _normalize_aq_variables(payload.variables, EXTENDED_AIR_QUALITY_VARIABLES)
 
             logger.info("Getting detailed air quality for city=%s", city)
 

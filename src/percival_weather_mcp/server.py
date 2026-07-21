@@ -92,9 +92,7 @@ tool_handlers: dict[str, ToolHandler] = {}
 class WeatherFastMCP(FastMCP):
     """FastMCP subclass that resolves legacy aliases at dispatch time."""
 
-    async def call_tool(
-        self, name: str, arguments: dict[str, Any]
-    ) -> Any:
+    async def call_tool(self, name: str, arguments: dict[str, Any]) -> Any:
         resolved = resolve_tool_name(name)
         if resolved != name:
             logger.warning("Tool alias used: %s -> %s", name, resolved)
@@ -169,7 +167,11 @@ def _make_tool_proxy(handler: ToolHandler) -> Callable[..., Any]:
         if field_info.is_required():
             default = empty
         else:
-            default = field_info.default if field_info.default is not empty else FieldInfo.from_field().default
+            default = (
+                field_info.default
+                if field_info.default is not empty
+                else FieldInfo.from_field().default
+            )
         parameters.append(
             inspect.Parameter(
                 name=field_name,
@@ -201,8 +203,7 @@ def _make_tool_proxy(handler: ToolHandler) -> Callable[..., Any]:
 def _register_status_tool(mcp_server: FastMCP) -> None:
     async def get_status() -> str:
         return (
-            f"Percival Weather MCP Server operational. "
-            f"Name: {SERVER_NAME} Version: {__version__}"
+            f"Percival Weather MCP Server operational. Name: {SERVER_NAME} Version: {__version__}"
         )
 
     get_status.__name__ = "weather_get_status"
@@ -312,7 +313,9 @@ def create_streamable_http_app(
 ) -> Starlette:
     """Return the Streamable HTTP Starlette app from a FastMCP server."""
     if debug and not mcp_server.settings.debug:
-        logger.debug("create_streamable_http_app(debug=True) called on a non-debug FastMCP instance")
+        logger.debug(
+            "create_streamable_http_app(debug=True) called on a non-debug FastMCP instance"
+        )
     if stateless != mcp_server.settings.stateless_http:
         logger.debug(
             "Requested stateless=%s but server is stateless_http=%s",
@@ -353,9 +356,7 @@ class _ASGIWrapper:
 
     def __init__(self, inner: ASGIApp, *, started_at: float, version: str) -> None:
         self._inner = inner
-        self._middleware = HealthAndMetricsMiddleware(
-            inner, started_at=started_at, version=version
-        )
+        self._middleware = HealthAndMetricsMiddleware(inner, started_at=started_at, version=version)
 
     async def __call__(self, scope: Any, receive: Any, send: Any) -> None:
         if scope["type"] == "http" and scope.get("path") in {"/healthz", "/health", "/metrics"}:

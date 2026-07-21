@@ -55,8 +55,7 @@ def register_prompts(mcp_server: FastMCP) -> None:
             "questions — it is intended for historical/forecast windows."
         )
         user_text = (
-            f"What is the current weather in {city}? "
-            "Use the percival-weather-mcp tools to answer."
+            f"What is the current weather in {city}? Use the percival-weather-mcp tools to answer."
         )
         return [
             AssistantMessage(content=system_text),

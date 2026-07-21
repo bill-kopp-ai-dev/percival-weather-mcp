@@ -73,6 +73,7 @@ async def test_bearer_auth_accepts_valid_token():
 def test_rate_limit_blocks_after_budget():
     loop = asyncio.new_event_loop()
     try:
+
         async def scenario():
             sent: list[dict] = []
 
@@ -184,4 +185,3 @@ async def test_rate_limit_evicts_idle_buckets():
     assert "10.0.0.2" not in middleware._buckets
     assert "10.0.0.3" not in middleware._buckets
     assert "10.0.0.1" in middleware._buckets
-

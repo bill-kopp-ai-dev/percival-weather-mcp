@@ -159,9 +159,8 @@ class ConvertTimeToolHandler(ToolHandler):
                 "original_timezone": payload.from_timezone,
                 "converted_datetime": target_time.isoformat(timespec="seconds"),
                 "converted_timezone": payload.to_timezone,
-                "time_difference_hours": (
-                    tgt_offset.total_seconds() - src_offset.total_seconds()
-                ) / 3600,
+                "time_difference_hours": (tgt_offset.total_seconds() - src_offset.total_seconds())
+                / 3600,
             }
             return [TextContent(type="text", text=json.dumps(result, indent=2))]
         except RuntimeError:

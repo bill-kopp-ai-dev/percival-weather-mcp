@@ -59,8 +59,7 @@ class GetWeatherByDateRangeInput(BaseModel):
     start_date: str = Field(
         ...,
         description=(
-            "Start date in ISO 8601 calendar format: YYYY-MM-DD. Must be on "
-            "or before end_date."
+            "Start date in ISO 8601 calendar format: YYYY-MM-DD. Must be on or before end_date."
         ),
         pattern=r"^\d{4}-\d{2}-\d{2}$",
     )

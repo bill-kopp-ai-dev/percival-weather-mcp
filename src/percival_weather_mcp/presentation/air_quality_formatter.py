@@ -59,14 +59,13 @@ class AirQualityFormatter:
             )
         if pm25 <= 250:
             return (
-                "Everyone should avoid outdoor activities. "
-                "Sensitive groups should remain indoors."
+                "Everyone should avoid outdoor activities. Sensitive groups should remain indoors."
             )
-        return (
-            "Health alert: Everyone should avoid all outdoor activities and remain indoors."
-        )
+        return "Health alert: Everyone should avoid all outdoor activities and remain indoors."
 
-    def format_legacy(self, city: str, latitude: float, longitude: float, aq_data: dict[str, Any]) -> str:
+    def format_legacy(
+        self, city: str, latitude: float, longitude: float, aq_data: dict[str, Any]
+    ) -> str:
         """Render a human-readable, single-line-per-pollutant view."""
         safe_city = utils.safe_inline_text(city)
         parts = [f"Air quality in {safe_city} (lat: {latitude:.2f}, lon: {longitude:.2f}):"]
