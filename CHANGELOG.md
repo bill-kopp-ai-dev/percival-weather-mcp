@@ -4,6 +4,59 @@ All notable changes to **percival-weather-mcp** are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.8.0] - 2026-07-21
+
+### Added
+- `percival_weather_mcp.knowledge_base` module holding static reference
+  tables — WMO weather codes, WHO/EPA air-quality bands, curated IANA
+  timezones, and per-tool response schemas — exposed to the agent via
+  MCP resources.
+- Three MCP prompts (`weather_quick_answer`, `weather_analysis`,
+  `weather_unit_conversion`) that bundle the recommended tool combinations
+  and reference-table lookups for the three common workflow shapes.
+- Three static MCP resources (`weather://codes`, `weather://aqi`,
+  `weather://timezones`) and one resource template
+  (`weather://schema/{tool_name}`) for on-demand reference data.
+- `tool_export.build_primitives_document()` and `--mode export`-friendly
+  tooling that serialises tools + prompts + resources + templates into
+  `docs/tools.json`.
+- New regression test modules: `test_primitives.py`,
+  `test_docstring_quality.py`, `test_air_quality_integration.py`,
+  `test_state_isolation.py`, `test_input_schema_fix.py`.
+
+### Changed
+- Every Pydantic input model now documents its description, examples,
+  length/pattern constraints and defaults; the verbose "Output shape +
+  Errors" prose moved into the tool description so the JSON schema does
+  not duplicate it.
+- `create_fastmcp_server()` no longer mutates the module-level
+  `globals()["app"]`; each call returns a fresh, configured FastMCP
+  instance. Tests and `tool_export` no longer leak registration state
+  across invocations.
+- `tool_export.build_primitives_document()` is now the canonical
+  introspection surface; `build_tools_document()` is kept as a thin
+  backwards-compatible alias.
+
+### Fixed
+- The eight data tools (`weather_get_*`, `weather_convert_time`,
+  `weather_get_air_quality*`) used to expose `inputSchema = {"kwargs":
+  {...}}` to MCP clients because the proxy function accepted bare
+  `**kwargs`. A new `_make_tool_proxy` helper rebuilds the proxy's
+  `__signature__` and `__annotations__` from `input_model.model_fields`,
+  so FastMCP derives a per-field JSON schema. Resolves the bug reported
+  in `MCP_Docs/Issues/2026-07-21-percival-weather-mcp-broken-input-schema.md`.
+- `_call_handler` is now `async` and awaits `handler.run_tool` inside the
+  metric context; `track_tool_async` exposes the real latency and
+  exception type to Prometheus.
+- `RateLimitMiddleware._buckets` now evicts idle entries every 60s
+  (default idle-ttl 600s) to bound the dictionary size.
+- `ResilientHttpClient.record_http_request` is called for **every**
+  status code (including 4xx/5xx and retries), restoring error-path
+  visibility in `mcp_weather_http_requests_total`.
+- `_normalize_aq_variables` accepts any `Sequence[str]` (was `list` only).
+- `ConvertTimeToolHandler` treats `"now"` case-insensitively and trims
+  surrounding whitespace.
+
 ## [0.7.0] - 2026-07-21
 
 ### Added
