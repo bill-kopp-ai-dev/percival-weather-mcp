@@ -75,8 +75,10 @@ class GetTimeZoneInfoToolHandler(ToolHandler):
         return Tool(
             name=self.name,
             description=(
-                "Get timezone metadata for an IANA timezone: current local time, UTC time, "
-                "offset in hours, DST flag, and timezone abbreviation."
+                "Get timezone metadata for an IANA timezone as structured JSON: "
+                "current local time, UTC time, offset in hours, DST flag, and "
+                "timezone abbreviation. Use this when the user asks about DST, "
+                "UTC offset, or abbreviation (e.g. 'PST', 'CET')."
             ),
             inputSchema=GetTimeZoneInfoInput.model_json_schema(),
         )
@@ -124,9 +126,10 @@ class ConvertTimeToolHandler(ToolHandler):
         return Tool(
             name=self.name,
             description=(
-                "Convert a datetime from one timezone to another. "
-                "Accepts 'now' or ISO 8601 input; supports offset-aware strings "
-                "(including trailing 'Z')."
+                "Convert a datetime from one timezone to another. Returns a JSON "
+                "payload with the original and converted timestamps and the time "
+                "difference in hours. Accepts 'now' or ISO 8601 input (including "
+                "trailing 'Z')."
             ),
             inputSchema=ConvertTimeInput.model_json_schema(),
         )
@@ -138,7 +141,7 @@ class ConvertTimeToolHandler(ToolHandler):
             from_tz = utils.get_zoneinfo(payload.from_timezone)
             to_tz = utils.get_zoneinfo(payload.to_timezone)
 
-            if payload.datetime_str.lower() == "now":
+            if payload.datetime_str.strip().lower() == "now":
                 source_time = datetime.now(from_tz)
             else:
                 normalised = payload.datetime_str.replace("Z", "+00:00")

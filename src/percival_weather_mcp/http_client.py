@@ -51,6 +51,12 @@ class CircuitBreaker:
 
     async def record_failure(self) -> None:
         async with self._lock:
+            # If the breaker is already open we keep the original open
+            # timestamp so the cooldown window cannot be extended indefinitely
+            # by a continuous stream of failures. Only the first opening is
+            # recorded.
+            if self._opened_at is not None:
+                return
             self._failures += 1
             if self._failures >= self._fail_threshold:
                 import time
@@ -118,20 +124,23 @@ class ResilientHttpClient:
             try:
                 async with self._semaphore:
                     response = await self.raw.request(method, url, params=params)
-                if response.status_code == httpx.codes.TOO_MANY_REQUESTS and attempt < attempts:
+                status = response.status_code
+                # Always record the request count, regardless of status code or
+                # retry decision, so error-path volume is visible in metrics.
+                record_http_request(self._name, str(status))
+                if status == httpx.codes.TOO_MANY_REQUESTS and attempt < attempts:
                     await self._sleep_backoff(attempt)
                     continue
-                if response.status_code >= 500 and attempt < attempts:
+                if status >= 500 and attempt < attempts:
                     await self._sleep_backoff(attempt)
                     continue
-                if response.status_code != 200:
+                if status != 200:
                     raise ValueError(
-                        f"{self._name} returned HTTP {response.status_code} for {url}"
+                        f"{self._name} returned HTTP {status} for {url}"
                     )
 
                 if breaker is not None:
                     await breaker.record_success()
-                record_http_request(self._name, str(response.status_code))
                 return response.json()
             except (httpx.RequestError, ValueError) as exc:
                 record_http_error(self._name, exc)

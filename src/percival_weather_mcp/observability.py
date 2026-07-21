@@ -8,9 +8,10 @@ back to no-op implementations.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import time
-from collections.abc import Iterator
+from collections.abc import AsyncIterator, Iterator
 from contextlib import contextmanager
 from typing import Any
 
@@ -120,7 +121,12 @@ def reset_metrics() -> None:
 
 @contextmanager
 def track_tool(tool_name: str) -> Iterator[dict[str, Any]]:
-    """Context manager that records call counts and latency for a tool."""
+    """Synchronous context manager that records tool-call latency.
+
+    For coroutine tool handlers use :func:`track_tool_async` instead, which
+    measures the time spent inside the coroutine (not just the time spent
+    creating it).
+    """
     metrics = get_metrics()
     state: dict[str, Any] = {"exception": None}
     start = time.perf_counter()
@@ -128,6 +134,34 @@ def track_tool(tool_name: str) -> Iterator[dict[str, Any]]:
         yield state
         metrics.tool_calls.labels(tool=tool_name, status="ok").inc()
     except Exception as exc:
+        metrics.tool_calls.labels(tool=tool_name, status="error").inc()
+        metrics.tool_errors.labels(
+            tool=tool_name, exception=type(exc).__name__
+        ).inc()
+        state["exception"] = exc
+        raise
+    finally:
+        metrics.tool_latency.labels(tool=tool_name).observe(
+            time.perf_counter() - start
+        )
+
+
+@contextlib.asynccontextmanager
+async def track_tool_async(tool_name: str) -> AsyncIterator[dict[str, Any]]:
+    """Async context manager that records tool-call latency around an awaited coroutine.
+
+    Usage::
+
+        async with track_tool_async("my_tool") as state:
+            state["result"] = await handler.run_tool(args)
+    """
+    metrics = get_metrics()
+    state: dict[str, Any] = {"exception": None, "result": None}
+    start = time.perf_counter()
+    try:
+        yield state
+        metrics.tool_calls.labels(tool=tool_name, status="ok").inc()
+    except BaseException as exc:
         metrics.tool_calls.labels(tool=tool_name, status="error").inc()
         metrics.tool_errors.labels(
             tool=tool_name, exception=type(exc).__name__

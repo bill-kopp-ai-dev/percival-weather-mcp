@@ -117,3 +117,26 @@ async def test_breaker_resets_after_window():
 def test_get_geo_breaker_is_singleton():
     breaker = get_geo_breaker()
     assert get_geo_breaker() is breaker
+
+
+@pytest.mark.asyncio
+async def test_breaker_does_not_extend_cooldown_on_repeated_failures():
+    """Regression: record_failure must NOT reset ``_opened_at`` once the breaker is open."""
+    breaker = CircuitBreaker(fail_threshold=1, reset_seconds=10.0)
+    with respx.mock(base_url="https://example.test") as mock:
+        mock.get("/geo").mock(return_value=httpx.Response(500))
+        async with ResilientHttpClient(name="geo") as client:
+            # First failure opens the breaker and sets the timestamp.
+            with pytest.raises(ValueError):
+                await client.get_json("https://example.test/geo", breaker=breaker)
+            first_opened = breaker._opened_at
+            assert first_opened is not None
+
+            # Subsequent failures must NOT touch ``_opened_at``.
+            with pytest.raises(CircuitOpenError):
+                await client.get_json("https://example.test/geo", breaker=breaker)
+            with pytest.raises(CircuitOpenError):
+                await client.get_json("https://example.test/geo", breaker=breaker)
+
+        assert breaker._opened_at == first_opened
+

@@ -10,6 +10,7 @@ from typing import cast
 from mcp.types import EmbeddedResource, ImageContent, TextContent, Tool
 
 from .. import utils
+from ..http_client import ResilientHttpClient
 from ..models import (
     DEFAULT_AIR_QUALITY_VARIABLES,
     EXTENDED_AIR_QUALITY_VARIABLES,
@@ -28,10 +29,15 @@ def _normalize_aq_variables(
     raw_variables: Sequence[str] | None,
     default_variables: Sequence[str],
 ) -> list[str]:
-    """Validate and normalise the optional ``variables`` argument."""
+    """Validate and normalise the optional ``variables`` argument.
+
+    Accepts any sequence of strings (list, tuple, etc.) — the runtime check
+    is ``isinstance(..., (list, tuple))`` rather than ``list`` alone, which
+    keeps the type hint (``Sequence[str]``) and runtime behaviour consistent.
+    """
     if raw_variables is None:
         return list(default_variables)
-    if not isinstance(raw_variables, list):
+    if not isinstance(raw_variables, (list, tuple)):
         raise ValueError("variables must be an array of strings.")
     if len(raw_variables) > len(EXTENDED_AIR_QUALITY_VARIABLES):
         raise ValueError("Too many variables requested.")
@@ -85,10 +91,13 @@ class GetAirQualityToolHandler(_BaseAirQualityHandler):
 
             logger.info("Getting air quality for city=%s variables=%s", city, variables)
 
-            latitude, longitude = await self.weather_service.get_coordinates(city)
-            aq_data = await self.air_quality_service.get_air_quality(
-                latitude, longitude, variables
-            )
+            async with ResilientHttpClient(name="air-quality-tools") as http_client:
+                latitude, longitude = await self.weather_service.get_coordinates(
+                    city, client=http_client
+                )
+                aq_data = await self.air_quality_service.get_air_quality(
+                    latitude, longitude, variables, client=http_client
+                )
             current_aq = self.air_quality_service.get_current_air_quality_index(aq_data)
             response_data = {
                 "city": city,
@@ -142,10 +151,13 @@ class GetAirQualityDetailsToolHandler(_BaseAirQualityHandler):
 
             logger.info("Getting detailed air quality for city=%s", city)
 
-            latitude, longitude = await self.weather_service.get_coordinates(city)
-            aq_data = await self.air_quality_service.get_air_quality(
-                latitude, longitude, variables
-            )
+            async with ResilientHttpClient(name="air-quality-tools") as http_client:
+                latitude, longitude = await self.weather_service.get_coordinates(
+                    city, client=http_client
+                )
+                aq_data = await self.air_quality_service.get_air_quality(
+                    latitude, longitude, variables, client=http_client
+                )
             current_aq = self.air_quality_service.get_current_air_quality_index(aq_data)
             response_data = {
                 "city": city,

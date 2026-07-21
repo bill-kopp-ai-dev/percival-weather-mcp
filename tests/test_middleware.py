@@ -156,3 +156,32 @@ async def test_health_middleware_responds_to_healthz():
     middleware = HealthAndMetricsMiddleware(app, started_at=time.time(), version="0.7.0")
     await middleware({"type": "http", "method": "GET", "path": "/healthz"}, receive, send)
     assert any(msg.get("type") == "http.response.start" for msg in sent)
+
+
+@pytest.mark.asyncio
+async def test_rate_limit_evicts_idle_buckets():
+    """Regression: idle buckets must be removed from the dictionary to avoid leaks."""
+
+    async def app(scope, receive, send):
+        pass
+
+    middleware = RateLimitMiddleware(
+        app,
+        per_minute=10,
+        idle_eviction_seconds=0.1,
+        eviction_interval_seconds=0.0,  # evict on every request
+    )
+    # Seed three distinct IPs.
+    for ip in ("10.0.0.1", "10.0.0.2", "10.0.0.3"):
+        middleware._bucket_for(ip)
+    assert len(middleware._buckets) == 3
+
+    # Wait past the idle threshold and re-touch only one IP.
+    await asyncio.sleep(0.15)
+    middleware._bucket_for("10.0.0.1")
+
+    # Idle IPs (10.0.0.2 and 10.0.0.3) must have been evicted.
+    assert "10.0.0.2" not in middleware._buckets
+    assert "10.0.0.3" not in middleware._buckets
+    assert "10.0.0.1" in middleware._buckets
+

@@ -71,17 +71,47 @@ class _TokenBucket:
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    """Simple in-memory per-IP token-bucket rate limiter."""
+    """In-memory per-IP token-bucket rate limiter with idle eviction.
 
-    def __init__(self, app: ASGIApp, per_minute: int) -> None:
+    Idle buckets (those that have not been consumed from for
+    ``idle_eviction_seconds``) are pruned at most once every
+    ``eviction_interval_seconds`` to keep the dictionary bounded.
+    """
+
+    DEFAULT_IDLE_EVICTION_SECONDS = 600.0
+    DEFAULT_EVICTION_INTERVAL_SECONDS = 60.0
+
+    def __init__(
+        self,
+        app: ASGIApp,
+        per_minute: int,
+        *,
+        idle_eviction_seconds: float = DEFAULT_IDLE_EVICTION_SECONDS,
+        eviction_interval_seconds: float = DEFAULT_EVICTION_INTERVAL_SECONDS,
+    ) -> None:
         super().__init__(app)
         self._per_minute = max(1, per_minute)
         self._refill_per_second = self._per_minute / 60.0
+        self._idle_eviction_seconds = float(idle_eviction_seconds)
+        self._eviction_interval_seconds = float(eviction_interval_seconds)
         self._buckets: dict[str, _TokenBucket] = {}
         self._lock = threading.Lock()
+        self._last_eviction = time.monotonic()
+
+    def _evict_idle(self) -> None:
+        now = time.monotonic()
+        if (now - self._last_eviction) < self._eviction_interval_seconds:
+            return
+        self._last_eviction = now
+        stale_threshold = now - self._idle_eviction_seconds
+        # A bucket is idle if its ``_last`` timestamp is older than the threshold.
+        stale = [host for host, bucket in self._buckets.items() if bucket._last < stale_threshold]
+        for host in stale:
+            self._buckets.pop(host, None)
 
     def _bucket_for(self, client_host: str) -> _TokenBucket:
         with self._lock:
+            self._evict_idle()
             bucket = self._buckets.get(client_host)
             if bucket is None:
                 bucket = _TokenBucket(self._per_minute, self._refill_per_second)
@@ -183,8 +213,22 @@ def validate_http_runtime_security(
 
 
 def install_security_middleware(app: Any, *, auth_token: str | None) -> None:
-    """Install rate-limit + auth middlewares on a Starlette/FastMCP app."""
+    """Install rate-limit + auth middlewares on a Starlette/FastMCP app.
+
+    Middleware order in Starlette: the *last* ``add_middleware`` call wraps the
+    app as the *outermost* layer, so it executes first on every request. The
+    order below puts authentication before rate limiting, which means:
+
+    * Unauthenticated traffic is rejected immediately, without consuming any
+      of the client's rate-limit budget.
+    * The crypto comparison in :class:`BearerTokenAuthMiddleware` runs against
+      the smallest possible request volume (no anonymous floods reach it).
+
+    Reverse the two calls if you prefer to budget anonymous traffic too.
+    """
     settings = get_settings()
-    app.add_middleware(RateLimitMiddleware, per_minute=settings.rate_limit_per_minute)
     if auth_token:
+        # Auth added LAST → runs FIRST (outermost layer).
         app.add_middleware(BearerTokenAuthMiddleware, token=auth_token)
+    # Rate limit added FIRST → runs AFTER auth (innermost layer).
+    app.add_middleware(RateLimitMiddleware, per_minute=settings.rate_limit_per_minute)
