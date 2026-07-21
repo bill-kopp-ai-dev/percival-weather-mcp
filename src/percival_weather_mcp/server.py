@@ -10,14 +10,17 @@ from __future__ import annotations
 import argparse
 import asyncio
 import contextlib
+import inspect
 import logging
 import os
 import sys
 import time
+from collections.abc import Callable
 from typing import Any
 
 import uvicorn
 from mcp.server.fastmcp import FastMCP
+from pydantic.fields import FieldInfo
 from starlette.applications import Starlette
 from starlette.types import ASGIApp
 
@@ -36,7 +39,9 @@ from .middleware import (
     install_security_middleware,
     validate_http_runtime_security,
 )
-from .observability import track_tool
+from .observability import track_tool_async
+from .prompts import register_prompts
+from .resources import register_resources
 from .tools.toolhandler import ToolHandler
 from .tools.tools_air_quality import (
     GetAirQualityDetailsToolHandler,
@@ -96,22 +101,20 @@ class WeatherFastMCP(FastMCP):
         return await super().call_tool(resolved, arguments)
 
 
-def _call_handler(handler: ToolHandler, arguments: dict[str, Any]) -> Any:
-    """Run ``handler.run_tool`` with metrics instrumentation."""
-    with track_tool(handler.name):
-        return handler.run_tool(arguments)
+async def _call_handler(handler: ToolHandler, arguments: dict[str, Any]) -> Any:
+    """Run ``handler.run_tool`` with metrics instrumentation.
+
+    The coroutine is awaited **inside** the metric context so latency reflects
+    the real execution time and exceptions bubble up to the metric counters.
+    """
+    async with track_tool_async(handler.name):
+        return await handler.run_tool(arguments)
 
 
 def _register_handler_with_fastmcp(mcp_server: FastMCP, handler: ToolHandler) -> None:
     description = (handler.get_tool_description().description or "").strip()
 
-    async def tool_proxy(**kwargs: Any) -> Any:
-        normalised = {key: value for key, value in kwargs.items() if value is not None}
-        return await _call_handler(handler, normalised)
-
-    tool_proxy.__name__ = f"{handler.name}_proxy"
-    tool_proxy.__qualname__ = tool_proxy.__name__
-    tool_proxy.__doc__ = description or f"Tool: {handler.name}"
+    tool_proxy = _make_tool_proxy(handler)
 
     with contextlib.suppress(Exception):
         mcp_server.remove_tool(handler.name)
@@ -120,6 +123,79 @@ def _register_handler_with_fastmcp(mcp_server: FastMCP, handler: ToolHandler) ->
         name=handler.name,
         description=description or None,
     )
+
+
+def _make_tool_proxy(handler: ToolHandler) -> Callable[..., Any]:
+    """Build an MCP-compatible proxy function for ``handler``.
+
+    FastMCP derives the ``inputSchema`` of every registered tool from the
+    signature of the callable passed to ``add_tool`` — using ``func_metadata``
+    under the hood. A plain ``async def ...(**kwargs)`` therefore produces a
+    schema with a single ``kwargs`` field, which is exactly the bug described
+    in ``MCP_Docs/Issues/2026-07-21-percival-weather-mcp-broken-input-schema.md``.
+
+    To expose the real per-field schema we reconstruct an
+    ``inspect.Signature`` whose parameters mirror the fields declared on the
+    handler's ``input_model`` (a Pydantic ``BaseModel``). FastMCP then introspects
+    the rebuilt signature and builds a correct schema, while the underlying
+    function still receives the original kwargs dict that ``_call_handler``
+    forwards to ``handler.run_tool``.
+    """
+    description = (handler.get_tool_description().description or "").strip()
+
+    async def tool_proxy(**kwargs: Any) -> Any:
+        # Drop keys that arrived as ``None`` so the handler's Pydantic model can
+        # apply its real defaults instead of being forced to validate ``None``.
+        normalised = {key: value for key, value in kwargs.items() if value is not None}
+        return await _call_handler(handler, normalised)
+
+    input_model_cls = getattr(handler.__class__, "input_model", None)
+    if input_model_cls is None or not isinstance(input_model_cls, type):
+        # Fallback for legacy handlers: keep the original **kwargs behaviour.
+        tool_proxy.__name__ = f"{handler.name}_proxy"
+        tool_proxy.__qualname__ = tool_proxy.__name__
+        tool_proxy.__doc__ = description or f"Tool: {handler.name}"
+        return tool_proxy
+
+    model_fields = getattr(input_model_cls, "model_fields", {}) or {}
+
+    annotations: dict[str, Any] = {}
+    parameters: list[inspect.Parameter] = []
+    empty = inspect.Parameter.empty
+    for field_name, field_info in model_fields.items():
+        annotation = field_info.annotation if field_info.annotation is not empty else Any
+        annotations[field_name] = annotation
+        default: Any
+        if field_info.is_required():
+            default = empty
+        else:
+            default = field_info.default if field_info.default is not empty else FieldInfo.from_field().default
+        parameters.append(
+            inspect.Parameter(
+                name=field_name,
+                kind=inspect.Parameter.KEYWORD_ONLY,
+                annotation=annotation,
+                default=default,
+            )
+        )
+
+    if parameters:
+        # Force a KEYWORD_ONLY-only signature. FastMCP's func_metadata expects
+        # real parameter names, so this is mandatory.
+        rebuilt_sig = inspect.Signature(
+            parameters=parameters,
+            return_annotation=inspect.Signature.empty,
+        )
+        tool_proxy.__signature__ = rebuilt_sig  # type: ignore[attr-defined]
+
+    # ``__annotations__`` is the primary source for ``func_metadata``'s
+    # ``_get_typed_signature``; update it to match the fields we just added.
+    tool_proxy.__annotations__ = annotations
+    tool_proxy.__name__ = f"{handler.name}_proxy"
+    tool_proxy.__qualname__ = tool_proxy.__name__
+    tool_proxy.__doc__ = description or f"Tool: {handler.name}"
+
+    return tool_proxy
 
 
 def _register_status_tool(mcp_server: FastMCP) -> None:
@@ -140,6 +216,8 @@ def _sync_fastmcp_tools(mcp_server: FastMCP) -> None:
     for handler in tool_handlers.values():
         _register_handler_with_fastmcp(mcp_server, handler)
     _register_status_tool(mcp_server)
+    register_prompts(mcp_server)
+    register_resources(mcp_server)
 
 
 # ---------------------------------------------------------------------------
@@ -148,11 +226,16 @@ def _sync_fastmcp_tools(mcp_server: FastMCP) -> None:
 
 
 def add_tool_handler(tool_handler: ToolHandler) -> None:
-    """Register a tool handler in the in-memory registry and the FastMCP server."""
+    """Register a tool handler in the in-memory registry.
+
+    The handler is also attached to the module-level ``app`` server when one
+    exists, so the CLI bootstrap can call this function before the server is
+    actually started.
+    """
     global tool_handlers
     tool_handlers[tool_handler.name] = tool_handler
-    if "app" in globals() and app is not None:
-        _register_handler_with_fastmcp(app, tool_handler)
+    if "app" in globals() and globals()["app"] is not None:
+        _register_handler_with_fastmcp(globals()["app"], tool_handler)
     logger.info("Registered tool handler: %s", tool_handler.name)
 
 
@@ -192,7 +275,13 @@ def create_fastmcp_server(
     debug: bool = False,
     stateless: bool = False,
 ) -> WeatherFastMCP:
-    """Create a configured FastMCP server instance."""
+    """Create a fresh, configured FastMCP server instance.
+
+    Each call returns a new ``WeatherFastMCP`` object — the module-level
+    ``app`` is NOT mutated here so that callers (tests, ``tool_export``,
+    CLI bootstrap) get independent instances and don't share registration
+    state.
+    """
     mcp_server = WeatherFastMCP(
         name=SERVER_NAME,
         host=host,
@@ -205,9 +294,6 @@ def create_fastmcp_server(
     )
     if tool_handlers:
         _sync_fastmcp_tools(mcp_server)
-    # Make sure the module-level ``app`` reflects the current server so that
-    # subsequent ``add_tool_handler`` calls attach to the same instance.
-    globals()["app"] = mcp_server
     return mcp_server
 
 
@@ -335,7 +421,15 @@ async def run_server(
     )
     configure_logging()
 
-    app = create_fastmcp_server(host=host, port=port, debug=debug, stateless=stateless)
+    # Build (or reuse) the server instance. ``app`` is None until ``main``
+    # initialises it; if a caller invokes ``run_server`` directly without
+    # going through ``main`` we create a fresh instance here.
+    if app is None:
+        globals()["app"] = create_fastmcp_server(
+            host=host, port=port, debug=debug, stateless=stateless
+        )
+    server_instance = app
+    assert server_instance is not None  # for type checkers
 
     validate_http_runtime_security(
         mode=mode,
@@ -347,11 +441,11 @@ async def run_server(
 
     if mode == "stdio":
         logger.info("Starting stdio server...")
-        await app.run_stdio_async()
+        await server_instance.run_stdio_async()
     elif mode == "sse":
         logger.info("Starting SSE server on %s:%s...", host, port)
         await _run_http_transport(
-            app,
+            server_instance,
             mode="sse",
             host=host,
             port=port,
@@ -364,7 +458,7 @@ async def run_server(
         logger.info("Starting Streamable HTTP server (%s) on %s:%s...", mode_desc, host, port)
         logger.info("Endpoint: http://%s:%s/mcp", host, port)
         await _run_http_transport(
-            app,
+            server_instance,
             mode="streamable-http",
             host=host,
             port=port,
@@ -376,8 +470,10 @@ async def run_server(
         raise ValueError(f"Unknown mode: {mode}")
 
 
-# Module-level server instance used by ``python -m percival_weather_mcp``.
-app = create_fastmcp_server()
+# Module-level server instance placeholder. Populated by :func:`main` when the
+# CLI bootstrap runs; stays ``None`` for callers that want a fresh instance
+# via :func:`create_fastmcp_server` (e.g. tests, ``tool_export``).
+app: WeatherFastMCP | None = None
 
 
 async def main() -> None:
@@ -438,6 +534,14 @@ async def main() -> None:
 
     configure_logging()
     register_all_tools()
+    # Materialise the module-level ``app`` so tools are addressable as
+    # ``percival_weather_mcp.server.app`` for the lifetime of this process.
+    globals()["app"] = create_fastmcp_server(
+        host=args.host,
+        port=port,
+        debug=args.debug,
+        stateless=args.stateless,
+    )
     logger.info("Starting MCP Weather Server in %s mode...", args.mode)
     logger.info("Python version: %s", sys.version)
     logger.info("Registered tools: %s", sorted(tool_handlers.keys()))

@@ -1,25 +1,33 @@
 {
   "server": "percival-weather-mcp",
   "version": "0.7.0",
-  "tool_count": 8,
   "tools": [
     {
       "name": "weather_convert_time",
-      "description": "Convert a datetime from one timezone to another. Accepts 'now' or ISO 8601 input; supports offset-aware strings (including trailing 'Z').",
+      "description": "Convert a datetime from one timezone to another. Returns a JSON payload with the original and converted timestamps and the time difference in hours. Accepts 'now' or ISO 8601 input (including trailing 'Z').",
       "input_schema": {
         "properties": {
           "datetime_str": {
-            "description": "Datetime to convert: 'now' or ISO 8601 string (for example: '2026-03-28T14:30:00' or '2026-03-28T14:30:00Z'). If timezone is omitted, it is interpreted in from_timezone.",
+            "description": "Datetime to convert. Either the literal string 'now' (case-insensitive, whitespace allowed) or an ISO 8601 datetime (e.g. '2026-03-28T14:30:00', '2026-03-28T14:30:00Z', or '2026-03-28T14:30:00+02:00'). Strings without an offset are interpreted in ``from_timezone``.",
+            "examples": [
+              "now",
+              "2026-03-28T14:30:00",
+              "2026-03-28T14:30:00Z"
+            ],
             "title": "Datetime Str",
             "type": "string"
           },
           "from_timezone": {
             "description": "Source timezone (IANA name).",
+            "maxLength": 64,
+            "minLength": 1,
             "title": "From Timezone",
             "type": "string"
           },
           "to_timezone": {
             "description": "Target timezone (IANA name).",
+            "maxLength": 64,
+            "minLength": 1,
             "title": "To Timezone",
             "type": "string"
           }
@@ -40,6 +48,12 @@
         "properties": {
           "city": {
             "description": "City name in English, optionally with region/country to disambiguate.",
+            "examples": [
+              "London",
+              "S\u00e3o Paulo, BR"
+            ],
+            "maxLength": 200,
+            "minLength": 1,
             "title": "City",
             "type": "string"
           },
@@ -67,7 +81,16 @@
               }
             ],
             "default": null,
-            "description": "Optional subset of pollutant variables. If omitted, defaults to: pm10, pm2_5, ozone, nitrogen_dioxide, carbon_monoxide.",
+            "description": "Optional subset of pollutant variables to query. If omitted, the default compact set is used: pm10, pm2_5, ozone, nitrogen_dioxide, carbon_monoxide. Pass an explicit list when the user asks for a specific pollutant (e.g. ['ozone']) or wants to exclude one.",
+            "examples": [
+              [
+                "pm2_5",
+                "pm10"
+              ],
+              [
+                "ozone"
+              ]
+            ],
             "title": "Variables"
           }
         },
@@ -82,9 +105,27 @@
       "name": "weather_get_air_quality_details",
       "description": "Get detailed air quality data for a city as structured JSON text. Use this tool when downstream logic needs raw API-like fields in 'full_data'.",
       "input_schema": {
+        "examples": [
+          {
+            "city": "Beijing"
+          },
+          {
+            "city": "S\u00e3o Paulo",
+            "variables": [
+              "pm2_5",
+              "ozone"
+            ]
+          }
+        ],
         "properties": {
           "city": {
             "description": "City name in English, optionally with region/country to disambiguate.",
+            "examples": [
+              "Beijing",
+              "S\u00e3o Paulo"
+            ],
+            "maxLength": 200,
+            "minLength": 1,
             "title": "City",
             "type": "string"
           },
@@ -112,7 +153,13 @@
               }
             ],
             "default": null,
-            "description": "Optional pollutant list. If omitted, uses an extended default set covering major pollutants and particulates.",
+            "description": "Optional pollutant list. If omitted, the extended default set is used: pm10, pm2_5, ozone, nitrogen_dioxide, carbon_monoxide, sulphur_dioxide, ammonia, dust, aerosol_optical_depth.",
+            "examples": [
+              [
+                "pm2_5",
+                "ozone"
+              ]
+            ],
             "title": "Variables"
           }
         },
@@ -127,19 +174,30 @@
       "name": "weather_get_by_range",
       "description": "Get weather data for a city between two calendar dates (inclusive). Returns a compact JSON payload optimized for agent analysis, including period metadata, summary statistics, and an hourly sample.",
       "input_schema": {
+        "examples": [
+          {
+            "city": "Lisbon",
+            "end_date": "2026-03-07",
+            "start_date": "2026-03-01"
+          }
+        ],
         "properties": {
           "city": {
             "description": "City name in English, optionally with region/country to disambiguate.",
+            "maxLength": 200,
+            "minLength": 1,
             "title": "City",
             "type": "string"
           },
           "start_date": {
-            "description": "Start date in ISO 8601 calendar format: YYYY-MM-DD.",
+            "description": "Start date in ISO 8601 calendar format: YYYY-MM-DD. Must be on or before end_date.",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
             "title": "Start Date",
             "type": "string"
           },
           "end_date": {
-            "description": "End date in ISO 8601 calendar format: YYYY-MM-DD. Must be the same day or after start_date.",
+            "description": "End date in ISO 8601 calendar format: YYYY-MM-DD (inclusive). The total range (end_date - start_date + 1) must be <= 16 days.",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
             "title": "End Date",
             "type": "string"
           }
@@ -157,9 +215,26 @@
       "name": "weather_get_current",
       "description": "Get a concise, human-readable snapshot of current weather for a city. Use this tool when you need a short summary (temperature, humidity, wind, precipitation context, pressure, clouds, UV, visibility), not raw datasets.",
       "input_schema": {
+        "examples": [
+          {
+            "city": "London, UK"
+          },
+          {
+            "city": "New York"
+          },
+          {
+            "city": "S\u00e3o Paulo, BR"
+          }
+        ],
         "properties": {
           "city": {
-            "description": "City name in English, optionally with region/country to disambiguate (for example: 'Springfield, US' or 'London, UK').",
+            "description": "City name in English, optionally with region/country to disambiguate (for example: 'Springfield, US' or 'London, UK'). Control characters, angle brackets and excessive whitespace are stripped automatically.",
+            "examples": [
+              "London, UK",
+              "New York"
+            ],
+            "maxLength": 200,
+            "minLength": 1,
             "title": "City",
             "type": "string"
           }
@@ -175,15 +250,23 @@
       "name": "weather_get_details",
       "description": "Get detailed structured JSON weather data for a city. Use this when you need raw fields for downstream processing. Optionally include a short forecast window.",
       "input_schema": {
+        "examples": [
+          {
+            "city": "Berlin",
+            "include_forecast": true
+          }
+        ],
         "properties": {
           "city": {
             "description": "City name in English, optionally with region/country to disambiguate.",
+            "maxLength": 200,
+            "minLength": 1,
             "title": "City",
             "type": "string"
           },
           "include_forecast": {
             "default": false,
-            "description": "If true, include the next ~24 hours under the 'forecast' key. Defaults to false for smaller responses.",
+            "description": "When true, attaches a 'forecast' array with the next 24 hours of hourly observations. Defaults to false for a smaller payload.",
             "title": "Include Forecast",
             "type": "boolean"
           }
@@ -201,7 +284,13 @@
       "input_schema": {
         "properties": {
           "timezone_name": {
-            "description": "IANA timezone name (for example: 'America/New_York', 'Europe/London', 'UTC').",
+            "description": "IANA timezone name (for example: 'America/New_York', 'Europe/London', 'UTC'). Case-sensitive; must match the IANA database exactly. Refer to the ``weather://timezones`` resource for the curated list.",
+            "examples": [
+              "America/Sao_Paulo",
+              "Europe/London",
+              "UTC"
+            ],
+            "maxLength": 64,
             "minLength": 1,
             "title": "Timezone Name",
             "type": "string"
@@ -216,11 +305,21 @@
     },
     {
       "name": "weather_get_timezone",
-      "description": "Get timezone metadata for an IANA timezone: current local time, UTC time, offset in hours, DST flag, and timezone abbreviation.",
+      "description": "Get timezone metadata for an IANA timezone as structured JSON: current local time, UTC time, offset in hours, DST flag, and timezone abbreviation. Use this when the user asks about DST, UTC offset, or abbreviation (e.g. 'PST', 'CET').",
       "input_schema": {
+        "examples": [
+          {
+            "timezone_name": "America/Sao_Paulo"
+          }
+        ],
         "properties": {
           "timezone_name": {
-            "description": "IANA timezone name (for example: 'America/Sao_Paulo', 'Asia/Tokyo').",
+            "description": "IANA timezone name (for example: 'America/Sao_Paulo', 'Asia/Tokyo'). Refer to ``weather://timezones`` for the curated list.",
+            "examples": [
+              "America/Sao_Paulo",
+              "Asia/Tokyo"
+            ],
+            "maxLength": 64,
             "minLength": 1,
             "title": "Timezone Name",
             "type": "string"
@@ -232,6 +331,88 @@
         "title": "GetTimeZoneInfoInput",
         "type": "object"
       }
+    }
+  ],
+  "prompts": [
+    {
+      "name": "weather_analysis",
+      "description": "Recipe for analysing weather across a date range or across multiple cities. Use when the user wants averages, extremes, comparisons, or 'what was the weather like last week?'.",
+      "arguments": [
+        {
+          "name": "city",
+          "description": null,
+          "required": true
+        },
+        {
+          "name": "start_date",
+          "description": null,
+          "required": true
+        },
+        {
+          "name": "end_date",
+          "description": null,
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "weather_quick_answer",
+      "description": "Recipe for answering a single weather question such as 'How is the weather in <city> right now?'. Returns the system guidance the agent should follow and a user message template containing the city argument.",
+      "arguments": [
+        {
+          "name": "city",
+          "description": null,
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "weather_unit_conversion",
+      "description": "Recipe for converting datetimes between timezones or for translating a casual 'what time is it in <city>?' into a tool call. Use when the user mentions another city, country or explicit IANA timezone.",
+      "arguments": [
+        {
+          "name": "datetime_str",
+          "description": null,
+          "required": false
+        },
+        {
+          "name": "from_timezone",
+          "description": null,
+          "required": false
+        },
+        {
+          "name": "to_timezone",
+          "description": null,
+          "required": false
+        }
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "uri": "weather://aqi",
+      "name": "weather_aqi",
+      "description": "Air-quality risk bands per pollutant (PM2.5, PM10, ozone, NO2, SO2, CO) following WHO 2021 / EPA breakpoints. Each band has ``min``, ``max``, ``label`` and an optional ``advice`` recommendation. Use this resource when the user asks whether the air is safe for outdoor activity.",
+      "mime_type": "text/plain"
+    },
+    {
+      "uri": "weather://codes",
+      "name": "weather_codes",
+      "description": "WMO weather code reference table used by the Open-Meteo API. Each entry has a numeric ``code`` and a human-readable ``description``. Consult this resource whenever the agent needs to translate a numeric code returned by ``weather_get_details`` or ``weather_get_by_range`` into plain text (e.g. code 95 \u2192 'Thunderstorm: slight or moderate').",
+      "mime_type": "text/plain"
+    },
+    {
+      "uri": "weather://timezones",
+      "name": "weather_timezones",
+      "description": "Curated list of commonly-used IANA timezone names with display label and typical UTC offset (DST-aware ranges shown as ``+HH:MM/+HH:MM``). Use this resource whenever the agent must choose an IANA name for ``weather_convert_time`` or ``weather_get_time``.",
+      "mime_type": "text/plain"
+    }
+  ],
+  "resource_templates": [
+    {
+      "uri_template": "weather://schema/{tool_name}",
+      "name": "weather_tool_schema",
+      "description": "Top-level keys returned by the detailed weather/air-quality tools. Pass ``tool_name`` as one of: ``weather_get_details``, ``weather_get_by_range``, ``weather_get_air_quality_details``. Consult this resource before calling those tools so the agent can plan which fields to extract."
     }
   ]
 }
