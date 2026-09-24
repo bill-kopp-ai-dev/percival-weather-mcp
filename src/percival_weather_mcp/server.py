@@ -20,7 +20,6 @@ from typing import Any
 
 import uvicorn
 from mcp.server.fastmcp import FastMCP
-from pydantic.fields import FieldInfo
 from starlette.applications import Starlette
 from starlette.types import ASGIApp
 
@@ -166,12 +165,13 @@ def _make_tool_proxy(handler: ToolHandler) -> Callable[..., Any]:
         default: Any
         if field_info.is_required():
             default = empty
+        elif field_info.default_factory is not None:
+            # ``field_info.default`` is ``PydanticUndefined`` when only a
+            # ``default_factory`` is declared; calling the factory produces the
+            # real value to surface in the rebuilt signature.
+            default = field_info.default_factory()
         else:
-            default = (
-                field_info.default
-                if field_info.default is not empty
-                else FieldInfo.from_field().default
-            )
+            default = field_info.default
         parameters.append(
             inspect.Parameter(
                 name=field_name,

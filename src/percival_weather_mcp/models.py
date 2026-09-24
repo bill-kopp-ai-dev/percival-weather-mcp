@@ -8,9 +8,10 @@ length and pattern constraints) so the schema does not duplicate information.
 
 from __future__ import annotations
 
+from datetime import date as _date
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 # ---------------------------------------------------------------------------
 # Weather
@@ -71,6 +72,17 @@ class GetWeatherByDateRangeInput(BaseModel):
         ),
         pattern=r"^\d{4}-\d{2}-\d{2}$",
     )
+
+    @model_validator(mode="after")
+    def _validate_range(self) -> GetWeatherByDateRangeInput:
+        try:
+            start = _date.fromisoformat(self.start_date)
+            end = _date.fromisoformat(self.end_date)
+        except ValueError as exc:
+            raise ValueError("Dates must use YYYY-MM-DD format.") from exc
+        if end < start:
+            raise ValueError("end_date must be on or after start_date.")
+        return self
 
 
 class GetWeatherDetailsInput(BaseModel):

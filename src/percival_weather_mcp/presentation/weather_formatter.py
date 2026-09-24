@@ -48,29 +48,44 @@ class WeatherFormatter:
         return "Extreme"
 
     def format_current(self, weather_data: dict[str, Any]) -> str:
-        temp = weather_data["temperature_c"]
-        feels_like = weather_data.get("apparent_temperature_c", temp)
+        unknown = "unavailable"
 
-        temp_text = f"temperature of {temp}°C"
-        if abs(feels_like - temp) > 2:
-            temp_text += f" (feels like {feels_like}°C)"
+        def _present(key: str) -> Any:
+            value = weather_data.get(key)
+            return value if isinstance(value, (int, float)) else None
 
-        wind_dir = self.degrees_to_compass(weather_data.get("wind_direction_degrees", 0))
+        temp = _present("temperature_c")
+        feels_like = _present("apparent_temperature_c")
+        if temp is None:
+            temp_text = f"temperature {unknown}"
+        else:
+            temp_text = f"temperature of {temp}°C"
+            if feels_like is not None and abs(feels_like - temp) > 2:
+                temp_text += f" (feels like {feels_like}°C)"
+
+        wind_dir = self.degrees_to_compass(weather_data.get("wind_direction_degrees") or 0)
 
         safe_city = utils.safe_inline_text(weather_data.get("city", "Unknown city"))
+        humidity = _present("relative_humidity_percent")
+        dew_point = _present("dew_point_c")
+        wind_speed = _present("wind_speed_kmh")
+        wind_gusts = _present("wind_gusts_kmh")
+        weather_description = weather_data.get("weather_description") or unknown
+
         text = (
-            f"The weather in {safe_city} is {weather_data['weather_description']} "
+            f"The weather in {safe_city} is {weather_description} "
             f"with a {temp_text}, "
-            f"relative humidity at {weather_data['relative_humidity_percent']}%, "
-            f"and dew point at {weather_data['dew_point_c']}°C. "
-            f"Wind is blowing from the {wind_dir} at {weather_data['wind_speed_kmh']} km/h "
-            f"with gusts up to {weather_data['wind_gusts_kmh']} km/h."
+            f"relative humidity at {humidity if humidity is not None else unknown}%, "
+            f"and dew point at {dew_point if dew_point is not None else unknown}°C. "
+            f"Wind is blowing from the {wind_dir} "
+            f"at {wind_speed if wind_speed is not None else unknown} km/h "
+            f"with gusts up to {wind_gusts if wind_gusts is not None else unknown} km/h."
         )
 
-        precip_mm = weather_data.get("precipitation_mm", 0)
-        rain_mm = weather_data.get("rain_mm", 0)
-        snow_cm = weather_data.get("snowfall_cm", 0)
-        precip_prob = weather_data.get("precipitation_probability_percent", 0)
+        precip_mm = _present("precipitation_mm") or 0.0
+        rain_mm = _present("rain_mm") or 0.0
+        snow_cm = _present("snowfall_cm") or 0.0
+        precip_prob = _present("precipitation_probability_percent") or 0
 
         if precip_mm > 0 or precip_prob > 20:
             if snow_cm > 0:
@@ -81,16 +96,16 @@ class WeatherFormatter:
             if precip_prob > 0:
                 text += f" Precipitation probability is {precip_prob}%."
 
-        pressure = weather_data.get("pressure_hpa", 0)
-        clouds = weather_data.get("cloud_cover_percent", 0)
+        pressure = _present("pressure_hpa") or 0
+        clouds = _present("cloud_cover_percent") or 0
         text += f" Atmospheric pressure is {pressure} hPa with {clouds}% cloud cover."
 
-        uv = weather_data.get("uv_index", 0)
-        if uv > 3:
+        uv = _present("uv_index")
+        if uv is not None and uv > 3:
             text += f" UV index is {uv:.1f} ({self.uv_warning(uv)})."
 
-        visibility = weather_data.get("visibility_m", 0)
-        if visibility > 0:
+        visibility = _present("visibility_m")
+        if visibility is not None and visibility > 0:
             text += f" Visibility is {visibility / 1000:.1f} km."
 
         return text

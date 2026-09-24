@@ -4,6 +4,39 @@ All notable changes to **percival-weather-mcp** are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+- Tool proxies built by ``_make_tool_proxy`` leaked
+  ``pydantic_core.PydanticUndefined`` into the rebuilt
+  ``inspect.Parameter`` for fields declared with ``default_factory=``,
+  which would later confuse ``func_metadata``. The proxy now resolves
+  ``default_factory`` to its concrete value and keeps ``None`` defaults
+  untouched.
+- ``WeatherFormatter.format_current`` rendered upstream ``null`` values
+  as the literal string ``"None"`` (for example "temperature of None°C")
+  and crashed on ``None`` UV / visibility comparisons. Numeric sections
+  now report ``"unavailable"`` when the upstream omits a value and the
+  UV / visibility blocks are skipped entirely.
+- ``MAX_CITY_NAME_LENGTH`` (120) disagreed with the Pydantic
+  ``max_length=200`` declared on the weather input models. Bumped the
+  runtime constant to 200 so a 121–200 character city flows through
+  ``normalize_city_name`` instead of producing a misleading error after
+  model validation.
+- ``GetWeatherByDateRangeInput`` silently accepted an inverted range
+  (``end_date`` before ``start_date``) and only failed at the service
+  layer with a generic "Invalid weather request" message. A
+  ``model_validator`` now rejects inverted ranges at the Pydantic level
+  so the agent sees a clear, structured error before any HTTP call.
+
+### Tests
+- Added ``tests/test_proxy_defaults.py`` to pin the default_factory /
+  ``None``-default behaviour of ``_make_tool_proxy``.
+- Added ``tests/test_formatter_none_handling.py`` to pin the
+  "unavailable" rendering of the concise weather formatter.
+- Added ``tests/test_date_range_validator.py`` to pin the Pydantic-level
+  rejection of inverted date ranges.
+
 ## [0.8.0] - 2026-07-21
 
 ### Added

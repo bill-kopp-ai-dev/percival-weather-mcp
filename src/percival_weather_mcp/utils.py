@@ -16,7 +16,7 @@ class TimeResult(BaseModel):
     datetime: str
 
 
-MAX_CITY_NAME_LENGTH = 120
+MAX_CITY_NAME_LENGTH = 200
 MAX_TIMEZONE_NAME_LENGTH = 64
 _CONTROL_CHARS_RE = re.compile(r"[\x00-\x1f\x7f]")
 _MULTISPACE_RE = re.compile(r"\s+")
