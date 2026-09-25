@@ -31,3 +31,12 @@ pip-wheel-metadata/
 # IDE/editor
 .idea/
 .vscode/
+# --- Added by Positronic (do not edit by hand) ---
+.positronic/
+.positronic/cache/
+.positronic/journal.lock
+.positronic/scratch/
+.positronic/*.local.*
+AGENTS.md
+agents.md
+# --- End Positronic block ---

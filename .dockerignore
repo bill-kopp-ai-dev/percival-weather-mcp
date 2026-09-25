@@ -1,3 +1,5 @@
+# Docker build context excludes. Keep the runtime image as small as possible
+# while still bundling everything the FastMCP server needs at runtime.
 __pycache__/
 *.py[cod]
 *.egg-info/
@@ -7,9 +9,25 @@ venv/
 .mypy_cache/
 .ruff_cache/
 .coverage
+.coverage.*
 build/
 dist/
 .idea/
 .vscode/
 .DS_Store
 *.log
+
+# Tests, agent notes and registries do not belong in the runtime image.
+tests/
+docs/docker-mcp-packaging.md
+docs/mcp/
+AGENTS.md
+
+# Git/CI metadata
+.git/
+.gitignore
+.github/
+
+# Editor backups and tooling caches
+*.swp
+*.bak

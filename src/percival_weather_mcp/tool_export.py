@@ -109,6 +109,109 @@ def build_primitives_document() -> dict[str, object]:
     }
 
 
+def _primitive_type(schema: object) -> tuple[str, dict[str, str] | None]:
+    """Resolve a JSON Schema node to the registry-friendly ``(type, items)`` pair.
+
+    The Docker MCP registry restricts argument types to ``string | number |
+    integer | boolean | array``. Pydantic emits ``anyOf`` for ``Optional[X]``
+    and may emit ``type: [\"X\", \"null\"]``; this helper unwraps both.
+    """
+    if not isinstance(schema, dict):
+        return "string", None
+    if "anyOf" in schema:
+        for branch in schema["anyOf"]:
+            inner_type, inner_items = _primitive_type(branch)
+            if inner_type != "null":
+                return inner_type, inner_items
+        return "string", None
+    type_value = schema.get("type")
+    if isinstance(type_value, list):
+        for branch in type_value:
+            if branch != "null":
+                type_value = branch
+                break
+    if type_value == "array":
+        items = schema.get("items") or {}
+        inner_type = items.get("type", "string") if isinstance(items, dict) else "string"
+        if isinstance(inner_type, list):
+            inner_type = next((b for b in inner_type if b != "null"), "string")
+        return "array", {"type": inner_type}
+    if type_value in {"string", "number", "integer", "boolean"}:
+        return type_value, None
+    return "string", None
+
+
+def _collect_registry_arguments(schema: object) -> list[dict[str, object]]:
+    """Map a Pydantic ``model_json_schema`` to the registry argument layout."""
+    if not isinstance(schema, dict):
+        return []
+    properties = schema.get("properties") or {}
+    required = set(schema.get("required") or [])
+    arguments: list[dict[str, object]] = []
+    for arg_name, arg_schema in properties.items():
+        arg_type, items = _primitive_type(arg_schema)
+        description = ""
+        if isinstance(arg_schema, dict):
+            description = arg_schema.get("description") or arg_schema.get("title") or ""
+        entry: dict[str, object] = {
+            "name": arg_name,
+            "type": arg_type,
+            "desc": description,
+            "optional": arg_name not in required,
+        }
+        if items is not None:
+            entry["items"] = items
+        arguments.append(entry)
+    return arguments
+
+
+def build_registry_tools_document() -> dict[str, object]:
+    """Build the ``tools.json`` payload consumed by the Docker MCP registry.
+
+    Unlike :func:`build_primitives_document` (which preserves the full Pydantic
+    JSON schema for ``docs/tools.json``), this layout matches the restricted
+    schema accepted by the registry's task wizard:
+
+    * ``type`` is one of ``string | number | integer | boolean | array``.
+    * ``Optional[list[X]]`` collapses to ``type: array, items: {type: X}``.
+    * ``optional`` is a boolean derived from the Pydantic ``required`` list.
+
+    The return value is an object with the list under ``tools`` so callers
+    can introspect the server/version metadata alongside the tool list.
+    The CLI helper (:func:`registry_main`) writes only the ``tools`` array
+    to disk, which is the file format the registry task wizard consumes.
+    """
+    primitives = build_primitives_document()
+    raw_tools = primitives.get("tools")
+    if not isinstance(raw_tools, list):
+        raw_tools = []
+    tools: list[dict[str, object]] = []
+    for tool in raw_tools:
+        if not isinstance(tool, dict):
+            continue
+        tools.append(
+            {
+                "name": tool.get("name", ""),
+                "description": tool.get("description", ""),
+                "arguments": _collect_registry_arguments(tool.get("input_schema")),
+            }
+        )
+    return {
+        "server": primitives.get("server", "percival-weather-mcp"),
+        "version": primitives.get("version", __version__),
+        "tools": tools,
+    }
+
+
+def registry_tools_array() -> list[dict[str, object]]:
+    """Return only the registry-shaped tool array (drops server/version)."""
+    document = build_registry_tools_document()
+    tools = document.get("tools")
+    if not isinstance(tools, list):
+        return []
+    return tools
+
+
 def build_tools_document() -> dict[str, object]:
     """Backward-compatible alias used by older scripts."""
     document = build_primitives_document()
@@ -130,5 +233,19 @@ def main() -> None:
     sys.stdout.write("\n")
 
 
+def registry_main() -> None:
+    """CLI helper that emits the Docker MCP registry ``tools.json`` payload.
+
+    Writes a JSON array (not an object) so the file is directly accepted by
+    the registry's task wizard.
+    """
+    document = registry_tools_array()
+    json.dump(document, sys.stdout, indent=2)
+    sys.stdout.write("\n")
+
+
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) > 1 and sys.argv[1] == "--registry":
+        registry_main()
+    else:
+        main()

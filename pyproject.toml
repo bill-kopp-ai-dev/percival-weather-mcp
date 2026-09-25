@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "percival-weather-mcp"
-version = "0.8.0"
+version = "0.9.0"
 authors = [
   { name = "danielshih", email = "dog830228@gmail.com" },
   { name = "percival.OS Team" },
@@ -40,6 +40,7 @@ dev = [
   "ruff>=0.6.0",
   "mypy>=1.10.0",
   "respx>=0.21.1",
+  "pyyaml>=6.0.3",
 ]
 
 [project.scripts]

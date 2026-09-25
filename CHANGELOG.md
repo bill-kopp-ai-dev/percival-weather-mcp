@@ -6,7 +6,57 @@ the project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-09-24
+
+### Added
+- **Docker MCP Toolkit integration**. The image now declares the
+  ``io.docker.server.metadata`` OCI label with a full
+  ``catalog.ImportedServer`` payload so the Docker MCP Toolkit gateway
+  can introspect the server without launching the container. The label
+  payload is generated from ``docs/mcp/percival-weather-mcp/
+  oci-label.json`` and embedded into the Dockerfile as a single-line
+  ``LABEL`` instruction.
+- **Registry-level manifest** under ``docs/mcp/percival-weather-mcp/
+  server.yaml`` and ``tools.json``. Ready for the PR to
+  ``docker/mcp-registry``; the PR itself is out of scope for this
+  release (no ``mcp/`` Docker Hub namespace ownership yet).
+- **POSIX-sh entrypoint** (``docker-entrypoint.sh``) that dispatches
+  between transports: ``MCP_TRANSPORT`` wins when set, otherwise the
+  first positional argument is the transport selector, otherwise
+  ``stdio``. Forwards every other CLI flag through to ``python -m
+  percival_weather_mcp``; enforces ``--host 0.0.0.0`` /
+  ``--allow-remote-http`` when HTTP is requested.
+- ``tool_export.build_registry_tools_document()`` and
+  ``tool_export.registry_main()`` (the ``--registry`` CLI flag) emit the
+  registry-friendly ``tools.json`` payload from the Pydantic schemas,
+  collapsing ``Optional[list[X]]`` to ``type: array, items: {type: X}``.
+- Conventional OCI labels (``org.opencontainers.image.*``) on the image
+  for human inspection via ``docker inspect``.
+
+### Changed
+- The image **defaults to ``stdio``** so ``docker run -i --rm
+  percival-weather-mcp`` Just Works as a drop-in backend for the
+  Docker MCP Toolkit gateway, opencode and nanobot. HTTP is selected
+  with ``MCP_TRANSPORT=http`` (or a trailing positional ``http`` arg).
+- The image **no longer declares a HEALTHCHECK** at the Docker level.
+  A HEALTHCHECK is resolved at build time and cannot adapt to the
+  runtime transport — in stdio mode the container exits the moment
+  stdin closes, so any HTTP probe would mark it unhealthy for the
+  wrong reason. Operators running the HTTP transport add the
+  HEALTHCHECK in their compose / k8s manifest (example in the
+  Dockerfile comment block).
+- ``tool_export.build_primitives_document()`` now also dumps
+  ``weather_get_status`` so the embedded ``mcp.yaml`` and the
+  registry ``tools.json`` line up with the actual server surface.
+- The duplicate "Wire into OpenCode" / "Wire into the Docker MCP
+  Toolkit" sections in the README were collapsed into one.
+
 ### Fixed
+- ``docker-entrypoint.sh`` used to pass ``CMD ["stdio"]`` as a
+  positional argument, producing ``python -m percival_weather_mcp
+  --mode stdio stdio`` and an argparse "unrecognized arguments: stdio"
+  error — the gateway spawn never started. The entrypoint now
+  consumes the first positional as the transport selector.
 - Tool proxies built by ``_make_tool_proxy`` leaked
   ``pydantic_core.PydanticUndefined`` into the rebuilt
   ``inspect.Parameter`` for fields declared with ``default_factory=``,
@@ -30,6 +80,21 @@ the project adheres to [Semantic Versioning](https://semver.org/).
   so the agent sees a clear, structured error before any HTTP call.
 
 ### Tests
+- ``tests/test_dockerfile.py`` — lint the Dockerfile (image, syntax
+  pragma, multistage, non-root, entrypoint, CMD, label presence).
+- ``tests/test_entrypoint_script.py`` — behavioural tests for the
+  entrypoint: positional vs env vs default transport, loopback host
+  enforcement, no PATH hard-codes.
+- ``tests/test_oci_label.py`` — schema check on the embedded
+  ``io.docker.server.metadata`` label: required fields, forbidden
+  fields, primitive-type argument restriction, parity with the
+  registry ``tools.json``.
+- ``tests/test_mcp_yaml.py`` — validate the embedded ``mcp.yaml``
+  against the canonical ``docs/tools.json`` dump (catches the
+  ``weather_get_status`` drop regression).
+- ``tests/test_tool_export.py`` — pin ``build_primitives_document``
+  includes the status tool and the registry payload has the right
+  primitive types.
 - Added ``tests/test_proxy_defaults.py`` to pin the default_factory /
   ``None``-default behaviour of ``_make_tool_proxy``.
 - Added ``tests/test_formatter_none_handling.py`` to pin the

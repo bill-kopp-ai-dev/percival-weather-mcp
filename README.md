@@ -1,6 +1,6 @@
 # 🤖 Percival Weather - percival.OS MCP
 
-**Version 0.8.0**
+**Version 0.9.0**
 
 [![Python](https://img.shields.io/badge/python-3.10+-yellow.svg)]()
 [![MCP](https://img.shields.io/badge/mcp-server-blue.svg)]()
@@ -137,12 +137,12 @@ launches it with `docker run -i --rm …`:
 
 ```bash
 # Pull and run a single request (Docker MCP Toolkit gateway style)
-docker run -i --rm percival-weather-mcp:0.8.0
+docker run -i --rm percival-weather-mcp:0.9.0
 
 # Smoke-test the /healthz probe in HTTP mode
 docker run -d --name pw -p 8080:8080 \
     -e MCP_TRANSPORT=http \
-    percival-weather-mcp:0.8.0
+    percival-weather-mcp:0.9.0
 sleep 1 && curl -fsS http://127.0.0.1:8080/healthz && echo
 docker rm -f pw
 ```
@@ -168,7 +168,7 @@ Add the container to `~/.config/opencode/opencode.json` (or a project's
       "command": [
         "docker", "run", "-i", "--rm",
         "-e", "MCP_WEATHER_RATE_LIMIT_PER_MINUTE=600",
-        "percival-weather-mcp:0.8.0"
+        "percival-weather-mcp:0.9.0"
       ],
       "enabled": true
     }
@@ -186,7 +186,7 @@ transport, which is what the gateway expects:
 
 ```bash
 docker mcp profile create --name weather \
-    --server docker://percival-weather-mcp:0.8.0
+    --server docker://percival-weather-mcp:0.9.0
 docker mcp client connect claude-code --profile weather  # or cursor, vscode, …
 ```
 

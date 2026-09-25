@@ -1,0 +1,73 @@
+# Registry-level manifest for the Docker MCP Catalog.
+#
+# Submitted as a PR to https://github.com/docker/mcp-registry under
+# servers/percival-weather-mcp/server.yaml. This file follows the broader
+# `catalog.Server` schema (Docker MCP registry) and is OUTSIDE the image.
+# The OCI image label `io.docker.server.metadata` (built into the image via
+# the Dockerfile) carries the narrower `catalog.ImportedServer` schema.
+#
+# When the PR is approved, Docker builds the image under signing in the
+# `mcp/` Docker Hub namespace and the server becomes available on
+# https://hub.docker.com/mcp within 24 hours.
+name: percival-weather-mcp
+image: mcp/percival-weather-mcp
+type: server
+meta:
+  category: data
+  tags:
+    - weather
+    - air-quality
+    - time
+    - timezone
+    - open-meteo
+about:
+  title: Percival Weather, Air Quality and Time
+  description: |
+    Weather, air quality and time MCP server for the percival.OS
+    ecosystem. Backed entirely by the public Open-Meteo APIs (no API
+    keys required). Nine tools, three prompts, three static resources
+    and one resource template via FastMCP. Defaults to stdio so the
+    Docker MCP Toolkit gateway spawns it drop-in.
+  icon: https://avatars.githubusercontent.com/u/182288589?s=200&v=4
+source:
+  project: https://github.com/bill-kopp-ai-dev/percival-weather-mcp
+  commit: 0.9.0
+run:
+  env:
+    MCP_WEATHER_LOG_FORMAT: text
+    MCP_WEATHER_ENABLE_METRICS: "true"
+config:
+  description: |
+    Runtime knobs for percival-weather-mcp. All settings have safe
+    defaults — leave empty to use them. The HTTP transport requires
+    MCP_WEATHER_RATE_LIMIT_PER_MINUTE tuning when serving multiple
+    concurrent clients; stdio transport has no rate limit.
+  env:
+    - name: MCP_TRANSPORT
+      description: Transport selector for the docker-entrypoint.sh dispatcher. "stdio" (default) for the gateway, "http" for legacy HTTP, "http-loopback" for local HTTP smoke tests.
+      example: stdio
+    - name: PORT
+      description: Listening port when MCP_TRANSPORT=http (default 8080).
+      example: "8080"
+    - name: MCP_WEATHER_HOST
+      description: Bind host (HTTP transport only).
+      example: 127.0.0.1
+    - name: MCP_WEATHER_HTTP_TIMEOUT
+      description: Per-request upstream HTTP timeout in seconds.
+      example: "15.0"
+    - name: MCP_WEATHER_HTTP_MAX_RETRIES
+      description: Retry attempts beyond the first try.
+      example: "2"
+    - name: MCP_WEATHER_RATE_LIMIT_PER_MINUTE
+      description: Per-IP request budget on HTTP transports.
+      example: "600"
+    - name: MCP_WEATHER_LOG_FORMAT
+      description: "Log format: 'text' (default) or 'json'."
+      example: text
+    - name: MCP_WEATHER_ENABLE_METRICS
+      description: Toggle Prometheus export (also surfaces at /metrics on HTTP).
+      example: "true"
+  secrets:
+    - name: percival-weather-mcp.auth_token
+      env: MCP_WEATHER_AUTH_TOKEN
+      example: <32+ byte hex secret>
