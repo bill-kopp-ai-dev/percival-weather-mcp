@@ -23,13 +23,22 @@ set -eu
 # Resolve the transport mode.
 #
 # 1. ``MCP_TRANSPORT`` env var wins when set (case-insensitive, trimmed).
-# 2. Otherwise the first positional argument is treated as the transport
-#    selector (``docker run <image> http`` for instance).
+# 2. The first positional argument, when it matches a recognised transport
+#    (``stdio``/``http``/``http-loopback``), is consumed as the transport
+#    selector even if ``MCP_TRANSPORT`` is also set — this keeps
+#    ``CMD ["stdio"]`` from leaking into the Python argv when the gateway
+#    spawns the image.
 # 3. Otherwise we default to ``stdio`` — what the gateway expects.
 transport="${MCP_TRANSPORT:-}"
-if [ -z "$transport" ] && [ "$#" -gt 0 ]; then
-    transport="$1"
-    shift
+if [ "$#" -gt 0 ]; then
+    case "$1" in
+        stdio|http|http-loopback)
+            if [ -z "$transport" ]; then
+                transport="$1"
+            fi
+            shift
+            ;;
+    esac
 fi
 transport=$(printf '%s' "$transport" | tr '[:upper:]' '[:lower:]' | tr -d ' ')
 transport="${transport:-stdio}"
@@ -37,17 +46,26 @@ transport="${transport:-stdio}"
 if [ "$transport" = "http" ] || [ "$transport" = "http-loopback" ]; then
     if [ "$transport" = "http-loopback" ]; then
         host="127.0.0.1"
-        allow_remote="--allow-remote-http=false"
+        # ``--allow-remote-http`` is a store_true flag; the default is already
+        # False, so we don't pass anything to keep argparse happy.
+        allow_remote=""
     else
         host="0.0.0.0"
         allow_remote="--allow-remote-http"
     fi
     port="${PORT:-8080}"
+    if [ -n "$allow_remote" ]; then
+        exec python -m percival_weather_mcp \
+            --mode streamable-http \
+            --host "$host" \
+            --port "$port" \
+            "$allow_remote" \
+            "$@"
+    fi
     exec python -m percival_weather_mcp \
         --mode streamable-http \
         --host "$host" \
         --port "$port" \
-        "$allow_remote" \
         "$@"
 fi
 

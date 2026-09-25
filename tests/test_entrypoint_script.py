@@ -120,7 +120,12 @@ def test_mcp_transport_http_passes_remote_flag(sh: str, stub_python: Path, tmp_p
 def test_mcp_transport_http_loopback_uses_localhost(
     sh: str, stub_python: Path, tmp_path: Path
 ) -> None:
-    """``MCP_TRANSPORT=http-loopback`` must bind 127.0.0.1 and refuse remote."""
+    """``MCP_TRANSPORT=http-loopback`` must bind 127.0.0.1 and refuse remote.
+
+    The entrypoint relies on argparse's default (``False``) for the
+    ``--allow-remote-http`` store-true flag; passing ``--allow-remote-http=false``
+    explicitly is rejected by argparse, so we simply omit the flag.
+    """
     record = tmp_path / "argv.txt"
     argv = _run_entrypoint(
         sh,
@@ -130,7 +135,7 @@ def test_mcp_transport_http_loopback_uses_localhost(
     )
     assert "127.0.0.1" in argv
     assert "0.0.0.0" not in argv
-    assert "--allow-remote-http=false" in argv
+    assert "--allow-remote-http" not in argv
 
 
 def test_positional_http_overrides_default_transport(

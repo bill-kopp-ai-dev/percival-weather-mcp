@@ -8,11 +8,12 @@ ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
 
 WORKDIR /build
 RUN pip install --no-cache-dir uv==0.5.7
-COPY pyproject.toml uv.lock ./
+COPY pyproject.toml uv.lock README.md ./
 COPY src ./src
 RUN uv export --format requirements-txt --no-hashes --no-dev > /tmp/requirements.txt \
  && uv venv /opt/venv \
- && uv pip install --python /opt/venv/bin/python -r /tmp/requirements.txt
+ && uv pip install --python /opt/venv/bin/python -r /tmp/requirements.txt \
+ && uv pip install --python /opt/venv/bin/python --no-deps .
 
 
 FROM python:3.12-slim AS runtime
