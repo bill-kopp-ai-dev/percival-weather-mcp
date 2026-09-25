@@ -128,6 +128,72 @@ Add the following entry under `tools.mcpServers` in your Nanobot config
 `percival-weather-mcp_weather_get_current city="Lisbon, UK"` from the agent
 to verify the wiring.
 
+### Docker image
+
+The official image (`percival-weather-mcp`) is published alongside every
+release. It defaults to the **stdio** transport so it works as a drop-in
+backend for the Docker MCP Toolkit gateway and for any MCP client that
+launches it with `docker run -i --rm …`:
+
+```bash
+# Pull and run a single request (Docker MCP Toolkit gateway style)
+docker run -i --rm percival-weather-mcp:0.8.0
+
+# Smoke-test the /healthz probe in HTTP mode
+docker run -d --name pw -p 8080:8080 \
+    -e MCP_TRANSPORT=http \
+    percival-weather-mcp:0.8.0
+sleep 1 && curl -fsS http://127.0.0.1:8080/healthz && echo
+docker rm -f pw
+```
+
+The image ships a POSIX-sh `docker-entrypoint.sh` that decodes the
+`MCP_TRANSPORT` env var (`stdio`, `http`, or `http-loopback`) and forwards
+every other CLI flag through to `python -m percival_weather_mcp`. A
+static description of the server is embedded at `/mcp/mcp.yaml` so
+`docker mcp catalog import` and similar introspection tools can read it
+without launching the container.
+
+### Wire into OpenCode
+
+Add the container to `~/.config/opencode/opencode.json` (or a project's
+`.opencode/opencode.json`) as a local MCP server:
+
+```jsonc
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "percival-weather": {
+      "type": "local",
+      "command": [
+        "docker", "run", "-i", "--rm",
+        "-e", "MCP_WEATHER_RATE_LIMIT_PER_MINUTE=600",
+        "percival-weather-mcp:0.8.0"
+      ],
+      "enabled": true
+    }
+  }
+}
+```
+
+OpenCode launches the container with stdin attached; the server replies
+over the same channel, so the `-i` flag is required.
+
+### Wire into the Docker MCP Toolkit
+
+Add the image to a Toolkit profile. The image defaults to the stdio
+transport, which is what the gateway expects:
+
+```bash
+docker mcp profile create --name weather \
+    --server docker://percival-weather-mcp:0.8.0
+docker mcp client connect claude-code --profile weather  # or cursor, vscode, …
+```
+
+The gateway introspects the image through the embedded `/mcp/mcp.yaml`
+manifest, which documents the tools, prompts, resources, environment
+variables and runtime knobs.
+
 ### HTTP transport
 
 ```bash
@@ -153,6 +219,7 @@ to integrate with orchestrators and load balancers.
 
 | Variable | Default | Description |
 | --- | --- | --- |
+| `MCP_TRANSPORT` | `stdio` | Docker entrypoint transport selector (`stdio` / `http` / `http-loopback`). |
 | `PORT` | `8080` | Listening port for HTTP transports. |
 | `MCP_WEATHER_HOST` | `127.0.0.1` | Bind host. |
 | `MCP_WEATHER_AUTH_TOKEN_ENV` | `MCP_WEATHER_AUTH_TOKEN` | Name of the env var holding the bearer token. |

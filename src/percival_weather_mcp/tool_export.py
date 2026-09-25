@@ -12,7 +12,14 @@ import sys
 from . import __version__
 from .prompts import register_prompts
 from .resources import register_resources
-from .server import FastMCP, create_fastmcp_server, register_all_tools, tool_handlers
+from .server import (
+    STATUS_TOOL_DESCRIPTION,
+    STATUS_TOOL_NAME,
+    FastMCP,
+    create_fastmcp_server,
+    register_all_tools,
+    tool_handlers,
+)
 
 
 def _dump_tools() -> list[dict[str, object]]:
@@ -26,6 +33,13 @@ def _dump_tools() -> list[dict[str, object]]:
                 "input_schema": description.inputSchema,
             }
         )
+    tools.append(
+        {
+            "name": STATUS_TOOL_NAME,
+            "description": STATUS_TOOL_DESCRIPTION,
+            "input_schema": {"type": "object", "properties": {}, "additionalProperties": False},
+        }
+    )
     return tools
 
 

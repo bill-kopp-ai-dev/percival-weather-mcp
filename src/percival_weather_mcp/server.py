@@ -60,6 +60,10 @@ from .tools.tools_weather import (
 logger = logging.getLogger("percival-weather-mcp")
 
 
+STATUS_TOOL_NAME = "weather_get_status"
+STATUS_TOOL_DESCRIPTION = "Check the operational status of the weather server."
+
+
 # ---------------------------------------------------------------------------
 # Backward-compatible tool aliases (resolved at dispatch time).
 # ---------------------------------------------------------------------------
@@ -206,11 +210,11 @@ def _register_status_tool(mcp_server: FastMCP) -> None:
             f"Percival Weather MCP Server operational. Name: {SERVER_NAME} Version: {__version__}"
         )
 
-    get_status.__name__ = "weather_get_status"
-    get_status.__doc__ = "Check the operational status of the weather server."
+    get_status.__name__ = STATUS_TOOL_NAME
+    get_status.__doc__ = STATUS_TOOL_DESCRIPTION
     with contextlib.suppress(Exception):
-        mcp_server.remove_tool("weather_get_status")
-    mcp_server.add_tool(get_status, name="weather_get_status", description=get_status.__doc__)
+        mcp_server.remove_tool(STATUS_TOOL_NAME)
+    mcp_server.add_tool(get_status, name=STATUS_TOOL_NAME, description=STATUS_TOOL_DESCRIPTION)
 
 
 def _sync_fastmcp_tools(mcp_server: FastMCP) -> None:

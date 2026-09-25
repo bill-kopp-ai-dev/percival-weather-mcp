@@ -331,6 +331,15 @@
         "title": "GetTimeZoneInfoInput",
         "type": "object"
       }
+    },
+    {
+      "name": "weather_get_status",
+      "description": "Check the operational status of the weather server.",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
     }
   ],
   "prompts": [
