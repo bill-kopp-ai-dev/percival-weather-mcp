@@ -6,6 +6,25 @@ the project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- ``scripts/build_oci_label.py`` regenerates
+  ``docs/mcp/percival-weather-mcp/oci-label.{json,yaml,inline}`` from the
+  registry tools dump + a small fixed metadata block. Its ``--check`` flag
+  is wired into ``tests/test_dockerfile.py`` as a CI gate so a hand-edit to
+  the OCI label artifacts cannot drift past the regenerator.
+
+### Fixed
+- ``docs/tools.json`` was stale at ``version: "0.8.0"`` after the 0.9.0
+  release; regenerated to ``"0.9.0"``.
+- ``utils.get_closest_utc_index`` called ``dateutil.parser.isoparse(t)``
+  twice for every timestamp (once for the naive-vs-aware check, once for
+  the conversion). Extracted ``utils._parse_utc`` so each timestamp is
+  parsed exactly once — a 50% reduction in parse overhead on hourly
+  series.
+- ``utils.format_air_quality_data`` called ``hourly.get("time", [])``
+  twice in the same expression; cached the result so the list of times
+  is only fetched once.
+
 ## [0.9.0] - 2026-09-24
 
 ### Added

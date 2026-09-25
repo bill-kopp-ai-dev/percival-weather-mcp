@@ -124,3 +124,29 @@ def test_entrypoint_script_keeps_127_loopback_for_local_http(entrypoint_text: st
 
 def test_mcp_manifest_exists():
     assert MCP_MANIFEST.is_file()
+
+
+def test_oci_label_artifacts_match_build_script():
+    """``scripts/build_oci_label.py --check`` must pass when the
+    checked-in OCI label JSON / YAML / inline files are in sync.
+
+    This is the CI gate that prevents hand-edits from drifting past the
+    regenerator. The Dockerfile embeds ``oci-label.inline`` verbatim and
+    the gateway decodes it; any drift here means the image and the
+    checked-in docs disagree.
+    """
+    import subprocess
+
+    script = REPO_ROOT / "scripts" / "build_oci_label.py"
+    result = subprocess.run(
+        ["python", str(script), "--check"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, (
+        "OCI label artifacts drift detected — "
+        f"re-run `python {script}` to regenerate.\n"
+        f"stdout:\n{result.stdout}\n"
+        f"stderr:\n{result.stderr}"
+    )

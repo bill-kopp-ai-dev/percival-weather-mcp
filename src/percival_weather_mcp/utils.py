@@ -149,7 +149,8 @@ def format_air_quality_data(data_result: Any) -> str:
     """
     full_data = data_result.get("full_data", {}) or {}
     hourly = full_data.get("hourly", {}) if isinstance(full_data, dict) else {}
-    times = hourly.get("time", []) if isinstance(hourly.get("time", []), list) else []
+    raw_times = hourly.get("time", [])
+    times = raw_times if isinstance(raw_times, list) else []
 
     def _numeric_series(key: str) -> list[float]:
         raw_values = hourly.get(key, [])
@@ -209,6 +210,13 @@ def format_air_quality_data(data_result: Any) -> str:
     return json.dumps(payload, indent=2)
 
 
+def _parse_utc(timestamp: str) -> datetime:
+    parsed = parser.isoparse(timestamp)
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
 def get_closest_utc_index(hourly_times: list[str]) -> int:
     """
     Returns the index of the datetime in `hourly_times` closest to the current UTC time
@@ -219,12 +227,7 @@ def get_closest_utc_index(hourly_times: list[str]) -> int:
     """
 
     current_time = datetime.now(timezone.utc)
-    parsed_times = [
-        parser.isoparse(t).replace(tzinfo=timezone.utc)
-        if parser.isoparse(t).tzinfo is None
-        else parser.isoparse(t).astimezone(timezone.utc)
-        for t in hourly_times
-    ]
+    parsed_times = [_parse_utc(t) for t in hourly_times]
 
     return min(range(len(parsed_times)), key=lambda i: abs(parsed_times[i] - current_time))
 
