@@ -86,14 +86,20 @@ def _extract_docker_label(dockerfile_text: str, name: str) -> str:
             capturing = continuation
     merged = "\n".join(lines)
 
-    # Quoted form: `name="..."` (handles escaped quotes via \\.)
+    # Quoted form: `name="..."` (handles escaped quotes via \\.).
+    # Match up to the first non-escaped closing quote.
     match = re.search(
         rf"{re.escape(name)}\s*=\s*\"((?:[^\"\\]|\\.)*)\"",
         merged,
         re.DOTALL,
     )
     if match is not None:
-        return match.group(1)
+        raw = match.group(1)
+        # Unescape Dockerfile string-escape sequences (\\, \", etc.).
+        try:
+            return bytes(raw, "utf-8").decode("unicode_escape")
+        except UnicodeDecodeError:
+            return raw.replace('\\"', '"').replace("\\\\", "\\")
     # Unquoted form: capture until end-of-line or the next ``LABEL`` / ``#``
     # continuation marker. ``{...}`` JSON bodies may contain spaces, so we
     # must not stop at the first whitespace.
