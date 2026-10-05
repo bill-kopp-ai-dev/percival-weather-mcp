@@ -10,13 +10,21 @@
 
 **Percival Weather** is the weather, air quality, and time MCP server for the
 **percival.OS** ecosystem — a Personal Agentic Operating System designed for
-autonomy, security, and absolute privacy. Version 0.8 hardens the resilience
-layer (retries, circuit breaker, semaphore), introduces end-to-end
-observability (Prometheus metrics, structured logs, health probes), adds
-defensive middleware (per-IP rate limiting and bearer-token auth), ships the
-Pydantic input contracts that power correct JSON schemas, and exposes the
-server's reference tables through MCP **prompts** and **resources** so the
-agent can choose the right tool and interpret the result without guesswork.
+autonomy, security, and absolute privacy.
+
+- **Version 0.8** hardened the resilience layer (retries, circuit breaker,
+  semaphore), introduced end-to-end observability (Prometheus metrics,
+  structured logs, health probes), added defensive middleware (per-IP rate
+  limiting and bearer-token auth), shipped the Pydantic input contracts that
+  power correct JSON schemas, and exposed the server's reference tables
+  through MCP **prompts** and **resources** so the agent can choose the right
+  tool and interpret the result without guesswork.
+- **Version 0.9** repackages the server as a Docker image that drops straight
+  into the Docker MCP Toolkit, opencode and nanobot. The image defaults to
+  `stdio` so `docker run -i …` Just Works, the `io.docker.server.metadata`
+  OCI label exposes the server surface to the gateway, and a POSIX-sh
+  entrypoint dispatches between `stdio` / `http` / `http-loopback` via the
+  `MCP_TRANSPORT` env var.
 
 The server follows the [Model Context Protocol](https://modelcontextprotocol.io)
 and uses FastMCP as the transport layer; it speaks `stdio`, `sse`, or
@@ -294,6 +302,26 @@ to integrate with orchestrators and load balancers.
 - **Reference primitives** — `knowledge_base.py` holds WMO codes, AQI
   bands, curated IANA timezones, and per-tool response schemas; prompts
   teach the agent how to combine them.
+
+### What changed in 0.9
+
+- **Docker MCP Toolkit integration** — the published image carries the
+  `io.docker.server.metadata` OCI label so the Docker MCP Toolkit gateway
+  can introspect the server without launching it. The label payload is
+  generated from `scripts/build_oci_label.py` and embedded into the
+  `Dockerfile`; a `--check` flag is wired into the test suite so a
+  hand-edit cannot drift past the regenerator.
+- **Stdout-default image** — `CMD ["stdio"]` plus the POSIX-sh
+  `docker-entrypoint.sh` make `docker run -i --rm percival-weather-mcp`
+  a drop-in backend for opencode, nanobot and the gateway. HTTP is
+  selected with `MCP_TRANSPORT=http` (or a trailing positional `http`).
+- **Registry-level manifest** — `docs/mcp/percival-weather-mcp/`
+  ships a `server.yaml` + `tools.json` so the project is ready for the
+  PR to `docker/mcp-registry`.
+- **`weather_get_status`** — added as a regular handler so the embedded
+  `mcp.yaml` and the registry `tools.json` line up with the actual
+  server surface (the synthetic decorator previously dropped the tool
+  from the primitives dump).
 
 ---
 

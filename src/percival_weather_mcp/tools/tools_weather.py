@@ -112,12 +112,12 @@ class GetWeatherByDateRangeToolHandler(_BaseWeatherHandler):
         except RuntimeError:
             raise
         except ValueError as exc:
-            logger.warning("Invalid request for get_weather_by_datetime_range: %s", exc)
+            logger.warning("Invalid request for weather_get_by_range: %s", exc)
             raise RuntimeError(
                 "Invalid weather request. Check input values and try again."
             ) from exc
         except Exception:
-            logger.exception("Unexpected error in get_weather_by_date_range")
+            logger.exception("Unexpected error in weather_get_by_range")
             raise RuntimeError(
                 "Weather service is temporarily unavailable. Please retry."
             ) from None

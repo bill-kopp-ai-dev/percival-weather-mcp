@@ -8,6 +8,7 @@ breaking and concurrency limits are consistent across the codebase.
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timedelta, timezone
 from time import monotonic
 from typing import Any
 
@@ -75,34 +76,17 @@ class WeatherService:
             return cached
 
         breaker = get_geo_breaker()
-        own_client = client is None
-        client = client or ResilientHttpClient(name="geocoding")
-        try:
-            if own_client:
-                async with client as opened:
-                    data = await opened.get_json(
-                        self.BASE_GEO_URL,
-                        params={
-                            "name": city,
-                            "count": 1,
-                            "language": "en",
-                            "format": "json",
-                        },
-                        breaker=breaker,
-                    )
-            else:
-                data = await client.get_json(
-                    self.BASE_GEO_URL,
-                    params={
-                        "name": city,
-                        "count": 1,
-                        "language": "en",
-                        "format": "json",
-                    },
-                    breaker=breaker,
-                )
-        except Exception:
-            raise
+        params = {
+            "name": city,
+            "count": 1,
+            "language": "en",
+            "format": "json",
+        }
+        if client is None:
+            async with ResilientHttpClient(name="geocoding") as opened:
+                data = await opened.get_json(self.BASE_GEO_URL, params=params, breaker=breaker)
+        else:
+            data = await client.get_json(self.BASE_GEO_URL, params=params, breaker=breaker)
 
         results = data.get("results") if isinstance(data, dict) else None
         if not results:
@@ -119,8 +103,6 @@ class WeatherService:
     # ------------------------------------------------------------------
 
     def _validate_date_range(self, start_date: str, end_date: str) -> tuple[str, str]:
-        from datetime import datetime
-
         try:
             parsed_start = datetime.strptime(start_date, "%Y-%m-%d").date()
             parsed_end = datetime.strptime(end_date, "%Y-%m-%d").date()
@@ -157,8 +139,6 @@ class WeatherService:
         to constrain the result; this is used by the detailed tool to fetch
         current + forecast data with a single HTTP call.
         """
-        from datetime import datetime, timedelta, timezone
-
         city = utils.normalize_city_name(city)
         async with ResilientHttpClient(name="weather") as http_client:
             latitude, longitude = await self.get_coordinates(city, client=http_client)
@@ -302,67 +282,41 @@ class WeatherService:
 
         hourly = data.get("hourly") or {}
         times = hourly.get("time") or []
+
+        def _hourly_value(key: str, index: int) -> Any:
+            values = hourly.get(key) or []
+            if index >= len(values):
+                return None
+            return values[index]
+
         weather_data: list[dict[str, Any]] = []
         for i, ts in enumerate(times):
+            weather_code = _hourly_value("weather_code", i)
             weather_data.append(
                 {
                     "time": ts,
-                    "temperature_c": (hourly.get("temperature_2m") or [None])[i]
-                    if i < len(hourly.get("temperature_2m") or [])
-                    else None,
-                    "humidity_percent": (hourly.get("relative_humidity_2m") or [None])[i]
-                    if i < len(hourly.get("relative_humidity_2m") or [])
-                    else None,
-                    "dew_point_c": (hourly.get("dew_point_2m") or [None])[i]
-                    if i < len(hourly.get("dew_point_2m") or [])
-                    else None,
-                    "weather_code": (hourly.get("weather_code") or [None])[i]
-                    if i < len(hourly.get("weather_code") or [])
-                    else None,
+                    "temperature_c": _hourly_value("temperature_2m", i),
+                    "humidity_percent": _hourly_value("relative_humidity_2m", i),
+                    "dew_point_c": _hourly_value("dew_point_2m", i),
+                    "weather_code": weather_code,
                     "weather_description": utils.weather_descriptions.get(
-                        (hourly.get("weather_code") or [None])[i]
-                        if i < len(hourly.get("weather_code") or [])
-                        else -1,
+                        weather_code if weather_code is not None else -1,
                         "Unknown weather condition",
                     ),
-                    "wind_speed_kmh": (hourly.get("wind_speed_10m") or [None])[i]
-                    if i < len(hourly.get("wind_speed_10m") or [])
-                    else None,
-                    "wind_direction_degrees": (hourly.get("wind_direction_10m") or [None])[i]
-                    if i < len(hourly.get("wind_direction_10m") or [])
-                    else None,
-                    "wind_gusts_kmh": (hourly.get("wind_gusts_10m") or [None])[i]
-                    if i < len(hourly.get("wind_gusts_10m") or [])
-                    else None,
-                    "precipitation_mm": (hourly.get("precipitation") or [None])[i]
-                    if i < len(hourly.get("precipitation") or [])
-                    else None,
-                    "rain_mm": (hourly.get("rain") or [None])[i]
-                    if i < len(hourly.get("rain") or [])
-                    else None,
-                    "snowfall_cm": (hourly.get("snowfall") or [None])[i]
-                    if i < len(hourly.get("snowfall") or [])
-                    else None,
-                    "precipitation_probability_percent": (
-                        hourly.get("precipitation_probability") or [None]
-                    )[i]
-                    if i < len(hourly.get("precipitation_probability") or [])
-                    else None,
-                    "pressure_hpa": (hourly.get("pressure_msl") or [None])[i]
-                    if i < len(hourly.get("pressure_msl") or [])
-                    else None,
-                    "cloud_cover_percent": (hourly.get("cloud_cover") or [None])[i]
-                    if i < len(hourly.get("cloud_cover") or [])
-                    else None,
-                    "uv_index": (hourly.get("uv_index") or [None])[i]
-                    if i < len(hourly.get("uv_index") or [])
-                    else None,
-                    "apparent_temperature_c": (hourly.get("apparent_temperature") or [None])[i]
-                    if i < len(hourly.get("apparent_temperature") or [])
-                    else None,
-                    "visibility_m": (hourly.get("visibility") or [None])[i]
-                    if i < len(hourly.get("visibility") or [])
-                    else None,
+                    "wind_speed_kmh": _hourly_value("wind_speed_10m", i),
+                    "wind_direction_degrees": _hourly_value("wind_direction_10m", i),
+                    "wind_gusts_kmh": _hourly_value("wind_gusts_10m", i),
+                    "precipitation_mm": _hourly_value("precipitation", i),
+                    "rain_mm": _hourly_value("rain", i),
+                    "snowfall_cm": _hourly_value("snowfall", i),
+                    "precipitation_probability_percent": _hourly_value(
+                        "precipitation_probability", i
+                    ),
+                    "pressure_hpa": _hourly_value("pressure_msl", i),
+                    "cloud_cover_percent": _hourly_value("cloud_cover", i),
+                    "uv_index": _hourly_value("uv_index", i),
+                    "apparent_temperature_c": _hourly_value("apparent_temperature", i),
+                    "visibility_m": _hourly_value("visibility", i),
                 }
             )
 

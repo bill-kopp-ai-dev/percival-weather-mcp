@@ -54,10 +54,10 @@ class GetCurrentDateTimeToolHandler(ToolHandler):
         except RuntimeError:
             raise
         except McpError as exc:
-            logger.warning("Invalid timezone in get_current_datetime: %s", exc)
+            logger.warning("Invalid timezone in weather_get_time: %s", exc)
             raise RuntimeError("Invalid timezone") from exc
         except Exception:
-            logger.exception("Unexpected error in get_current_datetime")
+            logger.exception("Unexpected error in weather_get_time")
             raise RuntimeError(
                 "Datetime service is temporarily unavailable. Please retry."
             ) from None
@@ -105,10 +105,10 @@ class GetTimeZoneInfoToolHandler(ToolHandler):
         except RuntimeError:
             raise
         except McpError as exc:
-            logger.warning("Invalid timezone in get_timezone_info: %s", exc)
+            logger.warning("Invalid timezone in weather_get_timezone: %s", exc)
             raise RuntimeError("Invalid timezone") from exc
         except Exception:
-            logger.exception("Unexpected error in get_timezone_info")
+            logger.exception("Unexpected error in weather_get_timezone")
             raise RuntimeError(
                 "Timezone service is temporarily unavailable. Please retry."
             ) from None
@@ -166,13 +166,13 @@ class ConvertTimeToolHandler(ToolHandler):
         except RuntimeError:
             raise
         except McpError as exc:
-            logger.warning("Invalid timezone in convert_time: %s", exc)
+            logger.warning("Invalid timezone in weather_convert_time: %s", exc)
             raise RuntimeError("Invalid timezone") from exc
         except ValueError as exc:
-            logger.warning("Invalid datetime input in convert_time: %s", exc)
+            logger.warning("Invalid datetime input in weather_convert_time: %s", exc)
             raise RuntimeError("Invalid datetime format") from exc
         except Exception:
-            logger.exception("Unexpected error in convert_time")
+            logger.exception("Unexpected error in weather_convert_time")
             raise RuntimeError(
                 "Time conversion service is temporarily unavailable. Please retry."
             ) from None

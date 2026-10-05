@@ -14,6 +14,8 @@
               "2026-03-28T14:30:00",
               "2026-03-28T14:30:00Z"
             ],
+            "maxLength": 64,
+            "minLength": 1,
             "title": "Datetime Str",
             "type": "string"
           },
@@ -349,17 +351,17 @@
       "arguments": [
         {
           "name": "city",
-          "description": null,
+          "description": "City name in English, optionally with a region or country suffix to disambiguate.",
           "required": true
         },
         {
           "name": "start_date",
-          "description": null,
+          "description": "Inclusive start of the range, ISO 8601 calendar date (YYYY-MM-DD).",
           "required": true
         },
         {
           "name": "end_date",
-          "description": null,
+          "description": "Inclusive end of the range, ISO 8601 calendar date (YYYY-MM-DD). Must be ``>= start_date`` and the total range must be ``<= 16 days``.",
           "required": true
         }
       ]
@@ -370,7 +372,7 @@
       "arguments": [
         {
           "name": "city",
-          "description": null,
+          "description": "City name in English, optionally with a region or country suffix to disambiguate (e.g. ``'Springfield, US'`` or ``'London, UK'``).",
           "required": true
         }
       ]
@@ -381,17 +383,17 @@
       "arguments": [
         {
           "name": "datetime_str",
-          "description": null,
+          "description": "Datetime to convert. Either ``'now'`` or an ISO 8601 datetime string (trailing ``'Z'`` is accepted).",
           "required": false
         },
         {
           "name": "from_timezone",
-          "description": null,
+          "description": "Source IANA timezone (e.g. ``'America/Sao_Paulo'``).",
           "required": false
         },
         {
           "name": "to_timezone",
-          "description": null,
+          "description": "Target IANA timezone (e.g. ``'Asia/Tokyo'``).",
           "required": false
         }
       ]

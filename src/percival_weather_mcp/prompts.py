@@ -15,9 +15,10 @@ Available prompts:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Annotated
 
 from mcp.server.fastmcp.prompts.base import AssistantMessage, UserMessage
+from pydantic import Field
 
 if TYPE_CHECKING:
     from mcp.server.fastmcp import FastMCP
@@ -35,8 +36,24 @@ def register_prompts(mcp_server: FastMCP) -> None:
             "containing the city argument."
         ),
     )
-    async def weather_quick_answer(city: str) -> list[AssistantMessage | UserMessage]:
-        """Build the prompt for a one-shot weather question."""
+    async def weather_quick_answer(
+        city: Annotated[
+            str,
+            Field(
+                description=(
+                    "City name in English, optionally with a region or country "
+                    "suffix to disambiguate (e.g. ``'Springfield, US'`` or "
+                    "``'London, UK'``)."
+                )
+            ),
+        ],
+    ) -> list[AssistantMessage | UserMessage]:
+        """Build the prompt for a one-shot weather question.
+
+        Args:
+            city: The city to query (English name, optionally with a region
+                suffix, e.g. ``"Springfield, US"`` or ``"London, UK"``).
+        """
         system_text = (
             "You are a weather assistant backed by the percival-weather-mcp server.\n"
             "\n"
@@ -71,9 +88,41 @@ def register_prompts(mcp_server: FastMCP) -> None:
         ),
     )
     async def weather_analysis(
-        city: str, start_date: str, end_date: str
+        city: Annotated[
+            str,
+            Field(
+                description=(
+                    "City name in English, optionally with a region or country "
+                    "suffix to disambiguate."
+                )
+            ),
+        ],
+        start_date: Annotated[
+            str,
+            Field(
+                description=("Inclusive start of the range, ISO 8601 calendar date (YYYY-MM-DD).")
+            ),
+        ],
+        end_date: Annotated[
+            str,
+            Field(
+                description=(
+                    "Inclusive end of the range, ISO 8601 calendar date "
+                    "(YYYY-MM-DD). Must be ``>= start_date`` and the total "
+                    "range must be ``<= 16 days``."
+                )
+            ),
+        ],
     ) -> list[AssistantMessage | UserMessage]:
-        """Build the prompt for a date-range weather analysis."""
+        """Build the prompt for a date-range weather analysis.
+
+        Args:
+            city: The city to query.
+            start_date: Inclusive start of the range, ISO 8601 (YYYY-MM-DD).
+            end_date: Inclusive end of the range, ISO 8601 (YYYY-MM-DD).
+                Must satisfy ``end_date >= start_date`` and the total range
+                must be ``<= 16 days``.
+        """
         system_text = (
             "You are a weather analyst backed by the percival-weather-mcp server.\n"
             "\n"
@@ -110,11 +159,32 @@ def register_prompts(mcp_server: FastMCP) -> None:
         ),
     )
     async def weather_unit_conversion(
-        datetime_str: str = "now",
-        from_timezone: str = "UTC",
-        to_timezone: str = "UTC",
+        datetime_str: Annotated[
+            str,
+            Field(
+                description=(
+                    "Datetime to convert. Either ``'now'`` or an ISO 8601 "
+                    "datetime string (trailing ``'Z'`` is accepted)."
+                )
+            ),
+        ] = "now",
+        from_timezone: Annotated[
+            str,
+            Field(description=("Source IANA timezone (e.g. ``'America/Sao_Paulo'``).")),
+        ] = "UTC",
+        to_timezone: Annotated[
+            str,
+            Field(description=("Target IANA timezone (e.g. ``'Asia/Tokyo'``).")),
+        ] = "UTC",
     ) -> list[AssistantMessage | UserMessage]:
-        """Build the prompt for a timezone conversion."""
+        """Build the prompt for a timezone conversion.
+
+        Args:
+            datetime_str: ``"now"`` or an ISO 8601 datetime string. Trailing
+                ``"Z"`` is accepted.
+            from_timezone: Source IANA timezone (e.g. ``"America/Sao_Paulo"``).
+            to_timezone: Target IANA timezone (e.g. ``"Asia/Tokyo"``).
+        """
         system_text = (
             "You are a timezone-conversion assistant.\n"
             "\n"

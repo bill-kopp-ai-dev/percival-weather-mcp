@@ -12,6 +12,14 @@ the project adheres to [Semantic Versioning](https://semver.org/).
   registry tools dump + a small fixed metadata block. Its ``--check`` flag
   is wired into ``tests/test_dockerfile.py`` as a CI gate so a hand-edit to
   the OCI label artifacts cannot drift past the regenerator.
+- MCP prompts now publish argument descriptions. The three prompt
+  templates (``weather_quick_answer``, ``weather_analysis``,
+  ``weather_unit_conversion``) declared their parameters as bare
+  ``str`` types, which FastMCP rendered as ``description: null`` in
+  ``docs/tools.json`` and in the live prompt listing. The signatures now
+  use ``Annotated[str, Field(description=...)]`` so the agent sees a
+  meaningful description for ``city``, ``start_date``, ``end_date``,
+  ``datetime_str`` and the timezone arguments.
 
 ### Fixed
 - ``docs/tools.json`` was stale at ``version: "0.8.0"`` after the 0.9.0
@@ -24,6 +32,39 @@ the project adheres to [Semantic Versioning](https://semver.org/).
 - ``utils.format_air_quality_data`` called ``hourly.get("time", [])``
   twice in the same expression; cached the result so the list of times
   is only fetched once.
+- Handler log messages used the **legacy** tool names
+  (``get_weather_by_datetime_range``, ``get_current_datetime``,
+  ``get_timezone_info``, ``convert_time``) even though the handlers were
+  already exposed under the ``weather_*`` namespace. Operators grepping
+  for failures saw the legacy name and never matched a live request.
+  ``tools_weather.py`` / ``tools_time.py`` now log the canonical name on
+  every error path.
+- ``weather_service.get_weather_by_date_range`` built each row with a
+  five-clause ternary that called ``hourly.get(<key>)`` twice per field
+  per row (18 fields × N rows). Replaced with a local ``_hourly_value``
+  helper that performs a single lookup per field; the row-builder is now
+  a flat dict literal that's easier to audit.
+- ``weather_service`` had two function-local ``from datetime import``
+  statements and a dead ``try/except Exception: raise`` block around the
+  geocoding request. Both removed; the geocoding call now uses a single
+  ``async with`` branch driven by the ``client is None`` check.
+- ``ConvertTimeInput.datetime_str`` was unconstrained. An empty string
+  passed the Pydantic model and exploded inside
+  ``datetime.fromisoformat`` as a generic ``ValueError``; the model now
+  enforces ``min_length=1, max_length=64`` so the structured error
+  reaches the agent before any work.
+- ``percival_weather_mcp.app`` was a stale reference: the package's
+  ``__init__.py`` did ``from .server import app`` at import time, which
+  froze the binding to the initial ``None`` placeholder. After
+  ``server.main`` populated the module-level ``app``, the package's
+  public re-export still pointed at ``None``. The re-export is now
+  resolved lazily via ``__getattr__`` (PEP 562) so callers always see
+  the live instance.
+- README intro was still describing the 0.8 feature set ("Version 0.8
+  hardens the resilience layer…") even though the project ships 0.9.0
+  with the Docker MCP Toolkit integration. The description now
+  summarises both 0.8 and 0.9, and the architecture section adds a
+  dedicated "What changed in 0.9" entry.
 
 ## [0.9.0] - 2026-09-24
 

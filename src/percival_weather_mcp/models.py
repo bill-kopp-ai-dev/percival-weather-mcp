@@ -247,6 +247,8 @@ class ConvertTimeInput(BaseModel):
             "offset are interpreted in ``from_timezone``."
         ),
         examples=["now", "2026-03-28T14:30:00", "2026-03-28T14:30:00Z"],
+        min_length=1,
+        max_length=64,
     )
     from_timezone: str = Field(
         ...,
