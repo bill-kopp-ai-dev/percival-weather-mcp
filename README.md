@@ -124,7 +124,7 @@ Add the following entry under `tools.mcpServers` in your Nanobot config
           "python", "-m", "percival_weather_mcp", "--mode", "stdio"
         ],
         "env": { "PYTHONUNBUFFERED": "1" },
-        "toolTimeout": 60
+        "toolTimeout": 120
       }
     }
   }
@@ -136,6 +136,14 @@ Add the following entry under `tools.mcpServers` in your Nanobot config
 `percival-weather-mcp_weather_get_current city="Lisbon, UK"` from the agent
 to verify the wiring.
 
+`toolTimeout` (seconds) caps each `tools/call` round-trip. The
+default 60 s is tight for this codebase — a single
+`weather_get_by_range` call issues 1 geocoding request plus 16 days of
+hourly data, and `MCP_WEATHER_HTTP_TIMEOUT` retries the chain with
+exponential backoff (up to ~2 s per attempt). `90`–`120` seconds is
+recommended; raise further if the upstream Open-Meteo APIs are
+degraded.
+
 ### Docker image
 
 The official image (`percival-weather-mcp`) is published alongside every
@@ -145,15 +153,20 @@ launches it with `docker run -i --rm …`:
 
 ```bash
 # Pull and run a single request (Docker MCP Toolkit gateway style)
-docker run -i --rm percival-weather-mcp:0.9.0
+docker run -i --rm percival-weather-mcp:latest
 
 # Smoke-test the /healthz probe in HTTP mode
 docker run -d --name pw -p 8080:8080 \
     -e MCP_TRANSPORT=http \
-    percival-weather-mcp:0.9.0
+    percival-weather-mcp:latest
 sleep 1 && curl -fsS http://127.0.0.1:8080/healthz && echo
 docker rm -f pw
 ```
+
+The `:latest` tag tracks the most recent published release. For
+production, pin to a specific version (`:0.9.0`) so tool-call behaviour
+is reproducible across upgrades — the server is published with
+SemVer tags on every GitHub release.
 
 The image ships a POSIX-sh `docker-entrypoint.sh` that decodes the
 `MCP_TRANSPORT` env var (`stdio`, `http`, or `http-loopback`) and forwards
@@ -176,8 +189,9 @@ Add the container to `~/.config/opencode/opencode.json` (or a project's
       "command": [
         "docker", "run", "-i", "--rm",
         "-e", "MCP_WEATHER_RATE_LIMIT_PER_MINUTE=600",
-        "percival-weather-mcp:0.9.0"
+        "percival-weather-mcp:latest"
       ],
+      "timeout": 120000,
       "enabled": true
     }
   }
@@ -187,6 +201,12 @@ Add the container to `~/.config/opencode/opencode.json` (or a project's
 OpenCode launches the container with stdin attached; the server replies
 over the same channel, so the `-i` flag is required.
 
+The optional `timeout` field (`ms`, default `5000`) caps each
+`tools/call` round-trip — a single weather lookup can chain a geocoding
+request plus the forecast request, so 30 s–2 min is recommended. Bump
+further (or pair with `MCP_WEATHER_HTTP_TIMEOUT` on the container)
+when the upstream Open-Meteo APIs are degraded.
+
 ### Wire into the Docker MCP Toolkit
 
 Add the image to a Toolkit profile. The image defaults to the stdio
@@ -194,13 +214,21 @@ transport, which is what the gateway expects:
 
 ```bash
 docker mcp profile create --name weather \
-    --server docker://percival-weather-mcp:0.9.0
+    --server docker://percival-weather-mcp:latest
 docker mcp client connect claude-code --profile weather  # or cursor, vscode, …
 ```
 
 The gateway introspects the image through the embedded `/mcp/mcp.yaml`
 manifest, which documents the tools, prompts, resources, environment
 variables and runtime knobs.
+
+The Docker MCP Toolkit gateway launches each server with a fixed
+resource envelope (`--cpus 1 --memory 2Gb --security-opt no-new-privileges`).
+For stdio the upstream Open-Meteo traffic is tiny, so the defaults are
+generous; for HTTP behind the gateway, raise
+`MCP_WEATHER_RATE_LIMIT_PER_MINUTE` (default `120`) per profile to
+absorb concurrent clients, or pin the image to a specific SemVer tag
+to avoid surprise upgrades.
 
 ### HTTP transport
 

@@ -21,6 +21,18 @@ the project adheres to [Semantic Versioning](https://semver.org/).
   meaningful description for ``city``, ``start_date``, ``end_date``,
   ``datetime_str`` and the timezone arguments.
 
+### Changed
+- README wiring snippets no longer hardcode ``:0.9.0``. The four
+  consumer-facing examples (Docker smoke test, OpenCode local MCP,
+  Docker MCP Toolkit profile, Nanobot stdio launcher) now reference
+  ``percival-weather-mcp:latest`` and call out that production
+  deployments should pin to a SemVer tag for reproducibility.
+- README documents the ``toolTimeout`` knob in the Nanobot snippet
+  (bumped from 60 s to **120 s** as the recommended value, with an
+  explanation of why 60 s is too tight for ``weather_get_by_range`` and
+  the HTTP retry/backoff chain) and introduces the analogous ``timeout``
+  field on the OpenCode snippet.
+
 ### Fixed
 - ``docs/tools.json`` was stale at ``version: "0.8.0"`` after the 0.9.0
   release; regenerated to ``"0.9.0"``.
