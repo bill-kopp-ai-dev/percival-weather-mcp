@@ -40,3 +40,6 @@ pip-wheel-metadata/
 AGENTS.md
 agents.md
 # --- End Positronic block ---
+
+# Local Percival integration working note (not for the public repo)
+docs/percival-integration.md
