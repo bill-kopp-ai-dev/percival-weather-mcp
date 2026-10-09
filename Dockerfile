@@ -18,6 +18,9 @@ RUN uv export --format requirements-txt --no-hashes --no-dev > /tmp/requirements
 
 FROM python:3.12-slim AS runtime
 
+ARG VERSION=0.0.0
+ARG GIT_SHA=unknown
+
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PATH="/opt/venv/bin:${PATH}" \
@@ -72,8 +75,11 @@ EXPOSE 8080
 LABEL org.opencontainers.image.title="Percival Weather MCP" \
       org.opencontainers.image.description="Weather, air quality and time MCP server for the percival.OS ecosystem (Open-Meteo backed)" \
       org.opencontainers.image.source="https://github.com/bill-kopp-ai-dev/percival-weather-mcp" \
+      org.opencontainers.image.documentation="https://github.com/bill-kopp-ai-dev/percival-weather-mcp/blob/main/README.md" \
       org.opencontainers.image.licenses="MIT" \
-      org.opencontainers.image.vendor="Positronic Bean Labs"
+      org.opencontainers.image.vendor="Positronic Bean Labs" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.revision="${GIT_SHA}"
 
 # io.docker.server.metadata is generated — see docs/mcp/percival-weather-mcp/oci-label.json
 # fmt:off

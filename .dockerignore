@@ -21,6 +21,7 @@ dist/
 tests/
 docs/docker-mcp-packaging.md
 docs/mcp/
+.positronic/
 AGENTS.md
 
 # Git/CI metadata
