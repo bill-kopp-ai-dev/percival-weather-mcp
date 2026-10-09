@@ -16,6 +16,16 @@ dist/
 .vscode/
 .DS_Store
 *.log
+.env
+.env.*
+!.env.example
+secrets/
+logs/
+.cache/
+.git/
+.dockerignore
+Dockerfile
+docker-compose*.yml
 
 # Tests, agent notes and registries do not belong in the runtime image.
 tests/
