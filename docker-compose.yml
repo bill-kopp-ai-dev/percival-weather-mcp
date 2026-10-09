@@ -1,0 +1,61 @@
+# Local MCP runtime contracts for Percival Weather.
+# Stdio: `docker compose run --rm -T percival-weather-stdio`.
+# HTTP is opt-in and loopback-only by default, requires a bearer token, and
+# must sit behind an authenticated TLS proxy/firewall before external access.
+
+x-common: &common
+  build:
+    context: .
+    dockerfile: Dockerfile
+  image: percival-weather-mcp:dev
+  init: true
+  read_only: true
+  tmpfs:
+    - /tmp:size=64m,mode=1777,noexec,nosuid,nodev
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  environment: &weather-environment
+    MCP_WEATHER_LOG_FORMAT: ${MCP_WEATHER_LOG_FORMAT:-text}
+    MCP_WEATHER_HTTP_TIMEOUT: ${MCP_WEATHER_HTTP_TIMEOUT:-15.0}
+    MCP_WEATHER_HTTP_MAX_RETRIES: ${MCP_WEATHER_HTTP_MAX_RETRIES:-2}
+    MCP_WEATHER_HTTP_BACKOFF_BASE: ${MCP_WEATHER_HTTP_BACKOFF_BASE:-0.3}
+    MCP_WEATHER_HTTP_BACKOFF_CAP: ${MCP_WEATHER_HTTP_BACKOFF_CAP:-2.0}
+    MCP_WEATHER_HTTP_MAX_CONCURRENCY: ${MCP_WEATHER_HTTP_MAX_CONCURRENCY:-16}
+    MCP_WEATHER_RATE_LIMIT_PER_MINUTE: ${MCP_WEATHER_RATE_LIMIT_PER_MINUTE:-120}
+    MCP_WEATHER_ENABLE_METRICS: ${MCP_WEATHER_ENABLE_METRICS:-true}
+    MCP_WEATHER_ENABLE_TRACING: ${MCP_WEATHER_ENABLE_TRACING:-false}
+
+services:
+  percival-weather-stdio:
+    <<: *common
+    command: ["stdio"]
+    stdin_open: true
+    tty: false
+    restart: "no"
+    environment:
+      <<: *weather-environment
+      MCP_TRANSPORT: stdio
+
+  percival-weather-http:
+    <<: *common
+    profiles: ["http"]
+    command: ["http"]
+    environment:
+      <<: *weather-environment
+      MCP_TRANSPORT: http
+      MCP_WEATHER_HOST: 0.0.0.0
+      PORT: "8080"
+      MCP_WEATHER_AUTH_TOKEN: ${MCP_WEATHER_AUTH_TOKEN:-}
+    ports:
+      - "127.0.0.1:${HTTP_PORT:-8080}:8080"
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=3)"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
