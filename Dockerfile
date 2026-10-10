@@ -22,6 +22,10 @@ RUN printf 'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian
     && apt-get upgrade -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
+# These MCP processes do not mount filesystems or enter namespaces. Remove
+# the setuid privilege from mount and omit unrelated namespace/terminfo tools.
+RUN chmod u-s /usr/bin/mount && rm -f /usr/bin/nsenter /usr/bin/infocmp
+
 ARG VERSION=0.0.0
 ARG GIT_SHA=unknown
 
