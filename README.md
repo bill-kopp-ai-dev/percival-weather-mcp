@@ -153,10 +153,10 @@ launches it with `docker run -i --rm …`:
 
 ```bash
 # Pull and run a single request (Docker MCP Toolkit gateway style)
-docker run -i --rm percival-weather-mcp:latest
+docker run -i --rm --init percival-weather-mcp:latest
 
 # Smoke-test the /healthz probe in HTTP mode
-docker run -d --name pw -p 8080:8080 \
+docker run -d --name pw --init -p 8080:8080 \
     -e MCP_TRANSPORT=http \
     percival-weather-mcp:latest
 sleep 1 && curl -fsS http://127.0.0.1:8080/healthz && echo

@@ -51,7 +51,7 @@ test_stdio_gateway() {
             '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"smoke","version":"0.0.1"}}}' \
             '{"jsonrpc":"2.0","method":"notifications/initialized","params":{}}' \
             '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' |
-            docker run -i --rm "$IMAGE" 2>/dev/null
+            docker run -i --rm --init "$IMAGE" 2>/dev/null
     )
     local initialize_reply tools_reply
     initialize_reply=$(printf '%s' "$payload" | sed -n '1p')
@@ -132,6 +132,7 @@ test_http_loopback() {
     info "HTTP loopback transport"
     local container body
     container=$(docker run -d --rm \
+        --init \
         -e MCP_TRANSPORT=http-loopback \
         --name pw-loopback \
         "$IMAGE")

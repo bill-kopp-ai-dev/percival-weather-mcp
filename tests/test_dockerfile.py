@@ -17,6 +17,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 DOCKERFILE = REPO_ROOT / "Dockerfile"
 ENTRYPOINT = REPO_ROOT / "docker-entrypoint.sh"
 MCP_MANIFEST = REPO_ROOT / "mcp.yaml"
+COMPOSE = REPO_ROOT / "docker-compose.yml"
 
 
 @pytest.fixture(scope="module")
@@ -31,6 +32,35 @@ def entrypoint_text() -> str:
 
 def test_dockerfile_exists():
     assert DOCKERFILE.is_file(), "Dockerfile is missing"
+
+
+def test_dockerfile_embeds_no_init_so_the_launcher_owns_it(dockerfile_text: str):
+    """The image must not embed an init of its own.
+
+    The launcher owns the init layer (``docker run --init`` / Compose
+    ``init: true``). A tini embedded in the image stacks a second
+    supervision layer on top of the launcher's own init, and the outer
+    layer masks which process is actually responsible for SIGTERM.
+    """
+    instructions = "\n".join(
+        line for line in dockerfile_text.splitlines() if not line.lstrip().startswith("#")
+    )
+    assert not re.search(r"\btini\b", instructions), (
+        "the image must not embed an init; the launcher provides it "
+        "(docker run --init / compose init: true)"
+    )
+    entrypoint = re.search(r"^ENTRYPOINT\s+\[(.+)\]$", instructions, re.MULTILINE)
+    assert entrypoint, "Dockerfile must declare an exec-form ENTRYPOINT"
+    assert "tini" not in entrypoint.group(1)
+
+
+def test_compose_declares_the_single_init():
+    """The launcher side of the contract: exactly one init, owned by Compose."""
+    compose = COMPOSE.read_text(encoding="utf-8")
+    assert re.search(r"^  init: true$", compose, re.MULTILINE), (
+        "the compose service must declare init: true so the launcher owns "
+        "the init layer and the container stops cleanly on SIGTERM"
+    )
 
 
 def test_dockerfile_uses_syntax_pragmas(dockerfile_text: str):
