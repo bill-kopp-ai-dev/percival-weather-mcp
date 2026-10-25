@@ -1,3 +1,15 @@
+# Only inputs copied by the Dockerfile enter the context.
+**
+!pyproject.toml
+!uv.lock
+!README.md
+!LICENSE
+!CHANGELOG.md
+!mcp.yaml
+!docker-entrypoint.sh
+!src/
+!src/**
+
 # Docker build context excludes. Keep the runtime image as small as possible
 # while still bundling everything the FastMCP server needs at runtime.
 __pycache__/
@@ -42,3 +54,18 @@ AGENTS.md
 # Editor backups and tooling caches
 *.swp
 *.bak
+
+# Apply the state/secret boundary inside copied source trees too.
+**/.venv/
+**/.positronic/
+**/.env
+**/.env.*
+**/secrets/
+**/*.pem
+**/*.key
+**/__pycache__/
+**/.cache/
+**/AGENTS.md
+**/.pytest_cache/
+**/node_modules/
+**/tests/
