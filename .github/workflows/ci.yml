@@ -60,6 +60,9 @@ jobs:
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - name: Set up BuildKit
         uses: docker/setup-buildx-action@v3
       - name: Resolve image metadata
@@ -85,7 +88,7 @@ jobs:
           docker run --rm --entrypoint python percival-weather-mcp:ci -c 'from importlib.metadata import version; print(version("percival-weather-mcp"))'
           test "$(docker image inspect percival-weather-mcp:ci --format '{{.Os}}/{{.Architecture}}')" = linux/amd64
           test "$(docker image inspect percival-weather-mcp:ci --format '{{.Config.User}}')" != ""
-          test "$(docker image inspect percival-weather-mcp:ci --format '{{index .Config.Labels \"org.opencontainers.image.revision\"}}')" = "$GITHUB_SHA"
+          test "$(docker image inspect percival-weather-mcp:ci --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')" = "$GITHUB_SHA"
       - name: MCP stdio conformance (offline)
         run: >-
           python3 scripts/docker-ci-conformance.py
@@ -96,15 +99,21 @@ jobs:
       - name: Render Compose contracts
         env:
           HTTP_PORT: "18080"
-          MCP_WEATHER_AUTH_TOKEN: ci-weather-token-not-a-secret
+          MCP_WEATHER_AUTH_TOKEN_FILE: ${{ runner.temp }}/weather-http-token
+          WEATHER_CI_TOKEN: ci-weather-token-not-a-secret
         run: |
+          umask 077
+          printf '%s' "$WEATHER_CI_TOKEN" > "$MCP_WEATHER_AUTH_TOKEN_FILE"
           docker compose config --quiet
           docker compose --profile http config --quiet
       - name: HTTP profile health, loopback bind and auth
         env:
           HTTP_PORT: "18080"
-          MCP_WEATHER_AUTH_TOKEN: ci-weather-token-not-a-secret
+          MCP_WEATHER_AUTH_TOKEN_FILE: ${{ runner.temp }}/weather-http-token
+          WEATHER_CI_TOKEN: ci-weather-token-not-a-secret
         run: |
+          umask 077
+          printf '%s' "$WEATHER_CI_TOKEN" > "$MCP_WEATHER_AUTH_TOKEN_FILE"
           docker compose --profile http up --build -d --wait percival-weather-http
           bind=$(docker compose --profile http port percival-weather-http 8080)
           test "$bind" = "127.0.0.1:18080"
