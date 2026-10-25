@@ -104,6 +104,7 @@ jobs:
         run: |
           umask 077
           printf '%s' "$WEATHER_CI_TOKEN" > "$MCP_WEATHER_AUTH_TOKEN_FILE"
+          chmod 0644 "$MCP_WEATHER_AUTH_TOKEN_FILE"
           docker compose config --quiet
           docker compose --profile http config --quiet
       - name: HTTP profile health, loopback bind and auth
@@ -114,6 +115,7 @@ jobs:
         run: |
           umask 077
           printf '%s' "$WEATHER_CI_TOKEN" > "$MCP_WEATHER_AUTH_TOKEN_FILE"
+          chmod 0644 "$MCP_WEATHER_AUTH_TOKEN_FILE"
           docker compose --profile http up --build -d --wait percival-weather-http
           bind=$(docker compose --profile http port percival-weather-http 8080)
           test "$bind" = "127.0.0.1:18080"
