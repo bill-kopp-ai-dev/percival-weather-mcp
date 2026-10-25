@@ -8,6 +8,9 @@ x-common: &common
     context: .
     dockerfile: Dockerfile
   image: percival-weather-mcp:dev
+  # The image's `app` account is UID/GID 999:999; pin the numeric identity so
+  # permissions do not depend on a name lookup in the container.
+  user: "999:999"
   init: true
   read_only: true
   tmpfs:
@@ -45,9 +48,22 @@ services:
       MCP_TRANSPORT: http
       MCP_WEATHER_HOST: 0.0.0.0
       PORT: "8080"
-      MCP_WEATHER_AUTH_TOKEN: ${MCP_WEATHER_AUTH_TOKEN:-}
+      # Read the credential from a mounted file in the wrapper below. It is
+      # absent from the rendered config and container creation environment;
+      # the server process receives it only after startup reads the file.
+      MCP_WEATHER_AUTH_TOKEN_ENV: MCP_WEATHER_AUTH_TOKEN
     ports:
       - "127.0.0.1:${HTTP_PORT:-8080}:8080"
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - |
+        MCP_WEATHER_AUTH_TOKEN="$$(cat /run/secrets/mcp_weather_auth_token)"
+        export MCP_WEATHER_AUTH_TOKEN
+        exec /usr/local/bin/docker-entrypoint.sh http
+    secrets:
+      - source: mcp_weather_auth_token
+        target: mcp_weather_auth_token
     restart: unless-stopped
     healthcheck:
       test:
@@ -59,3 +75,10 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+
+secrets:
+  # Docker Compose (non-swarm) supports file-backed local secrets. The source
+  # file must be readable by UID 999 (e.g. mode 0644 inside a host directory
+  # mode 0700); Docker mounts it read-only at this target.
+  mcp_weather_auth_token:
+    file: ${MCP_WEATHER_AUTH_TOKEN_FILE:-${HOME}/.config/percival/weather_auth_token}
