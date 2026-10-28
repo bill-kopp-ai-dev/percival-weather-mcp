@@ -116,7 +116,7 @@ _STATUS_REASONS: Final[dict[int, str]] = {
 
 
 def service_label(service: str) -> str:
-    """Return the human-readable name used in agent-facing messages."""
+    """Map a client name to the human-readable name used in agent-facing messages."""
     return _SERVICE_LABELS.get(service, service)
 
 
@@ -138,53 +138,51 @@ def _http_guidance(service: str, status_code: int) -> str:
     )
 
 
-def upstream_http_error(service: str, status_code: int) -> UpstreamError:
-    """Build the error for a non-200 HTTP response from the upstream."""
-    label = service_label(service)
+def upstream_http_error(label: str, status_code: int) -> UpstreamError:
+    """Build the error for a non-200 HTTP response from the upstream.
+
+    ``label`` is the human-readable name of the service that was called.
+    """
     reason = status_reason(status_code)
     message = (
         f"Upstream Open-Meteo {label} returned HTTP {status_code} ({reason}). "
-        f"{_http_guidance(service, status_code)}"
+        f"{_http_guidance(label, status_code)}"
     )
     return UpstreamError(
         message,
-        service=service,
+        service=label,
         status_code=status_code,
         reason="http_error",
     )
 
 
-def upstream_timeout(service: str, timeout_seconds: float) -> UpstreamError:
+def upstream_timeout(label: str, timeout_seconds: float) -> UpstreamError:
     """Build the error for an upstream request that exceeded the timeout."""
-    label = service_label(service)
     message = (
         f"Upstream Open-Meteo {label} timed out after {timeout_seconds:g}s. "
         "The provider did not answer in time; retry shortly."
     )
-    return UpstreamError(message, service=service, reason="timeout")
+    return UpstreamError(message, service=label, reason="timeout")
 
 
-def upstream_unreachable(service: str, detail: str) -> UpstreamError:
+def upstream_unreachable(label: str, detail: str) -> UpstreamError:
     """Build the error for an upstream that could not be reached at all."""
-    label = service_label(service)
     message = (
         f"Upstream Open-Meteo {label} could not be reached ({detail}). "
         "Check the network path and retry shortly."
     )
-    return UpstreamError(message, service=service, reason="network_error")
+    return UpstreamError(message, service=label, reason="network_error")
 
 
-def upstream_invalid_response(service: str) -> UpstreamError:
+def upstream_invalid_response(label: str) -> UpstreamError:
     """Build the error for a 2xx response whose body is not the expected JSON."""
-    label = service_label(service)
     message = (
         f"Upstream Open-Meteo {label} returned a response that could not be parsed as JSON. "
         "The provider may be misbehaving; retry shortly."
     )
-    return UpstreamError(message, service=service, reason="invalid_response")
+    return UpstreamError(message, service=label, reason="invalid_response")
 
 
-def no_data_found(service: str, subject: str, hint: str) -> NoDataError:
+def no_data_found(label: str, subject: str, hint: str) -> NoDataError:
     """Build the error for a successful upstream answer without usable data."""
-    label = service_label(service)
     return NoDataError(f"Open-Meteo {label} returned no data for {subject}. {hint}")

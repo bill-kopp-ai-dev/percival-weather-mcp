@@ -245,3 +245,22 @@ async def test_empty_air_quality_series_is_reported_as_no_data():
     message = str(excinfo.value)
     assert "empty hourly series" in message
     assert "Invalid air quality request" not in message
+
+
+@pytest.mark.asyncio
+async def test_the_message_names_the_service_that_failed():
+    """One HTTP client can serve two upstreams: the label must follow the call."""
+    from percival_weather_mcp.tools.tools_air_quality import GetAirQualityToolHandler
+
+    with respx.mock(assert_all_called=False) as mock:
+        # The air-quality tools geocode and read the air-quality endpoint
+        # through the same client; a geocoding failure must say so.
+        mock.get("https://geocoding-api.open-meteo.com/v1/search").respond(500)
+
+        handler = GetAirQualityToolHandler()
+        with pytest.raises(UpstreamError) as excinfo:
+            await handler.run_tool({"city": "Lisbon"})
+
+    message = str(excinfo.value)
+    assert "Open-Meteo geocoding" in message
+    assert "air quality" not in message

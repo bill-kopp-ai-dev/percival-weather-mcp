@@ -24,6 +24,7 @@ import random
 import threading
 from time import monotonic
 from typing import Any
+from urllib.parse import urlsplit
 
 import httpx
 
@@ -39,6 +40,23 @@ from .errors import (
 from .observability import record_http_error, record_http_request
 
 logger = logging.getLogger("mcp-weather.http")
+
+
+#: The Open-Meteo services, keyed by host. The label names the service that
+#: was actually called: one HTTP client can serve more than one upstream (the
+#: air-quality tools geocode and then read the air-quality endpoint through
+#: the same client), so the client name would mislabel the failure.
+_SERVICE_BY_HOST: dict[str, str] = {
+    "api.open-meteo.com": "weather forecast",
+    "geocoding-api.open-meteo.com": "geocoding",
+    "air-quality-api.open-meteo.com": "air quality",
+}
+
+
+def service_for_url(url: str, fallback: str) -> str:
+    """Return the display label of the upstream service addressed by ``url``."""
+    host = urlsplit(url).hostname or ""
+    return _SERVICE_BY_HOST.get(host, service_label(fallback))
 
 
 def is_retryable_status(status_code: int) -> bool:
@@ -163,13 +181,14 @@ class ResilientHttpClient:
 
         attempts = max(1, self._settings.http_max_retries + 1)
         last_error: UpstreamError | None = None
+        label = service_for_url(url, self._name)
 
         for attempt in range(1, attempts + 1):
             try:
                 async with self._semaphore:
                     response = await self.raw.request(method, url, params=params)
             except httpx.TimeoutException as exc:
-                error = upstream_timeout(self._name, self._settings.http_timeout)
+                error = upstream_timeout(label, self._settings.http_timeout)
                 record_http_error(self._name, error)
                 last_error = error
                 if breaker is not None:
@@ -179,7 +198,7 @@ class ResilientHttpClient:
                 await self._sleep_backoff(attempt)
                 continue
             except httpx.RequestError as exc:
-                error = upstream_unreachable(self._name, type(exc).__name__)
+                error = upstream_unreachable(label, type(exc).__name__)
                 record_http_error(self._name, error)
                 last_error = error
                 if breaker is not None:
@@ -198,13 +217,13 @@ class ResilientHttpClient:
                 try:
                     payload = response.json()
                 except ValueError as exc:
-                    error = upstream_invalid_response(self._name)
+                    error = upstream_invalid_response(label)
                     record_http_error(self._name, error)
                     if breaker is not None:
                         await breaker.record_failure()
                     raise error from exc
                 if not isinstance(payload, dict):
-                    error = upstream_invalid_response(self._name)
+                    error = upstream_invalid_response(label)
                     record_http_error(self._name, error)
                     if breaker is not None:
                         await breaker.record_failure()
@@ -213,7 +232,7 @@ class ResilientHttpClient:
                     await breaker.record_success()
                 return payload
 
-            error = upstream_http_error(self._name, status)
+            error = upstream_http_error(label, status)
             record_http_error(self._name, error)
             last_error = error
             if breaker is not None:
@@ -226,7 +245,7 @@ class ResilientHttpClient:
             await self._sleep_backoff(attempt)
 
         # Defensive: the loop always raises or returns.
-        raise last_error or upstream_unreachable(self._name, "no attempt was made")
+        raise last_error or upstream_unreachable(label, "no attempt was made")
 
     async def _sleep_backoff(self, attempt: int) -> None:
         base = self._settings.http_backoff_base
