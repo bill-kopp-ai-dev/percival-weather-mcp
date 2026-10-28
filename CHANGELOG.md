@@ -7,6 +7,21 @@ the project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- ``scripts/verification/`` now carries the MCP verification harness used by
+  the stage-2 remediation campaign (TLS mock of the three Open-Meteo
+  services, MCP session, failure/config/cache/resources matrices, lifecycle
+  and HTTP probes). The harness lives in the product repository so the
+  evidence is reproducible from the checkout instead of depending on a
+  report directory.
+- Error taxonomy (``src/percival_weather_mcp/errors.py``) separating an
+  upstream failure from a locally rejected request and from an upstream
+  answer without data. Upstream failures now carry the HTTP status, the
+  timeout or the network cause, so the agent receives the true reason.
+- ``docs/decisions/2026-10-28-http-endpoint-auth-policy.md`` records the
+  owner decision on the authentication policy of the HTTP endpoints.
+- ``scripts/docker-build.sh`` builds the image with the product version and
+  the source revision, and pins the build timestamp, so two builds of the
+  same commit produce the same image ID.
 - ``scripts/build_oci_label.py`` regenerates
   ``docs/mcp/percival-weather-mcp/oci-label.{json,yaml,inline}`` from the
   registry tools dump + a small fixed metadata block. Its ``--check`` flag
@@ -22,6 +37,10 @@ the project adheres to [Semantic Versioning](https://semver.org/).
   ``datetime_str`` and the timezone arguments.
 
 ### Changed
+- ``/metrics`` now requires the bearer token whenever one is configured;
+  ``/healthz`` and ``/health`` stay open as liveness probes.
+- The geocoding cache became a process-wide component with the same TTL and
+  size bounds.
 - README wiring snippets no longer hardcode ``:0.9.0``. The four
   consumer-facing examples (Docker smoke test, OpenCode local MCP,
   Docker MCP Toolkit profile, Nanobot stdio launcher) now reference
@@ -34,6 +53,30 @@ the project adheres to [Semantic Versioning](https://semver.org/).
   field on the OpenCode snippet.
 
 ### Fixed
+- An upstream failure is no longer reported to the agent as "invalid
+  request": a rate limit (HTTP 429), a provider error (5xx) and a network
+  timeout now say what actually happened and what to do next. A successful
+  answer without data (unknown city, empty hourly series) is reported as
+  "no data" instead of being confused with either.
+- Non-recoverable upstream statuses (4xx other than 429) are no longer
+  retried. Only 429, 5xx, timeouts and transport errors consume the retry
+  budget.
+- ``MCP_TRANSPORT`` with an unknown value is refused with a non-zero exit
+  and an operator message instead of degrading silently to stdio. An
+  out-of-range ``PORT``, ``MCP_WEATHER_HTTP_TIMEOUT``,
+  ``MCP_WEATHER_HTTP_MAX_RETRIES``, ``MCP_WEATHER_HTTP_MAX_CONCURRENCY`` or
+  ``MCP_WEATHER_RATE_LIMIT_PER_MINUTE`` is refused at start-up.
+- ``SIGINT`` now terminates the stdio server. It used to be swallowed by the
+  event loop, leaving the container alive until the orchestrator escalated
+  to ``SIGKILL``.
+- The handshake reports the **product** version (``0.9.0``) in
+  ``serverInfo`` instead of the version of the MCP SDK.
+- ``prompts/get`` without a required argument is reported as an invalid
+  params error, and reading a resource template with an unknown target is
+  reported as a "resource not found" error — the template used to answer
+  with a successful read whose payload described an error.
+- The geocoding cache is shared by every tool handler, so a city geocoded
+  by one tool is not geocoded again by another.
 - ``docs/tools.json`` was stale at ``version: "0.8.0"`` after the 0.9.0
   release; regenerated to ``"0.9.0"``.
 - ``utils.get_closest_utc_index`` called ``dateutil.parser.isoparse(t)``
