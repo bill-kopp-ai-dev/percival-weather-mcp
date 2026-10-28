@@ -1,0 +1,123 @@
+{
+  "@context": "https://openvex.dev/ns/v0.2.0",
+  "@id": "https://github.com/bill-kopp-ai-dev/percival-weather-mcp/docs/security/openvex.json",
+  "author": "Positronic Bean Labs",
+  "role": "Document Creator",
+  "timestamp": "2026-10-28T12:31:00Z",
+  "version": 1,
+  "tooling": "trivy 0.76.1 (vulnerability database of 2026-10-28)",
+  "statements": [
+    {
+      "vulnerability": {
+        "name": "CVE-2026-76642"
+      },
+      "products": [
+        {
+          "@id": "pkg:oci/percival-weather-mcp@sha256:821ea0f6761f7cd3d98f5737afc4753060a5eeb87e335aeaf2be23c50d007a58"
+        }
+      ],
+      "status": "not_affected",
+      "justification": "inline_mitigations_already_exist",
+      "impact_statement": "The advisory describes privileged mount/fstab/cgroups flows. The image runs as the non-root user app (UID 999) with an empty capability set (CapEff=0000000000000000), the setuid bit of /usr/bin/mount is removed and /usr/bin/nsenter is not shipped, so the privileged flow the advisory needs is not reachable. The util-linux package is present, but Trivy 0.76.1 with the database of 2026-10-28 reports no finding against it in this image.",
+      "action_statement": "Re-scan the candidate on every release and re-check this statement when the Debian snapshot moves. If the image ever gains the setuid bit on /usr/bin/mount or a capability set, this statement must be re-evaluated before the next candidate is published."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2026-78408"
+      },
+      "products": [
+        {
+          "@id": "pkg:oci/percival-weather-mcp@sha256:821ea0f6761f7cd3d98f5737afc4753060a5eeb87e335aeaf2be23c50d007a58"
+        }
+      ],
+      "status": "not_affected",
+      "justification": "inline_mitigations_already_exist",
+      "impact_statement": "Same advisory family as CVE-2026-76642: a privileged nsenter/fstab flow. /usr/bin/nsenter is not shipped, the process runs without capabilities and the rootfs is read-only in the deployed profile, so the flow is not reachable. No finding is reported for util-linux by Trivy 0.76.1 with the database of 2026-10-28.",
+      "action_statement": "Re-scan the candidate on every release; re-evaluate this statement if nsenter is reintroduced or the runtime gains privileges."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2026-78409"
+      },
+      "products": [
+        {
+          "@id": "pkg:oci/percival-weather-mcp@sha256:821ea0f6761f7cd3d98f5737afc4753060a5eeb87e335aeaf2be23c50d007a58"
+        }
+      ],
+      "status": "not_affected",
+      "justification": "inline_mitigations_already_exist",
+      "impact_statement": "Same advisory family as CVE-2026-76642: a privileged cgroups/mount flow. The process runs as UID 999 with an empty capability set and without the setuid bit on /usr/bin/mount. No finding is reported for util-linux by Trivy 0.76.1 with the database of 2026-10-28.",
+      "action_statement": "Re-scan the candidate on every release; re-evaluate this statement if the runtime profile changes."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2026-78410"
+      },
+      "products": [
+        {
+          "@id": "pkg:oci/percival-weather-mcp@sha256:821ea0f6761f7cd3d98f5737afc4753060a5eeb87e335aeaf2be23c50d007a58"
+        }
+      ],
+      "status": "not_affected",
+      "justification": "inline_mitigations_already_exist",
+      "impact_statement": "Same advisory family as CVE-2026-76642: a privileged fstab/mount flow. The image ships /usr/bin/mount without the setuid bit, runs as UID 999 with an empty capability set, and /usr/bin/nsenter is absent. No finding is reported for util-linux by Trivy 0.76.1 with the database of 2026-10-28.",
+      "action_statement": "Re-scan the candidate on every release; re-evaluate this statement if the runtime profile changes."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2026-54369"
+      },
+      "products": [
+        {
+          "@id": "pkg:oci/percival-weather-mcp@sha256:821ea0f6761f7cd3d98f5737afc4753060a5eeb87e335aeaf2be23c50d007a58"
+        }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_cannot_be_controlled_by_adversary",
+      "impact_statement": "The advisory describes a symlink traversal in the acl_*_file helpers when they are called by a privileged caller. The server never calls those helpers: the container runs as UID 999 with an empty capability set, and the MCP server only reads the public Open-Meteo APIs. The libacl1 package is present but the vulnerable entry point is not reachable from this workload. No finding is reported for libacl1 by Trivy 0.76.1 with the database of 2026-10-28.",
+      "action_statement": "Re-scan the candidate on every release and re-evaluate this statement if the runtime ever grants capabilities or runs a workload that calls the ACL helpers."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2025-69720"
+      },
+      "products": [
+        {
+          "@id": "pkg:oci/percival-weather-mcp@sha256:821ea0f6761f7cd3d98f5737afc4753060a5eeb87e335aeaf2be23c50d007a58"
+        }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_present",
+      "impact_statement": "The advisory describes an overflow in infocmp, the ncurses terminal-description tool. The binary is not shipped: /usr/bin/infocmp is removed by the Dockerfile. The ncurses libraries remain installed but the vulnerable program is absent. No finding is reported for ncurses by Trivy 0.76.1 with the database of 2026-10-28.",
+      "action_statement": "Re-scan the candidate on every release and re-evaluate this statement if infocmp is reintroduced."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2026-16742"
+      },
+      "products": [
+        {
+          "@id": "pkg:oci/percival-weather-mcp@sha256:821ea0f6761f7cd3d98f5737afc4753060a5eeb87e335aeaf2be23c50d007a58"
+        }
+      ],
+      "status": "not_affected",
+      "justification": "component_not_present",
+      "impact_statement": "The advisory describes a privilege escalation in systemd-homed. That component is not installed: the image carries libsystemd0 and libudev1 as dependencies of the Debian base, but systemd-homed is absent from the 104 installed packages. No finding is reported for libsystemd0 by Trivy 0.76.1 with the database of 2026-10-28.",
+      "action_statement": "Re-scan the candidate on every release and re-evaluate this statement if systemd-homed is ever added to the runtime image."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2026-9538"
+      },
+      "products": [
+        {
+          "@id": "pkg:oci/percival-weather-mcp@sha256:821ea0f6761f7cd3d98f5737afc4753060a5eeb87e335aeaf2be23c50d007a58"
+        }
+      ],
+      "status": "not_affected",
+      "justification": "component_not_present",
+      "impact_statement": "The advisory affects Perl Archive::Tar. The image carries perl-base only; the Archive::Tar module is not importable in the runtime and the server does not use Perl. No finding is reported for perl-base by Trivy 0.76.1 with the database of 2026-10-28.",
+      "action_statement": "Re-scan the candidate on every release and re-evaluate this statement if a Perl toolchain is ever added to the runtime image."
+    }
+  ]
+}

@@ -31,7 +31,10 @@ about:
   icon: https://avatars.githubusercontent.com/u/182288589?s=200&v=4
 source:
   project: https://github.com/bill-kopp-ai-dev/percival-weather-mcp
-  commit: 0.9.0
+  # The source revision the catalog entry is bound to. It must be a commit
+  # SHA — never the package version — so the image can be traced back to
+  # the tree it was built from.
+  commit: ed2caa8cfd225bc5861a6670544d32f386b2bf3c
 run:
   env:
     MCP_WEATHER_LOG_FORMAT: text
