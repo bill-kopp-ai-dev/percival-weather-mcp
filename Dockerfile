@@ -15,9 +15,13 @@ ARG SOURCE_DATE_EPOCH=0
 WORKDIR /build
 COPY pyproject.toml uv.lock README.md ./
 COPY src ./src
+# The timestamp normalisation makes the venv deterministic on its own and
+# puts SOURCE_DATE_EPOCH in the cache key, so a cached build cannot reuse
+# layers produced with a different timestamp.
 RUN UV_PROJECT_ENVIRONMENT=/opt/venv uv sync --frozen --no-dev --no-editable \
     && rm -f /opt/venv/lib/python3.12/site-packages/*.dist-info/uv_cache.json \
-    && sed -i '/uv_cache\.json/d' /opt/venv/lib/python3.12/site-packages/*.dist-info/RECORD
+    && sed -i '/uv_cache\.json/d' /opt/venv/lib/python3.12/site-packages/*.dist-info/RECORD \
+    && find /opt/venv -exec touch --no-dereference --date="@${SOURCE_DATE_EPOCH}" {} +
 
 
 FROM debian:forky-slim@sha256:4cee6ff3ebc49e32d55a857e25164ef8e5f8fecff2a186c6393f7e8bd8c23b53 AS runtime
@@ -50,7 +54,10 @@ RUN printf 'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian
         /usr/local/lib/python3.12/ensurepip/_bundled \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /var/log/apt /var/log/dpkg.log /var/cache/ldconfig /var/cache/debconf \
-    && rm -f /var/lib/dpkg/lock-frontend
+    && rm -f /var/lib/dpkg/lock-frontend \
+    && ( find /var/lib/dpkg /etc \
+        -not -path '/etc/resolv.conf' -not -path '/etc/hosts' \
+        -exec touch --no-dereference --date="@${SOURCE_DATE_EPOCH}" {} + || true )
 
 # These MCP processes do not mount filesystems or enter namespaces. Remove
 # the setuid privilege from mount and omit unrelated namespace/terminfo tools.
