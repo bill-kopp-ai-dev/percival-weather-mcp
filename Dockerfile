@@ -26,13 +26,21 @@ RUN UV_PROJECT_ENVIRONMENT=/opt/venv uv sync --frozen --no-dev --no-editable \
 
 FROM debian:forky-slim@sha256:4cee6ff3ebc49e32d55a857e25164ef8e5f8fecff2a186c6393f7e8bd8c23b53 AS runtime
 
+# See the builder stage: the same timestamp is used for the runtime stage.
+ARG SOURCE_DATE_EPOCH=0
+
+# The destination directories are created here, with the build timestamp. A
+# COPY that creates them would stamp them with the moment of the build, and
+# the layer would no longer be reproducible — nor would a cached build and a
+# clean build of the same commit agree.
+RUN mkdir -p /usr/local/bin /usr/local/lib \
+    && touch --no-dereference --date="@${SOURCE_DATE_EPOCH}" /usr/local/bin /usr/local/lib
+
 COPY --from=python-runtime /usr/local/bin/python3.12 /usr/local/bin/python3.12
 COPY --from=python-runtime /usr/local/lib/python3.12 /usr/local/lib/python3.12
 COPY --from=python-runtime /usr/local/lib/libpython3.12.so.1.0 /usr/local/lib/libpython3.12.so.1.0
 
 ARG DEBIAN_SNAPSHOT=20261020T000000Z
-# See the builder stage: the same timestamp is used for the runtime stage.
-ARG SOURCE_DATE_EPOCH=0
 RUN printf 'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian/%s forky main\n' "$DEBIAN_SNAPSHOT" > /etc/apt/sources.list \
     && printf 'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian-security/%s forky-security main\n' "$DEBIAN_SNAPSHOT" >> /etc/apt/sources.list \
     && rm -f /etc/apt/sources.list.d/debian.sources \
