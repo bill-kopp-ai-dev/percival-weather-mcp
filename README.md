@@ -152,6 +152,9 @@ backend for the Docker MCP Toolkit gateway and for any MCP client that
 launches it with `docker run -i --rm …`:
 
 ```bash
+# Build locally (derives version, revision and build timestamp from the checkout)
+scripts/docker-build.sh percival-weather-mcp:dev
+
 # Pull and run a single request (Docker MCP Toolkit gateway style)
 docker run -i --rm --init percival-weather-mcp:latest
 
@@ -162,6 +165,15 @@ docker run -d --name pw --init -p 8080:8080 \
 sleep 1 && curl -fsS http://127.0.0.1:8080/healthz && echo
 docker rm -f pw
 ```
+
+`scripts/docker-build.sh` is the documented build path: it reads the version
+from `pyproject.toml`, the revision from `git rev-parse HEAD` and the build
+timestamp from the commit date, and passes them as build arguments so the
+OCI labels carry a real `version`/`revision` pair. It also pins the layer
+timestamps and drops the build-time attestation, so **two builds of the same
+commit produce the same image ID**. A bare `docker build -t … .` still
+works, but it leaves `version=0.0.0` / `revision=unknown` in the labels and
+does not produce a reproducible image.
 
 The `:latest` tag tracks the most recent published release. For
 production, pin to a specific version (`:0.9.0`) so tool-call behaviour
@@ -248,8 +260,11 @@ percival-weather-mcp --mode streamable-http \
     --ssl-certfile ./certs/cert.pem
 ```
 
-`/healthz`, `/health`, and `/metrics` are exposed and bypass authentication
-to integrate with orchestrators and load balancers.
+`/healthz` and `/health` are exposed and bypass authentication to integrate
+with orchestrators and load balancers. `/metrics` carries operational
+counters and therefore **requires the same bearer token** as the rest of the
+HTTP surface (when a token is configured) — see the
+[decision record](docs/decisions/2026-10-28-http-endpoint-auth-policy.md).
 
 ### Environment variables
 
@@ -393,9 +408,10 @@ uv run --project ./percival-weather-mcp python -m percival_weather_mcp --mode st
 - Set `MCP_WEATHER_AUTH_TOKEN` to a 32+ byte secret before enabling HTTP
   transports in any non-localhost setting. The same env-var name works on
   both sides of `--auth-token-env`.
-- Health and metrics probes (`/healthz`, `/health`, `/metrics`) intentionally
-  bypass the auth middleware so that orchestrators can scrape them without
-  holding the token.
+- Health probes (`/healthz`, `/health`) intentionally bypass the auth
+  middleware so that orchestrators can reach them without holding the token.
+  `/metrics` does **not** bypass it: it exposes operational counters and
+  requires the bearer token whenever one is configured.
 
 ---
 

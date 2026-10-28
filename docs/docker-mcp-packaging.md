@@ -126,6 +126,40 @@ selector) to `python -m percival_weather_mcp`. For HTTP modes the script
 enforces `--host 0.0.0.0` / `--allow-remote-http` (or the loopback
 variants) so operators cannot accidentally bind to a private interface.
 
+### HTTP endpoints and authentication
+
+The HTTP transport (MCP_TRANSPORT=http / http-loopback) exposes four
+endpoints. The policy was decided by the owner on 2026-10-28 and is recorded
+in
+[`docs/decisions/2026-10-28-http-endpoint-auth-policy.md`](../docs/decisions/2026-10-28-http-endpoint-auth-policy.md).
+
+| Endpoint | Authentication | Content |
+|---|---|---|
+| `/mcp` | bearer token | the MCP session (streamable HTTP) |
+| `/healthz`, `/health` | **none** | liveness probe: server name, version, uptime |
+| `/metrics` | **bearer token** (when one is configured) | Prometheus counters |
+
+`/metrics` requires the token because it exposes operational counters (tool
+calls, upstream requests and errors). The health probes stay open because
+they expose nothing beyond what the MCP handshake already publishes, and
+because orchestrators probe them without holding the token.
+
+Scraping the metrics therefore needs the credential:
+
+```sh
+curl -fsS -H "Authorization: Bearer $MCP_WEATHER_AUTH_TOKEN" \
+    http://127.0.0.1:8080/metrics
+```
+
+Two operational notes:
+
+- **`/metrics` is empty until the first tool call.** The Prometheus labels
+  only exist after the first increment, so an empty response right after
+  start-up is expected and does not mean the exporter is broken.
+- **Without a token, nothing requires one.** A server started in loopback
+  development mode (no `MCP_WEATHER_AUTH_TOKEN`) serves `/metrics` without
+  authentication, exactly like `/mcp` does in that mode.
+
 ### `mcp.yaml`
 
 The file at `/mcp/mcp.yaml` is **human-readable documentation**; the
@@ -228,6 +262,40 @@ the server becomes available in the [Docker MCP Catalog](https://hub.docker.com/
 within 24 hours. Operators in the Docker Desktop catalog can then add it
 to a profile with a checkbox.
 
+## Build path and reproducibility
+
+The documented local build is `scripts/docker-build.sh`:
+
+```sh
+scripts/docker-build.sh                          # tag: percival-weather-mcp:dev
+scripts/docker-build.sh percival-weather-mcp:0.9.0
+scripts/docker-build.sh percival-weather-mcp:ci --no-cache
+```
+
+The script derives every build argument from the checkout, so the image
+carries its own provenance and two builds of the same commit are the same
+image:
+
+| Build argument | Source | Effect |
+|---|---|---|
+| `VERSION` | `pyproject.toml` | `org.opencontainers.image.version` |
+| `GIT_SHA` | `git rev-parse HEAD` | `org.opencontainers.image.revision` |
+| `SOURCE_DATE_EPOCH` | commit date (`git log -1 --format=%ct`) | pins the image creation timestamp and the mtimes written into the layers |
+
+The script also passes `--provenance=false` and
+`--output type=docker,rewrite-timestamp=true`. The provenance attestation
+records the build time and the default layer timestamps are the wall clock,
+so without both the image ID would change on every build of the same commit.
+
+The `Dockerfile` additionally drops the artefacts that embed the build
+time — the `uv_cache.json` written by `uv sync` (and its `RECORD` entry) and
+the `apt`/`dpkg`/`ldconfig` logs and caches — so the filesystem content is
+identical between two builds of the same commit.
+
+A bare `docker build -t percival-weather-mcp:dev .` still builds, but it
+leaves `version=0.0.0` and `revision=unknown` in the OCI labels and does not
+produce a reproducible image.
+
 ## File-level changes
 
 | File                            | Change                                                                 |
@@ -255,7 +323,7 @@ to a profile with a checkbox.
 |---|---------------------------------------------------------------------------------------------|---------------------------------------|
 | 1 | `uv run pytest`                                                                             | all tests pass                        |
 | 2 | `ruff check .` + `ruff format --check .` + `mypy src/`                                       | clean                                 |
-| 3 | `docker build -t percival-weather-mcp:dev .`                                                | builds without error                  |
+| 3 | `scripts/docker-build.sh percival-weather-mcp:dev`                                       | builds without error, with real `version`/`revision` labels |
 | 4 | `printf '{"jsonrpc":"2.0","id":1,"method":"initialize",...}\n{"jsonrpc":"2.0","method":"notifications/initialized",...}\n{"jsonrpc":"2.0","id":2,"method":"tools/list"}\n' \| docker run -i --rm percival-weather-mcp:dev` | three JSON-RPC frames in stdout |
 | 5 | `docker run --rm percival-weather-mcp:dev cat /mcp/mcp.yaml`                                | valid YAML (informational)            |
 | 6 | `docker run --rm percival-weather-mcp:dev cat /etc/os-release`                              | Debian slim base                      |

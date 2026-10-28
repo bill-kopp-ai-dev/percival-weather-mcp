@@ -8,10 +8,16 @@ ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
     UV_LINK_MODE=copy \
     UV_PROJECT_ENVIRONMENT=/opt/venv
 
+# Timestamp used to make the build reproducible. The build script derives it
+# from the source commit; BuildKit clamps the mtimes it writes to this value.
+ARG SOURCE_DATE_EPOCH=0
+
 WORKDIR /build
 COPY pyproject.toml uv.lock README.md ./
 COPY src ./src
-RUN UV_PROJECT_ENVIRONMENT=/opt/venv uv sync --frozen --no-dev --no-editable
+RUN UV_PROJECT_ENVIRONMENT=/opt/venv uv sync --frozen --no-dev --no-editable \
+    && rm -f /opt/venv/lib/python3.12/site-packages/*.dist-info/uv_cache.json \
+    && sed -i '/uv_cache\.json/d' /opt/venv/lib/python3.12/site-packages/*.dist-info/RECORD
 
 
 FROM debian:forky-slim@sha256:4cee6ff3ebc49e32d55a857e25164ef8e5f8fecff2a186c6393f7e8bd8c23b53 AS runtime
@@ -21,6 +27,8 @@ COPY --from=python-runtime /usr/local/lib/python3.12 /usr/local/lib/python3.12
 COPY --from=python-runtime /usr/local/lib/libpython3.12.so.1.0 /usr/local/lib/libpython3.12.so.1.0
 
 ARG DEBIAN_SNAPSHOT=20261020T000000Z
+# See the builder stage: the same timestamp is used for the runtime stage.
+ARG SOURCE_DATE_EPOCH=0
 RUN printf 'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian/%s forky main\n' "$DEBIAN_SNAPSHOT" > /etc/apt/sources.list \
     && printf 'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian-security/%s forky-security main\n' "$DEBIAN_SNAPSHOT" >> /etc/apt/sources.list \
     && rm -f /etc/apt/sources.list.d/debian.sources \
@@ -40,7 +48,9 @@ RUN printf 'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian
     && rm -rf /usr/local/lib/python3.12/site-packages/pip \
         /usr/local/lib/python3.12/site-packages/pip-*.dist-info \
         /usr/local/lib/python3.12/ensurepip/_bundled \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /var/log/apt /var/log/dpkg.log /var/cache/ldconfig /var/cache/debconf \
+    && rm -f /var/lib/dpkg/lock-frontend
 
 # These MCP processes do not mount filesystems or enter namespaces. Remove
 # the setuid privilege from mount and omit unrelated namespace/terminfo tools.
