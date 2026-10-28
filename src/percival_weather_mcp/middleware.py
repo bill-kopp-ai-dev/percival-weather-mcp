@@ -15,10 +15,41 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.types import ASGIApp, Receive, Scope, Send
 
-from .config import get_settings
+from .config import ConfigurationError, get_settings
 from .observability import get_metrics
 
 logger = logging.getLogger("mcp-weather.middleware")
+
+
+def scope_headers(scope: Scope) -> dict[str, str]:
+    """Return the headers of an ASGI scope as a lowercase string mapping."""
+    return {
+        name.decode("latin-1").lower(): value.decode("latin-1")
+        for name, value in scope.get("headers", [])
+    }
+
+
+def bearer_token_from_headers(headers: dict[str, str]) -> str:
+    """Extract the bearer token carried by the request headers.
+
+    Both the standard ``Authorization: Bearer <token>`` header and the
+    ``X-MCP-Auth-Token`` header are accepted.
+    """
+    authorization = headers.get("authorization", "")
+    header_token = headers.get("x-mcp-auth-token", "")
+
+    if authorization.lower().startswith("bearer "):
+        return authorization[7:].strip()
+    if header_token:
+        return header_token.strip()
+    return ""
+
+
+def bearer_token_matches(provided: str, expected: str) -> bool:
+    """Compare a presented bearer token with the expected one, in constant time."""
+    if not provided or not expected:
+        return False
+    return hmac.compare_digest(provided, expected)
 
 
 class BearerTokenAuthMiddleware(BaseHTTPMiddleware):
@@ -33,16 +64,14 @@ class BearerTokenAuthMiddleware(BaseHTTPMiddleware):
         request: Request,
         call_next: Callable[[Request], Awaitable[Response]],
     ) -> Response:
-        authorization = request.headers.get("authorization", "")
-        header_token = request.headers.get("x-mcp-auth-token", "")
+        provided_token = bearer_token_from_headers(
+            {
+                "authorization": request.headers.get("authorization", ""),
+                "x-mcp-auth-token": request.headers.get("x-mcp-auth-token", ""),
+            }
+        )
 
-        provided_token = ""
-        if authorization.lower().startswith("bearer "):
-            provided_token = authorization[7:].strip()
-        elif header_token:
-            provided_token = header_token.strip()
-
-        if not provided_token or not hmac.compare_digest(provided_token, self._token):
+        if not bearer_token_matches(provided_token, self._token):
             return JSONResponse({"error": "Unauthorized"}, status_code=401)
 
         return await call_next(request)
@@ -197,11 +226,11 @@ def validate_http_runtime_security(
 
     loopback = is_loopback_host(host)
     if not loopback and not allow_remote_http:
-        raise ValueError(
+        raise ConfigurationError(
             "Refusing to bind HTTP transport to a non-loopback host without --allow-remote-http."
         )
     if not loopback and not auth_token:
-        raise ValueError(
+        raise ConfigurationError(
             "Remote HTTP mode requires authentication. "
             f"Set {auth_token_env} or choose a different token env var with --auth-token-env."
         )

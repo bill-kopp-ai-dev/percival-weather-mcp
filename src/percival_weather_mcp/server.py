@@ -13,14 +13,20 @@ import contextlib
 import inspect
 import logging
 import os
+import signal
 import sys
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from typing import Any
 
 import uvicorn
+from mcp import McpError
 from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp.exceptions import ResourceError
+from mcp.types import INVALID_PARAMS, ErrorData
+from pydantic import AnyUrl
 from starlette.applications import Starlette
+from starlette.responses import JSONResponse, Response
 from starlette.types import ASGIApp
 
 from .__version__ import __version__
@@ -29,13 +35,18 @@ from .config import (
     DEFAULT_HOST,
     DEFAULT_PORT,
     SERVER_NAME,
+    ConfigurationError,
     Settings,
+    read_port,
     set_settings,
 )
 from .logging_utils import configure_logging
 from .middleware import (
     HealthAndMetricsMiddleware,
+    bearer_token_from_headers,
+    bearer_token_matches,
     install_security_middleware,
+    scope_headers,
     validate_http_runtime_security,
 )
 from .observability import track_tool_async
@@ -62,6 +73,28 @@ logger = logging.getLogger("percival-weather-mcp")
 
 STATUS_TOOL_NAME = "weather_get_status"
 STATUS_TOOL_DESCRIPTION = "Check the operational status of the weather server."
+
+#: JSON-RPC error code for "resource not found", from the MCP standard error
+#: codes. The SDK does not export a constant for it.
+RESOURCE_NOT_FOUND = -32002
+
+#: Conventional exit status for a process interrupted by a signal (128 + signum).
+SIGINT_EXIT_CODE = 130
+SIGTERM_EXIT_CODE = 143
+
+#: Prefix the SDK adds when a resource template fails to build its resource.
+_SDK_TEMPLATE_ERROR_PREFIX = "Error creating resource from template: "
+
+
+def _strip_sdk_template_prefix(message: str) -> str:
+    """Remove the SDK's template-error prefix from ``message``.
+
+    The SDK wraps the template failure twice (once in the template, once in
+    the resource manager), so the prefix is removed while it is present.
+    """
+    while message.startswith(_SDK_TEMPLATE_ERROR_PREFIX):
+        message = message[len(_SDK_TEMPLATE_ERROR_PREFIX) :]
+    return message
 
 
 # ---------------------------------------------------------------------------
@@ -95,11 +128,70 @@ tool_handlers: dict[str, ToolHandler] = {}
 class WeatherFastMCP(FastMCP):
     """FastMCP subclass that resolves legacy aliases at dispatch time."""
 
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._publish_product_version()
+
+    def _publish_product_version(self) -> None:
+        """Advertise the *product* version in ``serverInfo`` (F-008).
+
+        FastMCP does not forward a version to the low-level MCP server, so
+        ``create_initialization_options()`` falls back to the **SDK** version
+        (``pkg_version("mcp")``). The handshake then reports e.g. ``1.30.0``
+        for a product whose version is ``0.9.0`` — and the gateway, or any
+        consumer that identifies the server by the handshake version, sees the
+        wrong number.
+        """
+        low_level = getattr(self, "_mcp_server", None)
+        if low_level is None:  # pragma: no cover - depends on SDK internals
+            logger.warning("Could not publish the product version: unexpected FastMCP internals.")
+            return
+        low_level.version = __version__
+
     async def call_tool(self, name: str, arguments: dict[str, Any]) -> Any:
         resolved = resolve_tool_name(name)
         if resolved != name:
             logger.warning("Tool alias used: %s -> %s", name, resolved)
         return await super().call_tool(resolved, arguments)
+
+    async def get_prompt(self, name: str, arguments: dict[str, Any] | None = None) -> Any:
+        """Render a prompt, mapping a validation failure to a wire-level error.
+
+        FastMCP re-raises every failure as a bare ``ValueError``, which the
+        low-level server converts into a JSON-RPC error with code ``0`` — not a
+        standard JSON-RPC code, and indistinguishable from an internal failure.
+        A missing required argument is an *invalid params* condition, so it is
+        reported as such (-32602).
+        """
+        prompt = self._prompt_manager.get_prompt(name)
+        if prompt is None:
+            raise McpError(ErrorData(code=INVALID_PARAMS, message=f"Unknown prompt: {name}"))
+        required = {arg.name for arg in (prompt.arguments or []) if arg.required}
+        missing = required - set(arguments or {})
+        if missing:
+            raise McpError(
+                ErrorData(
+                    code=INVALID_PARAMS,
+                    message=f"Missing required arguments: {', '.join(sorted(missing))}",
+                )
+            )
+        return await super().get_prompt(name, arguments)
+
+    async def read_resource(self, uri: AnyUrl | str) -> Iterable[Any]:
+        """Read a resource, mapping a missing resource to a wire-level error.
+
+        The template ``weather://schema/{tool_name}`` used to answer with a
+        **successful** read whose payload was ``{"error": "unknown tool ..."}``.
+        An agent that trusts a successful read would show that JSON to the
+        user as if it were the schema. The template now raises, and this
+        override turns the failure into the JSON-RPC error the MCP schema
+        defines for a resource that does not exist.
+        """
+        try:
+            return await super().read_resource(uri)
+        except (ResourceError, ValueError) as exc:
+            message = _strip_sdk_template_prefix(str(exc))
+            raise McpError(ErrorData(code=RESOURCE_NOT_FOUND, message=message)) from exc
 
 
 async def _call_handler(handler: ToolHandler, arguments: dict[str, Any]) -> Any:
@@ -346,27 +438,73 @@ def _create_http_transport_app(
 
     install_security_middleware(http_app, auth_token=auth_token)
     # Health/metrics is wrapped as an outer ASGI middleware so that probes do
-    # not hit rate-limit/auth middlewares.
-    return _wrap_with_health(http_app, started_at=started_at, version=version)
+    # not hit rate-limit/auth middlewares. ``/metrics`` is the exception: it
+    # carries operational counters, so it requires the bearer token whenever
+    # one is configured (A-011).
+    return _wrap_with_health(
+        http_app, started_at=started_at, version=version, metrics_token=auth_token
+    )
 
 
-def _wrap_with_health(app: Starlette, *, started_at: float, version: str) -> _ASGIWrapper:
+def _wrap_with_health(
+    app: Starlette,
+    *,
+    started_at: float,
+    version: str,
+    metrics_token: str | None = None,
+) -> _ASGIWrapper:
     """Compose the health/metrics ASGI middleware with the existing Starlette app."""
-    return _ASGIWrapper(app, started_at=started_at, version=version)
+    return _ASGIWrapper(app, started_at=started_at, version=version, metrics_token=metrics_token)
 
 
 class _ASGIWrapper:
-    """Wraps a Starlette app so health/metrics endpoints bypass auth middleware."""
+    """Serves the health probes outside the auth middleware; ``/metrics`` needs the token.
 
-    def __init__(self, inner: ASGIApp, *, started_at: float, version: str) -> None:
+    ``/healthz`` and ``/health`` stay open: they are liveness probes used by
+    orchestrators that do not hold the bearer token, and they expose nothing
+    beyond the server name, version and uptime.
+
+    ``/metrics`` used to be open as well. It carries operational counters
+    (tool calls, upstream requests and errors), so it now requires the same
+    bearer token as the rest of the HTTP surface — but only when a token is
+    configured. A server running without a token (loopback development) has no
+    credential to present and keeps serving every endpoint unauthenticated,
+    exactly like ``/mcp`` does in that mode.
+    """
+
+    def __init__(
+        self,
+        inner: ASGIApp,
+        *,
+        started_at: float,
+        version: str,
+        metrics_token: str | None = None,
+    ) -> None:
         self._inner = inner
         self._middleware = HealthAndMetricsMiddleware(inner, started_at=started_at, version=version)
+        self._metrics_token = metrics_token.strip() if metrics_token else None
 
     async def __call__(self, scope: Any, receive: Any, send: Any) -> None:
-        if scope["type"] == "http" and scope.get("path") in {"/healthz", "/health", "/metrics"}:
-            await self._middleware(scope, receive, send)
-            return
+        if scope["type"] == "http":
+            path = scope.get("path")
+            if path == "/metrics":
+                if not self._metrics_authorized(scope):
+                    response: Response = JSONResponse({"error": "Unauthorized"}, status_code=401)
+                    await response(scope, receive, send)
+                    return
+                await self._middleware(scope, receive, send)
+                return
+            if path in {"/healthz", "/health"}:
+                await self._middleware(scope, receive, send)
+                return
         await self._inner(scope, receive, send)
+
+    def _metrics_authorized(self, scope: Any) -> bool:
+        if not self._metrics_token:
+            return True
+        headers = scope_headers(scope)
+        provided = bearer_token_from_headers(headers)
+        return bearer_token_matches(provided, self._metrics_token)
 
 
 async def _run_http_transport(
@@ -398,6 +536,44 @@ async def _run_http_transport(
     await server.serve()
 
 
+def _terminate_process(signame: str, exit_code: int) -> None:
+    """Leave the process now, honouring an interrupt or a termination signal.
+
+    The MCP stdio transport reads stdin through a worker thread whose read
+    cannot be interrupted while the client keeps the pipe open: cancelling the
+    main task (what ``asyncio`` does on ``SIGINT`` by itself) blocks forever
+    on that read, and the container would stay alive until the orchestrator
+    escalated to ``SIGKILL``.
+
+    The streams are flushed first, so no partial JSON-RPC frame is left on
+    stdout, and the process leaves with the conventional ``128 + signum``
+    status that the runtime already reported for ``SIGTERM``.
+    """
+    logger.info("Received %s, shutting down.", signame)
+    for stream in (sys.stdout, sys.stderr):
+        with contextlib.suppress(Exception):  # pragma: no cover - best effort
+            stream.flush()
+    os._exit(exit_code)
+
+
+def _install_stdio_signal_handlers() -> None:
+    """Make ``SIGINT``/``SIGTERM`` end the stdio server deterministically.
+
+    Without an explicit handler ``SIGINT`` is swallowed by the event loop and
+    the container keeps running with no diagnostic (F-010). ``SIGTERM`` keeps
+    the exit status it already had (143); only the shutdown log is new.
+    """
+    loop = asyncio.get_running_loop()
+    for signum, signame, exit_code in (
+        (signal.SIGINT, "SIGINT", SIGINT_EXIT_CODE),
+        (signal.SIGTERM, "SIGTERM", SIGTERM_EXIT_CODE),
+    ):
+        try:
+            loop.add_signal_handler(signum, _terminate_process, signame, exit_code)
+        except (NotImplementedError, RuntimeError):  # pragma: no cover
+            logger.warning("Signal %s cannot be handled on this platform.", signame)
+
+
 async def run_server(
     mode: str,
     host: str = DEFAULT_HOST,
@@ -413,17 +589,18 @@ async def run_server(
     """Unified runner supporting stdio, SSE and streamable-http transports."""
     global app
 
-    set_settings(
-        Settings.from_env(
-            host=host,
-            port=port,
-            debug=debug,
-            stateless=stateless,
-            auth_token=auth_token,
-            allow_remote_http=allow_remote_http,
-            auth_token_env=auth_token_env,
-        )
+    # Fail closed on an invalid environment before anything is built or bound.
+    settings = Settings.from_env(
+        host=host,
+        port=port,
+        debug=debug,
+        stateless=stateless,
+        auth_token=auth_token,
+        allow_remote_http=allow_remote_http,
+        auth_token_env=auth_token_env,
     )
+    settings.validate()
+    set_settings(settings)
     configure_logging()
 
     # Build (or reuse) the server instance. ``app`` is None until ``main``
@@ -446,7 +623,9 @@ async def run_server(
 
     if mode == "stdio":
         logger.info("Starting stdio server...")
+        _install_stdio_signal_handlers()
         await server_instance.run_stdio_async()
+        logger.info("stdio session ended (EOF on stdin); shutting down.")
     elif mode == "sse":
         logger.info("Starting SSE server on %s:%s...", host, port)
         await _run_http_transport(
@@ -534,10 +713,26 @@ async def main() -> None:
     parser.add_argument("--debug", action="store_true", help="Enable debug mode")
 
     args = parser.parse_args()
-    port = args.port if args.port is not None else int(os.environ.get("PORT", DEFAULT_PORT))
+    port = args.port if args.port is not None else read_port()
     auth_token = os.environ.get(args.auth_token_env, "").strip() or None
 
     configure_logging()
+    # Refuse to start on an invalid environment, before any server object is
+    # built, so the operator gets a controlled message naming the variable.
+    try:
+        Settings.from_env(
+            host=args.host,
+            port=port,
+            debug=args.debug,
+            stateless=args.stateless,
+            auth_token=auth_token,
+            allow_remote_http=args.allow_remote_http,
+            auth_token_env=args.auth_token_env,
+        ).validate()
+    except ConfigurationError as exc:
+        logger.error("Invalid configuration: %s", exc)
+        raise
+
     register_all_tools()
     # Materialise the module-level ``app`` so tools are addressable as
     # ``percival_weather_mcp.server.app`` for the lifetime of this process.

@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 
 import pytest
+from mcp import McpError
 
 from percival_weather_mcp.prompts import register_prompts
 from percival_weather_mcp.resources import register_resources
@@ -83,11 +84,17 @@ async def test_schema_template_returns_keys_for_known_tool(mcp_server):
 
 
 @pytest.mark.asyncio
-async def test_schema_template_returns_error_for_unknown_tool(mcp_server):
-    result = await mcp_server.read_resource("weather://schema/weather_does_not_exist")
-    payload = json.loads(result[0].content)
-    assert "error" in payload
-    assert "weather_get_details" in payload["available"]
+async def test_schema_template_raises_for_unknown_tool(mcp_server):
+    """F-013: an unknown template target must fail, not answer with an error payload.
+
+    The template used to return a *successful* read whose content was
+    ``{"error": "unknown tool ..."}``, which an agent could mistake for the
+    schema itself.
+    """
+    with pytest.raises(McpError) as excinfo:
+        await mcp_server.read_resource("weather://schema/weather_does_not_exist")
+    assert excinfo.value.error.code == -32002
+    assert "weather_get_details" in excinfo.value.error.message
 
 
 @pytest.mark.asyncio

@@ -34,6 +34,15 @@ if TYPE_CHECKING:
 RESOURCE_PREFIX = "weather://"
 
 
+class UnknownResourceError(Exception):
+    """Raised when a resource template target does not exist.
+
+    The server maps this to the JSON-RPC ``Resource not found`` error so the
+    failure reaches the client as an error instead of a successful read whose
+    payload happens to describe an error.
+    """
+
+
 def _serialise(payload: object) -> str:
     """Render an arbitrary Python object as a JSON string suitable for resources."""
     return json.dumps(payload, indent=2, ensure_ascii=False)
@@ -96,10 +105,9 @@ def register_resources(mcp_server: FastMCP) -> None:
     def weather_tool_schema(tool_name: str) -> str:
         schemas = tool_response_schemas()
         if tool_name not in schemas:
-            return _serialise(
-                {
-                    "error": f"unknown tool '{tool_name}'",
-                    "available": list(schemas.keys()),
-                }
+            # F-013: this used to answer with a *successful* read carrying an
+            # error payload, which an agent could mistake for the schema.
+            raise UnknownResourceError(
+                f"unknown tool '{tool_name}'; available schemas: {', '.join(sorted(schemas))}"
             )
         return _serialise({"tool": tool_name, **schemas[tool_name]})
