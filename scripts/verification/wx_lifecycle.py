@@ -152,6 +152,66 @@ def run_sigterm(image: str, timeout: float) -> dict:
     }
 
 
+def run_sigint(image: str, timeout: float) -> dict:
+    """SIGINT enviado ao container: o processo deve encerrar, nao ficar vivo."""
+    name = "iac-wx-sigint"
+    subprocess.run(["docker", "rm", "-f", name], check=False, capture_output=True)
+    command = [
+        "docker",
+        "run",
+        "-d",
+        "-i",
+        "--init",
+        "--name",
+        name,
+        "--network",
+        "none",
+        "--read-only",
+        "--tmpfs",
+        "/tmp:size=64m,mode=1777,noexec,nosuid,nodev",
+        "--cap-drop",
+        "ALL",
+        "--security-opt",
+        "no-new-privileges:true",
+        "--user",
+        "999:999",
+        image,
+    ]
+    subprocess.run(command, check=True, capture_output=True)
+    time.sleep(6)
+    started = time.monotonic()
+    subprocess.run(["docker", "kill", "--signal=SIGINT", name], check=False, capture_output=True)
+    exit_code = None
+    status = "running"
+    for _ in range(int(timeout)):
+        inspected = subprocess.run(
+            ["docker", "inspect", "-f", "{{.State.ExitCode}}|{{.State.Status}}", name],
+            check=False,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        code, _, status = inspected.partition("|")
+        if status not in {"running", "restarting"}:
+            exit_code = code
+            break
+        time.sleep(0.5)
+    logs = subprocess.run(
+        ["docker", "logs", name],
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+    ).stdout
+    subprocess.run(["docker", "rm", "-f", name], check=False, capture_output=True)
+    shutdown_logs = [line for line in logs.strip().splitlines() if "shutting down" in line.lower()]
+    return {
+        "exit_code": exit_code,
+        "status": status,
+        "seconds_to_exit": round(time.monotonic() - started, 2),
+        "shutdown_log_lines": shutdown_logs,
+    }
+
+
 def run_docker_stop(image: str, timeout: float) -> dict:
     """Ciclo de vida real do daemon: `docker stop` (10 s por padrao) -> codigo de saida."""
     name = "iac-wx-stop"
@@ -206,7 +266,9 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--image", required=True)
     parser.add_argument("--runs", type=int, default=8)
-    parser.add_argument("--mode", choices=["eof", "sigterm", "stop", "both"], default="both")
+    parser.add_argument(
+        "--mode", choices=["eof", "sigterm", "sigint", "stop", "both", "all"], default="both"
+    )
     parser.add_argument("--timeout", type=float, default=120.0)
     args = parser.parse_args()
 
@@ -223,9 +285,11 @@ def main() -> int:
             "latency_max_s": max(latencies) if latencies else None,
             "latency_mean_s": round(sum(latencies) / len(latencies), 2) if latencies else None,
         }
-    if args.mode in {"sigterm", "both"}:
+    if args.mode in {"sigterm", "both", "all"}:
         report["sigterm"] = run_sigterm(args.image, args.timeout)
-    if args.mode in {"stop", "both"}:
+    if args.mode in {"sigint", "both", "all"}:
+        report["sigint"] = run_sigint(args.image, args.timeout)
+    if args.mode in {"stop", "both", "all"}:
         report["docker_stop"] = run_docker_stop(args.image, args.timeout)
     print(json.dumps(report, indent=2, ensure_ascii=False))
     return 0

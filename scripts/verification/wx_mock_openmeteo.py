@@ -10,6 +10,7 @@ Modos (env `MOCK_MODE`):
   ok       -> respostas normais (default)
   500      -> HTTP 500 em toda requisição (testa retry/backoff e erro)
   429      -> HTTP 429 em toda requisição (testa retry por rate limit)
+  400      -> HTTP 400 em toda requisição (testa que 4xx não é re-tentado)
   empty    -> 200 com séries horárias vazias (testa "empty hourly series")
   hang     -> não responde (testa timeout do cliente)
 
@@ -115,6 +116,9 @@ class Handler(BaseHTTPRequestHandler):
             return
         if mode == "429":
             self._send_json(429, {"reason": "mock forced rate limit"})
+            return
+        if mode == "400":
+            self._send_json(400, {"reason": "mock forced bad request"})
             return
 
         if parsed.path == "/v1/search":

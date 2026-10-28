@@ -9,6 +9,7 @@ mock recebeu e o trecho final do stderr do servidor.
 Cenarios:
   forecast_500   -> upstream responde 500 (testa retry/backoff e erro)
   forecast_429   -> upstream responde 429 (testa retry por rate limit)
+  forecast_400   -> upstream responde 400 (testa que 4xx nao e re-tentado)
   forecast_empty -> 200 com serie horaria vazia
   geo_notfound   -> geocoding responde sem `results`
   geo_404        -> geocoding responde 404
@@ -102,6 +103,20 @@ SCENARIOS = [
         "call": "weather_get_current",
         "args": {"city": "Cidade Teste"},
         "env": [],
+    },
+    {
+        "name": "forecast_400",
+        "mode": "400",
+        "call": "weather_get_current",
+        "args": {"city": "Cidade Teste"},
+        "env": ["MCP_WEATHER_HTTP_MAX_RETRIES=2", "MCP_WEATHER_HTTP_BACKOFF_BASE=0.1"],
+    },
+    {
+        "name": "hang_timeout_retries",
+        "mode": "hang",
+        "call": "weather_get_current",
+        "args": {"city": "Cidade Teste"},
+        "env": ["MCP_WEATHER_HTTP_TIMEOUT=2", "MCP_WEATHER_HTTP_MAX_RETRIES=2"],
     },
     {
         "name": "geo_notfound",

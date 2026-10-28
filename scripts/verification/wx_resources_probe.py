@@ -96,6 +96,7 @@ def main() -> int:
                     "uri": uri,
                     "is_error": result.get("isError"),
                     "rpc_error": (payload.get("error") or {}).get("message"),
+                    "rpc_error_code": (payload.get("error") or {}).get("code"),
                     "mime_type": contents[0].get("mimeType") if contents else None,
                     "text_len": len(text),
                     "text_head": text[:200],
@@ -126,6 +127,7 @@ def main() -> int:
                     "arguments": prompt_args,
                     "is_error": result.get("isError"),
                     "rpc_error": (payload.get("error") or {}).get("message"),
+                    "rpc_error_code": (payload.get("error") or {}).get("code"),
                     "message_count": len(messages),
                     "text_head": (
                         messages[0].get("content", {}).get("text", "")[:200]
