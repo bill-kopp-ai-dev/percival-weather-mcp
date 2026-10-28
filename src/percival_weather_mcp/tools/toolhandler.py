@@ -16,6 +16,8 @@ from mcp.types import (
 )
 from pydantic import BaseModel
 
+from ..errors import InvalidRequestError
+
 
 class ToolHandler(ABC):
     """Abstract base class for all MCP tool handlers.
@@ -55,7 +57,7 @@ class ToolHandler(ABC):
         return self.input_model.model_validate(args)
 
     def validate_required_args(self, args: dict, required_fields: list[str]) -> None:
-        """Raise :class:`RuntimeError` if any required field is missing."""
+        """Raise :class:`InvalidRequestError` if any required field is missing."""
         missing = [field for field in required_fields if field not in args]
         if missing:
-            raise RuntimeError(f"Missing required arguments: {', '.join(missing)}")
+            raise InvalidRequestError(f"Missing required arguments: {', '.join(missing)}")

@@ -9,6 +9,7 @@ import pytest
 import respx
 
 from percival_weather_mcp import config
+from percival_weather_mcp.errors import UpstreamError
 from percival_weather_mcp.http_client import (
     CircuitBreaker,
     CircuitOpenError,
@@ -67,7 +68,7 @@ async def test_raises_after_exhausting_retries():
     with respx.mock(base_url="https://example.test") as mock:
         route = mock.get("/boom").mock(return_value=httpx.Response(500))
         async with ResilientHttpClient(name="test") as client:
-            with pytest.raises(ValueError):
+            with pytest.raises(UpstreamError):
                 await client.get_json("https://example.test/boom")
         # attempts = 1 + max_retries
         assert route.call_count == 2
@@ -80,7 +81,7 @@ async def test_circuit_breaker_opens_and_short_circuits():
         mock.get("/geo").mock(return_value=httpx.Response(500))
         async with ResilientHttpClient(name="geo") as client:
             for _ in range(2):
-                with pytest.raises(ValueError):
+                with pytest.raises(UpstreamError):
                     await client.get_json("https://example.test/geo", breaker=breaker)
             with pytest.raises(CircuitOpenError):
                 await client.get_json("https://example.test/geo", breaker=breaker)
@@ -98,7 +99,7 @@ async def test_breaker_resets_after_window():
             ]
         )
         async with ResilientHttpClient(name="geo") as client:
-            with pytest.raises(ValueError):
+            with pytest.raises(UpstreamError):
                 await client.get_json("https://example.test/geo", breaker=breaker)
             await asyncio.sleep(0.25)
             data = await client.get_json("https://example.test/geo", breaker=breaker)
@@ -119,7 +120,7 @@ async def test_breaker_does_not_extend_cooldown_on_repeated_failures():
         mock.get("/geo").mock(return_value=httpx.Response(500))
         async with ResilientHttpClient(name="geo") as client:
             # First failure opens the breaker and sets the timestamp.
-            with pytest.raises(ValueError):
+            with pytest.raises(UpstreamError):
                 await client.get_json("https://example.test/geo", breaker=breaker)
             first_opened = breaker._opened_at
             assert first_opened is not None

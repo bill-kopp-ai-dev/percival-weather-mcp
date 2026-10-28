@@ -4,6 +4,16 @@ This module centralises outbound HTTP traffic so that all Open-Meteo services
 benefit from the same resilience policy (timeouts, retries with jittered
 exponential backoff, optional circuit breaker for geocoding, and a global
 asyncio semaphore to cap concurrent in-flight requests).
+
+Two rules govern the outbound policy:
+
+* Only **recoverable** failures are retried: HTTP 429, HTTP 5xx, timeouts and
+  transport errors. A non-recoverable 4xx is answered on the first attempt —
+  repeating it would amplify load on a public, rate-limited API without any
+  chance of a different outcome.
+* Every failure leaves this module as an :class:`UpstreamError` carrying the
+  external cause (status code, timeout, network error), so the tool layer can
+  report the true reason to the agent instead of blaming the request.
 """
 
 from __future__ import annotations
@@ -11,14 +21,33 @@ from __future__ import annotations
 import asyncio
 import logging
 import random
+import threading
+from time import monotonic
 from typing import Any
 
 import httpx
 
 from .config import Settings, get_settings
+from .errors import (
+    UpstreamError,
+    service_label,
+    upstream_http_error,
+    upstream_invalid_response,
+    upstream_timeout,
+    upstream_unreachable,
+)
 from .observability import record_http_error, record_http_request
 
 logger = logging.getLogger("mcp-weather.http")
+
+
+def is_retryable_status(status_code: int) -> bool:
+    """Return True when an HTTP status is worth retrying.
+
+    429 (rate limited) and 5xx (provider failure) are transient; every other
+    4xx is a deterministic rejection of the request as sent.
+    """
+    return status_code == httpx.codes.TOO_MANY_REQUESTS or status_code >= 500
 
 
 class CircuitBreaker:
@@ -69,8 +98,20 @@ class CircuitBreaker:
                 )
 
 
-class CircuitOpenError(RuntimeError):
-    """Raised when the upstream is currently short-circuited."""
+class CircuitOpenError(UpstreamError):
+    """Raised when the upstream is currently short-circuited.
+
+    It is an :class:`UpstreamError` so the tool layer treats a short-circuited
+    call exactly like any other upstream failure — the agent must retry later
+    rather than change its input.
+    """
+
+    def __init__(self, service: str) -> None:
+        message = (
+            f"Upstream Open-Meteo {service_label(service)} is temporarily disabled after "
+            "repeated failures. Retry shortly."
+        )
+        super().__init__(message, service=service, reason="circuit_open")
 
 
 class ResilientHttpClient:
@@ -114,45 +155,78 @@ class ResilientHttpClient:
         params: dict[str, Any] | None = None,
         breaker: CircuitBreaker | None = None,
     ) -> dict[str, Any]:
+        error: UpstreamError
         if breaker is not None and not await breaker.allow():
-            raise CircuitOpenError(f"circuit open for upstream '{self._name}'")
+            error = CircuitOpenError(self._name)
+            record_http_error(self._name, error)
+            raise error
 
-        attempts = self._settings.http_max_retries + 1
-        last_exc: Exception | None = None
+        attempts = max(1, self._settings.http_max_retries + 1)
+        last_error: UpstreamError | None = None
 
         for attempt in range(1, attempts + 1):
             try:
                 async with self._semaphore:
                     response = await self.raw.request(method, url, params=params)
-                status = response.status_code
-                # Always record the request count, regardless of status code or
-                # retry decision, so error-path volume is visible in metrics.
-                record_http_request(self._name, str(status))
-                if status == httpx.codes.TOO_MANY_REQUESTS and attempt < attempts:
-                    await self._sleep_backoff(attempt)
-                    continue
-                if status >= 500 and attempt < attempts:
-                    await self._sleep_backoff(attempt)
-                    continue
-                if status != 200:
-                    raise ValueError(f"{self._name} returned HTTP {status} for {url}")
-
-                if breaker is not None:
-                    await breaker.record_success()
-                return response.json()
-            except (httpx.RequestError, ValueError) as exc:
-                record_http_error(self._name, exc)
-                last_exc = exc
+            except httpx.TimeoutException as exc:
+                error = upstream_timeout(self._name, self._settings.http_timeout)
+                record_http_error(self._name, error)
+                last_error = error
                 if breaker is not None:
                     await breaker.record_failure()
                 if attempt >= attempts:
-                    raise
+                    raise error from exc
                 await self._sleep_backoff(attempt)
+                continue
+            except httpx.RequestError as exc:
+                error = upstream_unreachable(self._name, type(exc).__name__)
+                record_http_error(self._name, error)
+                last_error = error
+                if breaker is not None:
+                    await breaker.record_failure()
+                if attempt >= attempts:
+                    raise error from exc
+                await self._sleep_backoff(attempt)
+                continue
 
-        # Defensive: loop should always raise or return.
-        if last_exc is not None:
-            raise last_exc
-        raise RuntimeError("HTTP request failed without an exception")
+            status = response.status_code
+            # Always record the request count, regardless of status code or
+            # retry decision, so error-path volume is visible in metrics.
+            record_http_request(self._name, str(status))
+
+            if status == httpx.codes.OK:
+                try:
+                    payload = response.json()
+                except ValueError as exc:
+                    error = upstream_invalid_response(self._name)
+                    record_http_error(self._name, error)
+                    if breaker is not None:
+                        await breaker.record_failure()
+                    raise error from exc
+                if not isinstance(payload, dict):
+                    error = upstream_invalid_response(self._name)
+                    record_http_error(self._name, error)
+                    if breaker is not None:
+                        await breaker.record_failure()
+                    raise error
+                if breaker is not None:
+                    await breaker.record_success()
+                return payload
+
+            error = upstream_http_error(self._name, status)
+            record_http_error(self._name, error)
+            last_error = error
+            if breaker is not None:
+                await breaker.record_failure()
+            if attempt >= attempts or not is_retryable_status(status):
+                # A non-recoverable status (4xx other than 429) is answered on
+                # the first attempt: repeating it cannot change the outcome
+                # and would only add load to the public upstream.
+                raise error
+            await self._sleep_backoff(attempt)
+
+        # Defensive: the loop always raises or returns.
+        raise last_error or upstream_unreachable(self._name, "no attempt was made")
 
     async def _sleep_backoff(self, attempt: int) -> None:
         base = self._settings.http_backoff_base
@@ -162,6 +236,65 @@ class ResilientHttpClient:
         await asyncio.sleep(delay)
 
 
+class GeocodingCache:
+    """Process-wide, TTL-bounded cache of geocoded coordinates.
+
+    Every tool handler used to build its own :class:`WeatherService`, and
+    therefore its own cache: four logical queries for the same city spread
+    over two tools cost three geocoding calls against a public, rate-limited
+    API. The cache is now shared by the whole process, with the same TTL and
+    size bounds it always had.
+
+    Access is guarded by a plain lock: the cache is touched from the event
+    loop and from worker threads, and it must never hand out a half-written
+    entry.
+    """
+
+    def __init__(self, *, ttl_seconds: float | None = None, max_size: int | None = None) -> None:
+        settings = get_settings()
+        self._ttl_seconds = (
+            ttl_seconds if ttl_seconds is not None else settings.geo_cache_ttl_seconds
+        )
+        self._max_size = max_size if max_size is not None else settings.geo_cache_max_size
+        self._entries: dict[str, tuple[float, float, float]] = {}
+        self._lock = threading.Lock()
+
+    @staticmethod
+    def _key(city: str) -> str:
+        return city.strip().lower()
+
+    def get(self, city: str) -> tuple[float, float] | None:
+        """Return the cached coordinates for ``city``, or ``None`` when absent/expired."""
+        key = self._key(city)
+        with self._lock:
+            cached = self._entries.get(key)
+            if cached is None:
+                return None
+            latitude, longitude, expires_at = cached
+            if monotonic() >= expires_at:
+                self._entries.pop(key, None)
+                return None
+            return latitude, longitude
+
+    def set(self, city: str, latitude: float, longitude: float) -> None:
+        """Store the coordinates for ``city``, evicting the oldest entry if needed."""
+        key = self._key(city)
+        with self._lock:
+            if key not in self._entries and len(self._entries) >= self._max_size:
+                oldest_key = min(self._entries, key=lambda candidate: self._entries[candidate][2])
+                self._entries.pop(oldest_key, None)
+            self._entries[key] = (latitude, longitude, monotonic() + self._ttl_seconds)
+
+    def clear(self) -> None:
+        """Drop every entry."""
+        with self._lock:
+            self._entries.clear()
+
+    def __len__(self) -> int:
+        with self._lock:
+            return len(self._entries)
+
+
 # ----------------------------------------------------------------------------
 # Module-level singletons for the shared client and the geocoding breaker.
 # These are created lazily so tests can override them.
@@ -169,6 +302,7 @@ class ResilientHttpClient:
 
 _shared_client: ResilientHttpClient | None = None
 _geo_breaker: CircuitBreaker | None = None
+_geo_cache: GeocodingCache | None = None
 
 
 def get_shared_client() -> ResilientHttpClient:
@@ -195,8 +329,17 @@ def get_geo_breaker() -> CircuitBreaker:
     return _geo_breaker
 
 
+def get_geocoding_cache() -> GeocodingCache:
+    """Return the lazily-created process-wide geocoding cache."""
+    global _geo_cache
+    if _geo_cache is None:
+        _geo_cache = GeocodingCache()
+    return _geo_cache
+
+
 def reset_shared_state() -> None:
     """Reset module-level singletons (intended for tests)."""
-    global _shared_client, _geo_breaker
+    global _shared_client, _geo_breaker, _geo_cache
     _shared_client = None
     _geo_breaker = None
+    _geo_cache = None

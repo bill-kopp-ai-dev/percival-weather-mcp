@@ -8,6 +8,7 @@ import pytest
 import respx
 
 from percival_weather_mcp import server
+from percival_weather_mcp.errors import UpstreamError
 from percival_weather_mcp.http_client import ResilientHttpClient
 
 
@@ -61,7 +62,7 @@ async def test_record_http_request_counts_all_status_codes(monkeypatch):
     with respx.mock(base_url="https://example.test") as mock:
         mock.get("/boom").respond(500)
         async with ResilientHttpClient(settings=fast_settings, name="recording-test") as client:
-            with pytest.raises(ValueError):
+            with pytest.raises(UpstreamError):
                 await client.get_json("https://example.test/boom")
 
     value = metrics.http_requests.labels(upstream="recording-test", status="500")._value.get()

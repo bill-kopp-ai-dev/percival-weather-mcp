@@ -9,12 +9,12 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timedelta, timezone
-from time import monotonic
 from typing import Any
 
 from .. import utils
 from ..config import get_settings
-from ..http_client import ResilientHttpClient, get_geo_breaker
+from ..errors import NoDataError
+from ..http_client import ResilientHttpClient, get_geo_breaker, get_geocoding_cache
 
 logger = logging.getLogger("mcp-weather")
 
@@ -33,36 +33,20 @@ class WeatherService:
     )
 
     def __init__(self) -> None:
-        self._coordinates_cache: dict[str, tuple[float, float, float]] = {}
+        # The geocoding cache is process-wide: every handler shares it, so a
+        # city geocoded by one tool is not geocoded again by another.
+        self._cache = get_geocoding_cache()
         self._settings = get_settings()
 
     # ------------------------------------------------------------------
     # Geocoding cache
     # ------------------------------------------------------------------
 
-    def _cache_key(self, city: str) -> str:
-        return city.strip().lower()
-
     def _get_cached_coordinates(self, city: str) -> tuple[float, float] | None:
-        key = self._cache_key(city)
-        cached = self._coordinates_cache.get(key)
-        if not cached:
-            return None
-        latitude, longitude, expires_at = cached
-        if monotonic() >= expires_at:
-            self._coordinates_cache.pop(key, None)
-            return None
-        return latitude, longitude
+        return self._cache.get(city)
 
     def _set_cached_coordinates(self, city: str, latitude: float, longitude: float) -> None:
-        key = self._cache_key(city)
-        cache = self._coordinates_cache
-        max_size = self._settings.geo_cache_max_size
-        ttl = self._settings.geo_cache_ttl_seconds
-        if key not in cache and len(cache) >= max_size:
-            oldest_key = min(cache, key=lambda candidate: cache[candidate][2])
-            cache.pop(oldest_key, None)
-        cache[key] = (latitude, longitude, monotonic() + ttl)
+        self._cache.set(city, latitude, longitude)
 
     async def get_coordinates(
         self,
@@ -90,7 +74,13 @@ class WeatherService:
 
         results = data.get("results") if isinstance(data, dict) else None
         if not results:
-            raise ValueError(f"No coordinates found for city: {city}")
+            # The upstream answered successfully, it simply has no entry for
+            # this city. That is neither an upstream failure nor a local
+            # validation failure, so it must not be reported as either.
+            raise NoDataError(
+                f"No location found for city '{city}' in the Open-Meteo geocoding service. "
+                "Check the spelling or add a country/region qualifier."
+            )
 
         result = results[0]
         latitude = float(result["latitude"])
@@ -166,7 +156,10 @@ class WeatherService:
         hourly = data.get("hourly") or {}
         times = hourly.get("time") or []
         if not times:
-            raise ValueError("Weather API returned an empty hourly series.")
+            raise NoDataError(
+                f"Open-Meteo returned an empty hourly series for city '{city}'. "
+                "No forecast data is available for the requested period."
+            )
 
         current_index = utils.get_closest_utc_index(times)
         now_utc = datetime.now(timezone.utc)

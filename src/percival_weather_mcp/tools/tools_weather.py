@@ -11,6 +11,7 @@ from typing import cast
 from mcp.types import EmbeddedResource, ImageContent, TextContent, Tool
 
 from .. import utils
+from ..errors import InvalidRequestError, UpstreamError, WeatherMCPError
 from ..models import (
     GetCurrentWeatherInput,
     GetWeatherByDateRangeInput,
@@ -60,17 +61,21 @@ class GetCurrentWeatherToolHandler(_BaseWeatherHandler):
             weather_data = await self.weather_service.get_current_weather(city)
             formatted = self.formatter.format_current(weather_data)
             return [TextContent(type="text", text=formatted)]
-        except RuntimeError:
+        except WeatherMCPError:
+            # Taxonomy errors already carry the agent-facing message and
+            # the true cause (upstream failure, empty result, local validation).
             raise
         except ValueError as exc:
             logger.warning("Invalid request for get_current_weather: %s", exc)
-            raise RuntimeError(
+            raise InvalidRequestError(
                 "Invalid weather request. Check input values and try again."
             ) from exc
         except Exception:
             logger.exception("Unexpected error in get_current_weather")
-            raise RuntimeError(
-                "Weather service is temporarily unavailable. Please retry."
+            raise UpstreamError(
+                "Weather service is temporarily unavailable. Please retry.",
+                service="weather",
+                reason="internal_error",
             ) from None
 
 
@@ -109,17 +114,21 @@ class GetWeatherByDateRangeToolHandler(_BaseWeatherHandler):
             )
             formatted = self.formatter.format_range(weather_data)
             return [TextContent(type="text", text=formatted)]
-        except RuntimeError:
+        except WeatherMCPError:
+            # Taxonomy errors already carry the agent-facing message and
+            # the true cause (upstream failure, empty result, local validation).
             raise
         except ValueError as exc:
             logger.warning("Invalid request for weather_get_by_range: %s", exc)
-            raise RuntimeError(
+            raise InvalidRequestError(
                 "Invalid weather request. Check input values and try again."
             ) from exc
         except Exception:
             logger.exception("Unexpected error in weather_get_by_range")
-            raise RuntimeError(
-                "Weather service is temporarily unavailable. Please retry."
+            raise UpstreamError(
+                "Weather service is temporarily unavailable. Please retry.",
+                service="weather",
+                reason="internal_error",
             ) from None
 
 
@@ -167,15 +176,19 @@ class GetWeatherDetailsToolHandler(_BaseWeatherHandler):
                 weather_data = await self.weather_service.get_current_weather(city)
 
             return [TextContent(type="text", text=json.dumps(weather_data, indent=2))]
-        except RuntimeError:
+        except WeatherMCPError:
+            # Taxonomy errors already carry the agent-facing message and
+            # the true cause (upstream failure, empty result, local validation).
             raise
         except ValueError as exc:
             logger.warning("Invalid request for get_weather_details: %s", exc)
-            raise RuntimeError(
+            raise InvalidRequestError(
                 "Invalid weather request. Check input values and try again."
             ) from exc
         except Exception:
             logger.exception("Unexpected error in get_weather_details")
-            raise RuntimeError(
-                "Weather service is temporarily unavailable. Please retry."
+            raise UpstreamError(
+                "Weather service is temporarily unavailable. Please retry.",
+                service="weather",
+                reason="internal_error",
             ) from None

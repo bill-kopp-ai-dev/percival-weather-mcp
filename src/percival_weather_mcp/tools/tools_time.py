@@ -12,6 +12,7 @@ from mcp import McpError
 from mcp.types import EmbeddedResource, ImageContent, TextContent, Tool
 
 from .. import utils
+from ..errors import InvalidRequestError, WeatherMCPError
 from ..models import (
     ConvertTimeInput,
     GetCurrentDateTimeInput,
@@ -51,14 +52,15 @@ class GetCurrentDateTimeToolHandler(ToolHandler):
                 datetime=current_time.isoformat(timespec="seconds"),
             )
             return [TextContent(type="text", text=json.dumps(time_result.model_dump(), indent=2))]
-        except RuntimeError:
+        except WeatherMCPError:
+            # Taxonomy errors already carry the agent-facing message.
             raise
         except McpError as exc:
             logger.warning("Invalid timezone in weather_get_time: %s", exc)
-            raise RuntimeError("Invalid timezone") from exc
+            raise InvalidRequestError("Invalid timezone") from exc
         except Exception:
             logger.exception("Unexpected error in weather_get_time")
-            raise RuntimeError(
+            raise WeatherMCPError(
                 "Datetime service is temporarily unavailable. Please retry."
             ) from None
 
@@ -102,14 +104,15 @@ class GetTimeZoneInfoToolHandler(ToolHandler):
                 "timezone_abbreviation": current_time.strftime("%Z"),
             }
             return [TextContent(type="text", text=json.dumps(info, indent=2))]
-        except RuntimeError:
+        except WeatherMCPError:
+            # Taxonomy errors already carry the agent-facing message.
             raise
         except McpError as exc:
             logger.warning("Invalid timezone in weather_get_timezone: %s", exc)
-            raise RuntimeError("Invalid timezone") from exc
+            raise InvalidRequestError("Invalid timezone") from exc
         except Exception:
             logger.exception("Unexpected error in weather_get_timezone")
-            raise RuntimeError(
+            raise WeatherMCPError(
                 "Timezone service is temporarily unavailable. Please retry."
             ) from None
 
@@ -163,16 +166,17 @@ class ConvertTimeToolHandler(ToolHandler):
                 / 3600,
             }
             return [TextContent(type="text", text=json.dumps(result, indent=2))]
-        except RuntimeError:
+        except WeatherMCPError:
+            # Taxonomy errors already carry the agent-facing message.
             raise
         except McpError as exc:
             logger.warning("Invalid timezone in weather_convert_time: %s", exc)
-            raise RuntimeError("Invalid timezone") from exc
+            raise InvalidRequestError("Invalid timezone") from exc
         except ValueError as exc:
             logger.warning("Invalid datetime input in weather_convert_time: %s", exc)
-            raise RuntimeError("Invalid datetime format") from exc
+            raise InvalidRequestError("Invalid datetime format") from exc
         except Exception:
             logger.exception("Unexpected error in weather_convert_time")
-            raise RuntimeError(
+            raise WeatherMCPError(
                 "Time conversion service is temporarily unavailable. Please retry."
             ) from None

@@ -6,6 +6,7 @@ import logging
 from typing import Any
 
 from .. import utils
+from ..errors import NoDataError
 from ..http_client import ResilientHttpClient
 
 logger = logging.getLogger("mcp-weather")
@@ -46,8 +47,20 @@ class AirQualityService:
         target = client or ResilientHttpClient(name="air-quality")
         if own_client:
             async with target as opened:
-                return await opened.get_json(self.BASE_AIR_QUALITY_URL, params=params)
-        return await target.get_json(self.BASE_AIR_QUALITY_URL, params=params)
+                data = await opened.get_json(self.BASE_AIR_QUALITY_URL, params=params)
+        else:
+            data = await target.get_json(self.BASE_AIR_QUALITY_URL, params=params)
+
+        hourly = data.get("hourly") if isinstance(data, dict) else None
+        times = (hourly or {}).get("time") or []
+        if not times:
+            # Successful answer without usable series: neither an upstream
+            # failure nor a local validation failure.
+            raise NoDataError(
+                "Open-Meteo air quality returned an empty hourly series. "
+                "No air-quality data is available for the requested coordinates."
+            )
+        return data
 
     def get_current_air_quality_index(self, aq_data: dict[str, Any]) -> dict[str, Any]:
         """Extract the current hour slice from the air-quality hourly series."""

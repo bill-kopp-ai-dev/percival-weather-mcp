@@ -10,6 +10,7 @@ from typing import cast
 from mcp.types import EmbeddedResource, ImageContent, TextContent, Tool
 
 from .. import utils
+from ..errors import InvalidRequestError, UpstreamError, WeatherMCPError
 from ..http_client import ResilientHttpClient
 from ..models import (
     DEFAULT_AIR_QUALITY_VARIABLES,
@@ -106,17 +107,21 @@ class GetAirQualityToolHandler(_BaseAirQualityHandler):
             }
             formatted = self.formatter.format_comprehensive(response_data)
             return [TextContent(type="text", text=formatted)]
-        except RuntimeError:
+        except WeatherMCPError:
+            # Taxonomy errors already carry the agent-facing message and
+            # the true cause (upstream failure, empty result, local validation).
             raise
         except ValueError as exc:
             logger.warning("Invalid request for get_air_quality: %s", exc)
-            raise RuntimeError(
+            raise InvalidRequestError(
                 "Invalid air quality request. Check input values and try again."
             ) from exc
         except Exception:
             logger.exception("Unexpected error in get_air_quality")
-            raise RuntimeError(
-                "Air quality service is temporarily unavailable. Please retry."
+            raise UpstreamError(
+                "Air quality service is temporarily unavailable. Please retry.",
+                service="air-quality",
+                reason="internal_error",
             ) from None
 
 
@@ -163,15 +168,19 @@ class GetAirQualityDetailsToolHandler(_BaseAirQualityHandler):
                 "full_data": aq_data,
             }
             return [TextContent(type="text", text=json.dumps(response_data, indent=2))]
-        except RuntimeError:
+        except WeatherMCPError:
+            # Taxonomy errors already carry the agent-facing message and
+            # the true cause (upstream failure, empty result, local validation).
             raise
         except ValueError as exc:
             logger.warning("Invalid request for get_air_quality_details: %s", exc)
-            raise RuntimeError(
+            raise InvalidRequestError(
                 "Invalid air quality request. Check input values and try again."
             ) from exc
         except Exception:
             logger.exception("Unexpected error in get_air_quality_details")
-            raise RuntimeError(
-                "Air quality service is temporarily unavailable. Please retry."
+            raise UpstreamError(
+                "Air quality service is temporarily unavailable. Please retry.",
+                service="air-quality",
+                reason="internal_error",
             ) from None
