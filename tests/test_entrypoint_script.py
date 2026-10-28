@@ -154,6 +154,32 @@ def test_entrypoint_is_posix_sh():
     assert first_line in {"#!/bin/sh", "#!/bin/sh "}
 
 
+def test_unknown_transport_is_refused_instead_of_degrading_to_stdio(
+    sh: str, stub_python: Path, tmp_path: Path
+) -> None:
+    """F-003 regression: a typo in ``MCP_TRANSPORT`` must fail loudly.
+
+    The entrypoint used to fall through to the stdio branch for any
+    unrecognised value, so a deploy that expected HTTP came up without a
+    published port and without any diagnostic.
+    """
+    record = tmp_path / "argv.txt"
+    env = {"PATH": f"{stub_python.parent}:{os.environ.get('PATH', '')}", "STUB_RECORD": str(record)}
+    env["MCP_TRANSPORT"] = "htpp"
+    result = subprocess.run(
+        [sh, str(ENTRYPOINT)],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    assert result.returncode != 0, "an unknown transport must not start the server"
+    assert "MCP_TRANSPORT" in result.stderr
+    assert "stdio, http, http-loopback" in result.stderr
+    assert not record.exists() or record.read_text(encoding="utf-8") == "", (
+        "the python runner must not be started for an unknown transport"
+    )
+
+
 def test_entrypoint_handles_unset_path():
     """The script must not assume a particular PATH layout at runtime."""
     text = ENTRYPOINT.read_text(encoding="utf-8")

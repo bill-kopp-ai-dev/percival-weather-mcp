@@ -41,7 +41,22 @@ if [ "$#" -gt 0 ]; then
     esac
 fi
 transport=$(printf '%s' "$transport" | tr '[:upper:]' '[:lower:]' | tr -d ' ')
-transport="${transport:-stdio}"
+if [ -z "$transport" ]; then
+    transport="stdio"
+fi
+
+# An unknown transport is refused instead of silently degrading to stdio: a
+# deploy that expected HTTP would otherwise come up without a published port
+# and without any diagnostic.
+case "$transport" in
+    stdio|http|http-loopback)
+        ;;
+    *)
+        echo "percival-weather-mcp: unknown MCP_TRANSPORT '${MCP_TRANSPORT}'." >&2
+        echo "Supported transports: stdio, http, http-loopback." >&2
+        exit 2
+        ;;
+esac
 
 if [ "$transport" = "http" ] || [ "$transport" = "http-loopback" ]; then
     if [ "$transport" = "http-loopback" ]; then
