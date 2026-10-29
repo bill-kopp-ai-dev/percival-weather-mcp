@@ -46,9 +46,11 @@ ou contato com serviço público é executado pela emissão deste plano.
   S2-C01 (sinais/drain) segue **aberto**. O formato S2-C03 foi decidido em
   `R-06`; materialização/versionamento do schema e validação dos manifests
   continuam pendentes.
-- [x] Decisões do operador de 2026-10-28 aplicáveis: `R-02` fixa `mounts=[]`
-  como default do broker, com mounts explícitos e `null` sujeito a confirmação
-  e auditoria; `R-03` remove a exigência de estimar esforço, custo ou prazo;
+- [x] Atualização de decisão do operador em 2026-10-29: `R-10` supersede `R-02`
+  quanto ao default do broker Percival, que permanece amplo conforme B14/B22/B23–B25.
+  O perfil Weather deve declarar explicitamente `mounts=[]` quando não precisa de
+  binds; ampliar perfil restrito exige confirmação e auditoria. `R-03` remove a
+  exigência de estimar esforço, custo ou prazo;
   `R-05` centraliza F3 em `pblabs-mcp-index`, por imagem publicada; `R-06` adota
   schema externo de `server.json`, extensão operacional `pblabs.app.yaml` e
   destino `pblabs-mcp-index`, sem dependência do Docker MCP Catalog; `R-07`
@@ -68,7 +70,7 @@ seção 6); prioridades de origem preservadas.
 | A-002 | F-002 / P2 | Retry só para recuperáveis, limitado e com backoff; não repetir 4xx não recuperável | Política corrente por cliente/handler | 400/404 causam uma requisição; 429/5xx/timeout respeitam limite configurado (baseline 3 tentativas), sem multiplicação oculta entre camadas |
 | A-003 | F-003, F-004 / P2 | Recusar transporte desconhecido e validar retries/timeout/porta no bootstrap | Perfil de configuração do produto | MCP_TRANSPORT=htpp, retries negativos e números inválidos falham com exit não zero/mensagem controlada; sem fallback silencioso para stdio |
 | A-004 | F-005 / P2 | Corrigir source.commit e referência da imagem/metadados em `server.yaml`; preparar manifest conforme `R-06` para o índice | S2-C03; publicação e etapas 2/4 IaC | SHA real e identidade/versão/transporte coerentes; schema externo de `server.json` validado, extensão `pblabs.app.yaml` e destino `pblabs-mcp-index`; imagem acessível por manifesto/digest na homologação; Docker MCP Catalog não é dependência |
-| A-005 | F-006, F-015 / P2 | Corrigir nota local: mounts explícitos, sem bind por default, e resources/prompts existentes mas limitados pelo consumidor | S2-NB-X01/A-010 e docs versionadas; `R-02` | Perfil usa `mounts=[]` sem bind do host por default; `null` exige operação separada, confirmação e auditoria; sem `mounts=["/"]`; resource weather://timezones provado; limites do MCPProvider explicados sem negar existência da capacidade |
+| A-005 | F-006, F-015 / P2 | Corrigir nota local: perfil de mounts explicitamente sem bind e resources/prompts existentes mas limitados pelo consumidor | S2-NB-X01/A-010 e docs versionadas; `R-10` | Perfil Weather configura explicitamente `mounts=[]` (nenhum bind), sem depender do default amplo do broker; ampliar perfil restrito exige confirmação/auditoria; sem `mounts=["/"]`; resource weather://timezones provado; limites do MCPProvider explicados sem negar existência da capacidade |
 | A-006 | F-007, F-014 / P2 | Normalizar timestamps/cache/logs no build e passar VERSION/GIT_SHA no caminho local documentado | Mesmas entradas/builder; etapa 2 IaC | Dois builds sem cache do mesmo SHA com image ID igual; versão/revisão corretas; comparação por arquivo/camada e parâmetros registrados |
 | A-007 | F-008 / P3 | Derivar versão do produto no serverInfo | Fonte única da versão | Initialize informa versão do pacote (0.9.0 só se vigente), não 1.30.0 do SDK histórico |
 | A-008 | F-009 / P3 | Compartilhar cache de geocoding entre handlers com lifecycle adequado | Concorrência/TTL preservados | Quatro consultas lógicas para mesma cidade em duas tools fazem uma geocodificação no cenário controlado; expiração/concorrência não causam contaminação |
@@ -202,7 +204,7 @@ pendente de aceite.
 | Alinhamento formal com S2-C01 e materialização/validação do schema S2-C03 | coordenação IaC + owners | O formato do schema foi decidido em `R-06`; implementação e validação continuam pendentes |
 | `V-REUSE` consolidado entre MCPs | coordenação + Notes/Research | O harness está versionado; a consolidação comum continua pendente, e a recomendação S2-C04 aguarda aceite |
 | Lifecycle de produção (runtime do broker e do gestor) | gestores (S2-NB A-007, S2-AP-X01) | Fora do checkout; nada foi mutado no host |
-| Implementação e prova do perfil de mounts do broker (`R-02`) | owner do broker / S2-NB-X01 | Política decidida: default `mounts=[]`; mounts explícitos e `null` como operação separada, confirmada e auditada. Implementação e evidência continuam pendentes |
+| Implementação e prova do perfil de mounts do broker (`R-10`) | owner do broker / S2-NB-X01 | Política decidida: default amplo conforme B14/B22/B23–B25; Weather usa perfil explícito `mounts=[]`; ampliar perfil restrito exige confirmação/auditoria. Implementação e evidência continuam pendentes |
 | Correção da nota local `docs/percival-integration.md` | owner do produto | O arquivo é gitignored: a correção do F-006/F-015 fica só no checkout local e não é publicada |
 | Regressão de `mounts`/secrets/lifecycle no broker | S2-NB-X01 | O checkout não altera registry nem configuração alheios |
 | `E-042` (egresso histórico) | — | **Não reescrito**: o registro da Etapa 1 permanece como está. Nesta campanha nenhum serviço real foi exercitado; o único egresso deliberado foi o download do banco do Trivy e o push para `origin` |
