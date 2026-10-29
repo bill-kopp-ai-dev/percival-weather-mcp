@@ -1,7 +1,7 @@
 # Stage-2 — Remediação do Percival Weather MCP
 
 **Data / revisão:** 2026-10-27 / 1.0.  
-**ID / estado:** S2-WX / planejado; execução não iniciada.  
+**ID / estado:** S2-WX / execução local parcial; aceites externos pendentes.
 **Checkout executor:** `/home/bill/Projects/percival-weather-mcp`.  
 **Responsável:** executor Weather a designar por bill; política HTTP e gestores com seus donos.
 
@@ -12,7 +12,8 @@ Tratar os 16 achados da **seção 6** do
 com ações/revalidação nas seções 7/9: 12 ações (1 P1, 6 P2, 5 P3), sem P0.
 Baseline e HEAD na emissão: `144dd44078bea4c7ba35111e15442cfc6bf14398`.
 Nota `docs/issues/2026-10-10-f3-status.md` localmente excluída antes da campanha;
-preservar e reconciliar destino com owner.
+preservar a exclusão. `R-05` define `pblabs-mcp-index` como tracker F3 canônico
+por imagem, sem manter cópia concorrente neste checkout.
 
 [Coordenador stage-2](../../../positronic-bean-IaC/docs/plans/2026-10-27-iac-v1-stage-2-remediation-plan.md)
 — retorno S2-WX, seções 3 e 7. Referências:
@@ -27,11 +28,11 @@ ou contato com serviço público é executado pela emissão deste plano.
 ## 2. Preparação e decisões
 
 - [x] Ler instruções/README/CI/config atuais; registrar SHA/worktree e contratos.
-  Preservar alterações locais e acordar destino da nota de segurança removida.
-  — SHA inicial `5943642b6f9b98591f867258a167a461ba332cfd`; destino da nota
-  decidido pelo owner em 2026-10-28: **restaurada** (`git checkout --
-  docs/issues/2026-10-10-f3-status.md`) e mantida como espelho F3 versionado,
-  com o OpenVEX próprio em `docs/security/` ao lado.
+  Preservar alterações locais e registrar o destino da nota de segurança.
+  — SHA inicial `5943642b6f9b98591f867258a167a461ba332cfd`; uma decisão anterior
+  previa restaurar a nota como espelho F3, mas `R-05` a substitui: o tracker
+  canônico fica em `pblabs-mcp-index`, por imagem, sem espelho concorrente neste
+  checkout. O OpenVEX específico do artefato permanece em `docs/security/`.
 - [x] Reconstruir matriz upstream com fixture TLS/host aliases controlados;
   conferir roteamento antes de iniciar para evitar egresso acidental (E-042).
   — CA local e rede `iac-wx-net` recriadas; o roteamento foi conferido
@@ -42,14 +43,19 @@ ou contato com serviço público é executado pela emissão deste plano.
   S2-C03; fixes locais de erro/config não esperam contrato completo.
   — **Parcial**: as correções locais de erro, configuração, lifecycle e
   metadados foram feitas sem esperar o contrato; o alinhamento formal com
-  S2-C01 (sinais/drain) e S2-C03 (schema do índice) segue **aberto**, porque
-  os drafts 0.1 continuam pendentes de revisão.
-- [x] Owner decide política de `/metrics` e limites/perfis; estimar lotes com bill
-  (D-06). Broker/piloto depende de P0 Percival e receita autorizada (D-05).
-  — Decisão de política de `/metrics` registrada pelo owner em 2026-10-28
-  (`docs/decisions/2026-10-28-http-endpoint-auth-policy.md`). O
-  dimensionamento por lote (D-06) permanece **pendente do owner**; a execução
-  abaixo registra o esforço consumido, sem assumir prazo ou orçamento.
+  S2-C01 (sinais/drain) segue **aberto**. O formato S2-C03 foi decidido em
+  `R-06`; materialização/versionamento do schema e validação dos manifests
+  continuam pendentes.
+- [x] Decisões do operador de 2026-10-28 aplicáveis: `R-02` fixa `mounts=[]`
+  como default do broker, com mounts explícitos e `null` sujeito a confirmação
+  e auditoria; `R-03` remove a exigência de estimar esforço, custo ou prazo;
+  `R-05` centraliza F3 em `pblabs-mcp-index`, por imagem publicada; `R-06` adota
+  schema externo de `server.json`, extensão operacional `pblabs.app.yaml` e
+  destino `pblabs-mcp-index`, sem dependência do Docker MCP Catalog; `R-07`
+  exige VEX por CVE ligado ao image ID e assinado pelo owner, com CVEs da imagem
+  base tratados por herança; `R-08` fixa pin aprovado e operação em janela única
+  datada. A política de `/metrics` permanece registrada separadamente em
+  `docs/decisions/2026-10-28-http-endpoint-auth-policy.md`.
 
 ## 3. Backlog integral e aceite
 
@@ -61,15 +67,15 @@ seção 6); prioridades de origem preservadas.
 | A-001 | F-001 / P1 | Separar erro upstream de entrada inválida em http_client/handlers, preservando distinção para entrada e resultado vazio | S2-C01 como referência | Matriz 429/500/404/timeout com causa externa explícita e orientação coerente; erro validado localmente continua entrada inválida; 200 vazio não confundido com falha |
 | A-002 | F-002 / P2 | Retry só para recuperáveis, limitado e com backoff; não repetir 4xx não recuperável | Política corrente por cliente/handler | 400/404 causam uma requisição; 429/5xx/timeout respeitam limite configurado (baseline 3 tentativas), sem multiplicação oculta entre camadas |
 | A-003 | F-003, F-004 / P2 | Recusar transporte desconhecido e validar retries/timeout/porta no bootstrap | Perfil de configuração do produto | MCP_TRANSPORT=htpp, retries negativos e números inválidos falham com exit não zero/mensagem controlada; sem fallback silencioso para stdio |
-| A-004 | F-005 / P2 | Corrigir source.commit e referência da imagem/metadados em server.yaml; preparar integração no índice | S2-C03; publicação e etapas 2/4 IaC | SHA real e identidade/versão/transporte coerentes; imagem acessível por manifesto/digest na homologação; nunca usar versão de pacote como commit |
-| A-005 | F-006, F-015 / P2 | Corrigir nota local: mounts=[] e resources/prompts existem no MCP mas são limitados pelo consumidor | S2-NB-X01/A-010 e docs versionadas | Receita sem mounts=["/"] nem bind do host; resource weather://timezones provado; limites do MCPProvider explicados sem negar existência da capacidade |
+| A-004 | F-005 / P2 | Corrigir source.commit e referência da imagem/metadados em `server.yaml`; preparar manifest conforme `R-06` para o índice | S2-C03; publicação e etapas 2/4 IaC | SHA real e identidade/versão/transporte coerentes; schema externo de `server.json` validado, extensão `pblabs.app.yaml` e destino `pblabs-mcp-index`; imagem acessível por manifesto/digest na homologação; Docker MCP Catalog não é dependência |
+| A-005 | F-006, F-015 / P2 | Corrigir nota local: mounts explícitos, sem bind por default, e resources/prompts existentes mas limitados pelo consumidor | S2-NB-X01/A-010 e docs versionadas; `R-02` | Perfil usa `mounts=[]` sem bind do host por default; `null` exige operação separada, confirmação e auditoria; sem `mounts=["/"]`; resource weather://timezones provado; limites do MCPProvider explicados sem negar existência da capacidade |
 | A-006 | F-007, F-014 / P2 | Normalizar timestamps/cache/logs no build e passar VERSION/GIT_SHA no caminho local documentado | Mesmas entradas/builder; etapa 2 IaC | Dois builds sem cache do mesmo SHA com image ID igual; versão/revisão corretas; comparação por arquivo/camada e parâmetros registrados |
 | A-007 | F-008 / P3 | Derivar versão do produto no serverInfo | Fonte única da versão | Initialize informa versão do pacote (0.9.0 só se vigente), não 1.30.0 do SDK histórico |
 | A-008 | F-009 / P3 | Compartilhar cache de geocoding entre handlers com lifecycle adequado | Concorrência/TTL preservados | Quatro consultas lógicas para mesma cidade em duas tools fazem uma geocodificação no cenário controlado; expiração/concorrência não causam contaminação |
 | A-009 | F-010, F-011 / P3 | Tratar SIGINT e investigar variabilidade no EOF, fechar clientes/tarefas | S2-C01 e contrato do gestor | SIGINT encerra; EOF sai em até 1 s em 20 execuções conforme origem; SIGTERM/exit/log observados sem corromper stdout ou deixar tarefa órfã |
 | A-010 | F-012, F-013 / P3 | Erro de validação para prompts sem argumento e resource template desconhecido | Contrato MCP/SDK efetivamente usado | Falha distinguível de resposta vazia/sucesso, com envelope de erro correto para cada método; testes wire-level e casos válidos preservados |
 | A-011 | F-016 / P3 | Documentar séries de métricas após primeira chamada e decidir bearer/bypass de metrics/health | Decisão de política pelo owner | Decisão datada e docs/testes auth versus health/metrics; se bypass mantido, alcance/exposição explícitos; vazio inicial explicado |
-| A-012 | DIST-01, DIST-02 / P2 | Scan no builder CI e triagem/VEX próprios por artefato; completar metadata aplicável/server.json | S2-C03 e candidato; etapas 2/4 IaC | DB/data/SHA/image ID/manifest digest quando existir; decisão VEX por CVE com campos aplicáveis, sem inventar findings; schema/metadata válidos e CI com evidência própria |
+| A-012 | DIST-01, DIST-02 / P2 | Scan no builder CI e triagem/VEX próprios por artefato conforme `R-07`; completar metadata conforme `R-06` | S2-C03 e candidato; etapas 2/4 IaC | DB/data/SHA/image ID/manifest digest quando existir; VEX por CVE ligado ao image ID e assinado pelo owner; CVEs da imagem base tratados por herança; schema/metadata válidos e CI com evidência própria |
 
 **Ajuste de interpretação de A-010:** `isError` é o campo de resultado de tool;
 `prompts/get` e `resources/read` devem usar o erro previsto para seus métodos no
@@ -83,13 +89,16 @@ recomendação literal. O objetivo F-012/F-013 permanece: não apresentar erro c
 1. **WX-1:** A-001/A-002/A-003, matriz de erro/retry/config e contratos públicos.
 2. **WX-2:** A-005/A-007/A-008/A-009/A-010/A-011; revisar lifecycle/cache e
    compatibilidade de respostas do consumidor, com decisão do owner para auth.
-3. **WX-3:** A-006/A-004/A-012, candidato/scan/metadados e etapas 2/4. Harness
-   deve ser versionado/adotado com S2-C04 e não depender de arquivo temporário.
+3. **WX-3:** A-006/A-004/A-012, candidato/scan/metadados e etapas 2/4. O harness
+   deste produto é versionado e não depende de arquivo temporário; a recomendação
+   de harness comum S2-C04 ainda aguarda aceite.
 
 Runtime antigo/hardening observado em LIFE-01 não é resolvido pelo código Weather:
 encaminhar a S2-AP-X01 e S2-NB A-007, receber inventário/candidato/postura de cada
-gestor. O checkout não altera registry/config alheios. Sem prazos/horas assumidos;
-publicação e prova vertical têm escopo/autorizações próprios.
+gestor. Repin deve usar imagem aprovada e ocorrer em janela única datada e
+autorizada (`R-08`). O checkout não altera registry/config alheios. `R-03` remove
+o dimensionamento prévio de esforço, custo ou prazo; publicação e prova vertical
+têm escopo/autorizações próprios.
 
 Riscos: taxonomia nova pode mudar reação do agente, cache comum precisa de isolamento
 por parâmetros/TTL, handler de sinal pode disputar loop. Testar caminhos alcançáveis
@@ -152,7 +161,8 @@ fecha por transferência ou por arquivo de plano existente.
 **Evidências sanitizadas:**
 `positronic-bean-IaC/docs/reports/evidence/percival-weather-mcp/ed2caa8cfd22/`.
 **Harness versionado no produto:** `scripts/verification/` (8 scripts + README
-de execução), conforme S2-C04 — não depende mais de arquivo temporário.
+de execução), independente da recomendação de consolidação comum S2-C04, ainda
+pendente de aceite.
 
 ### 6.1 Registro por ação
 
@@ -182,25 +192,26 @@ de execução), conforme S2-C04 — não depende mais de arquivo temporário.
 | `V-MCP` | **aprovado** | `initialize` → `notifications/initialized` → `tools/list` → `tools/call`; 9/9 com `isError=false`; 3 prompts, 3 resources e 1 template; stdout só JSON-RPC; `serverInfo.version=0.9.0`; erros de `prompts/get` e `resources/read` no wire com códigos padrão |
 | `V-FUNC` | **aprovado localmente** | 9 tools contra upstream **simulado**; 9 cenários de falha com causa explícita e contagem de requisições; cache compartilhado; **previsão real não verificada**; nenhum egresso ao Open-Meteo real |
 | `V-PILOT` | **não avaliado** | O par piloto continua sendo Percival + Notes (D-01); este checkout não é piloto |
-| `V-REUSE` | **parcial** | O harness do Weather foi versionado no próprio produto (`scripts/verification/`) e reutilizado por Notes/Research é o passo seguinte de S2-C04; a consolidação entre produtos não está fechada |
+| `V-REUSE` | **parcial** | O harness do Weather foi versionado no próprio produto (`scripts/verification/`); reutilização/consolidação por Notes/Research depende de avaliação e aceite da recomendação S2-C04, ainda pendente |
 
 ### 6.3 Riscos, pendências e responsáveis
 
 | Pendência | Responsável | Observação |
 |---|---|---|
-| Publicação da imagem e `RepoDigest`; PR do catálogo Docker MCP | owner do produto + gestão do catálogo (Etapa 2) | `mcp/percival-weather-mcp` responde `unauthorized`; o OpenVEX terá de ser reemitido contra o digest publicado |
-| Alinhamento formal com S2-C01 (sinais/drain) e S2-C03 (schema do índice) | coordenação IaC + owners | As correções locais foram feitas sem esperar o contrato; o contrato pode mudá-las |
-| `V-REUSE` consolidado entre MCPs | coordenação + Notes/Research | O harness está versionado; a matriz comum ainda não |
+| Publicação da imagem e `RepoDigest`; PR no índice PBLabs | owner do produto + owner do índice (Etapa 2) | `mcp/percival-weather-mcp` responde `unauthorized`; o OpenVEX terá de ser associado ao image ID/digest publicado. Docker MCP Catalog é opcional |
+| Alinhamento formal com S2-C01 e materialização/validação do schema S2-C03 | coordenação IaC + owners | O formato do schema foi decidido em `R-06`; implementação e validação continuam pendentes |
+| `V-REUSE` consolidado entre MCPs | coordenação + Notes/Research | O harness está versionado; a consolidação comum continua pendente, e a recomendação S2-C04 aguarda aceite |
 | Lifecycle de produção (runtime do broker e do gestor) | gestores (S2-NB A-007, S2-AP-X01) | Fora do checkout; nada foi mutado no host |
-| `D-05` (receita de privilégios) e `D-06` (orçamento e horas) | bill | Permanecem pendentes; esta execução não assume prazo nem custo |
+| Implementação e prova do perfil de mounts do broker (`R-02`) | owner do broker / S2-NB-X01 | Política decidida: default `mounts=[]`; mounts explícitos e `null` como operação separada, confirmada e auditada. Implementação e evidência continuam pendentes |
 | Correção da nota local `docs/percival-integration.md` | owner do produto | O arquivo é gitignored: a correção do F-006/F-015 fica só no checkout local e não é publicada |
 | Regressão de `mounts`/secrets/lifecycle no broker | S2-NB-X01 | O checkout não altera registry nem configuração alheios |
 | `E-042` (egresso histórico) | — | **Não reescrito**: o registro da Etapa 1 permanece como está. Nesta campanha nenhum serviço real foi exercitado; o único egresso deliberado foi o download do banco do Trivy e o push para `origin` |
 
 ### 6.4 Decisões do owner registradas
 
-1. **Nota de segurança removida** → restaurada e mantida como espelho F3
-   versionado, com o OpenVEX próprio em `docs/security/` ao lado.
+1. **Tracker F3** → `R-05` substitui o espelho local pelo canônico
+   `pblabs-mcp-index`, organizado por imagem; o OpenVEX específico do artefato
+   permanece em `docs/security/`.
 2. **Taxonomia de erro** → hierarquia de exceções com causa explícita na
    mensagem, preservando "Invalid weather request" para a validação local.
 3. **Equivalência de A-010** → erro no wire do método (`prompts/get` e
