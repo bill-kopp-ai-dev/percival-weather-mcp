@@ -12,6 +12,12 @@
 **percival.OS** ecosystem — a Personal Agentic Operating System designed for
 autonomy, security, and absolute privacy.
 
+This project belongs to Positronic Bean Labs (PBLabs), owned by Bill Kopp,
+who is the sole final decision-maker for decisions requiring company approval.
+Technical work and routine operations may be delegated; this does not authorize
+publication or production changes. The company site, `labs.positronicbean.com`,
+is under development and is not an operational service.
+
 - **Version 0.8** hardened the resilience layer (retries, circuit breaker,
   semaphore), introduced end-to-end observability (Prometheus metrics,
   structured logs, health probes), added defensive middleware (per-IP rate
