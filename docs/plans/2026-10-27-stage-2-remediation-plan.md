@@ -62,6 +62,11 @@ ou contato com serviço público é executado pela emissão deste plano.
   datada. A política de `/metrics` permanece registrada separadamente em
   `docs/decisions/2026-10-28-http-endpoint-auth-policy.md`. Em 2026-10-29,
   Bill confirmou as decisões complementares registradas na seção 6.4.
+- [x] `R-11` (2026-10-29): Trivy é o scanner padrão e está instalado; o agente
+  pode executá-lo autonomamente quando necessário em candidatos locais, cobrindo
+  todas as severidades, atualizando a DB e registrando versão, DB, SHA e image ID.
+  A evidência local anterior (DB de 2026-10-28) é histórica; não substitui scan
+  de candidato novo, CI ou gates de `R-07`. Não montar Docker socket para escanear.
 
 ## 3. Backlog integral e aceite
 
@@ -81,7 +86,7 @@ seção 6); prioridades de origem preservadas.
 | A-009 | F-010, F-011 / P3 | Tratar SIGINT e investigar variabilidade no EOF, fechar clientes/tarefas | S2-C01; aceite direto de Bill Kopp | SIGINT encerra; o processo do servidor encerra em até 1 s em 20 execuções com EOF. Registrar separadamente a latência do teardown do container; SIGTERM/exit/log observados sem corromper stdout ou deixar tarefa órfã |
 | A-010 | F-012, F-013 / P3 | Erro de validação para prompts sem argumento e resource template desconhecido | Contrato MCP/SDK efetivamente usado | Falha distinguível de resposta vazia/sucesso, com envelope de erro correto para cada método; testes wire-level e casos válidos preservados |
 | A-011 | F-016 / P3 | Documentar séries de métricas após primeira chamada e decidir bearer/bypass de metrics/health | Decisão de política pelo owner | Decisão datada e docs/testes auth versus health/metrics; se bypass mantido, alcance/exposição explícitos; vazio inicial explicado |
-| A-012 | DIST-01, DIST-02 / P2 | Scan no builder CI e triagem/VEX próprios por artefato conforme `R-07`; completar metadata conforme `R-06` | S2-C03 e candidato; etapas 2/4 IaC | DB/data/SHA/image ID/manifest digest quando existir; VEX por CVE ligado ao image ID e assinado pelo owner; CVEs da imagem base tratados por herança; schema/metadata válidos e CI com evidência própria |
+| A-012 | DIST-01, DIST-02 / P2 | Scan Trivy no builder CI e triagem/VEX próprios por artefato conforme `R-07`; completar metadata conforme `R-06` | Trivy (`R-11`), S2-C03 e candidato; etapas 2/4 IaC | Scan identifica versão/data da DB, SHA e image ID; VEX por CVE ligado ao image ID e assinado pelo owner; CVEs da imagem base tratados por herança; schema/metadata válidos e CI com evidência própria. Scans locais podem ser executados autonomamente, mas não substituem CI |
 
 **Ajuste de interpretação de A-010:** `isError` é o campo de resultado de tool;
 `prompts/get` e `resources/read` devem usar o erro previsto para seus métodos no
