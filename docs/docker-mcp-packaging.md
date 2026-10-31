@@ -1,5 +1,14 @@
 # Docker MCP packaging plan — `percival-weather-mcp` 0.9.0
 
+> **Historical implementation note, not the current distribution contract.**
+> This document describes the Docker MCP Toolkit/Catalog path explored in the
+> original packaging work. The owner selected `pblabs-mcp-index` and the
+> `server.json` + `pblabs.app.yaml` contract in R-06. Do not use the Docker MCP
+> Catalog submission instructions below for a release. Current integration
+> guidance is in [`percival-integration-guide.md`](percival-integration-guide.md);
+> draft index metadata and validation evidence are tracked under
+> `docs/mcp/percival-weather-mcp/`.
+
 ## Goal
 
 Repackage the FastMCP server as a Docker image that drops straight into

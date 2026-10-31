@@ -83,3 +83,17 @@ Each statement was checked against the image, not only against the scanner:
 The document is valid against the OpenVEX 0.2.0 JSON schema. Re-issue it
 whenever the candidate digest changes: the statements are bound to a digest,
 and a digest that was never scanned must not inherit a disposition.
+
+## Later local candidate scan — 2026-10-31
+
+The local image `percival-weather-mcp:0.9.0-f62d438` was scanned with Trivy
+0.76.1 and vulnerability DB updated at 2026-10-31 13:09 UTC. The source label
+is `f62d4383c89b63db7328bbbbb1a65846dff31531`; image ID is
+`sha256:680872039a8f530f7feb53610478087c5271d5a5aec451c1f668f799e0e8a0ee`.
+The scan found 0 vulnerabilities in Debian OS packages and Python packages;
+raw output is `trivy-raw-f62d438-68087203.json`.
+
+This scan is tied only to that local image ID. It does not update CI evidence,
+create a published RepoDigest, verify the Registry namespace, or authorize
+release. The existing OpenVEX statements remain bound to the earlier image and
+must not be reused for this candidate or a later published artifact.

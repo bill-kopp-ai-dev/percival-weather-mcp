@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Cache de geocodificacao do `percival-weather-mcp` (por handler, em memoria).
+"""Prove que duas tools compartilham o cache de geocoding no processo.
 
 Sequencia exercitada na MESMA sessao MCP:
   1. weather_get_current  (cidade A)
-  2. weather_get_current  (cidade A de novo)  -> deve reusar o cache do handler
-  3. weather_get_details  (cidade A)          -> outro handler, cache proprio
-  4. weather_get_current  (cidade B)          -> cidade diferente
+  2. weather_get_current  (cidade A de novo)
+  3. weather_get_details  (cidade A)          -> segunda tool, cache compartilhado
+  4. weather_get_details  (cidade A de novo)
 
 Conta as requisicoes que o mock recebeu em `/v1/search` (geocoding) e
 `/v1/forecast`, atribuindo cada uma a um passo.
@@ -23,11 +23,12 @@ import os
 
 from wx_mcp_session import McpSession
 
+CITY = "Cidade Alfa"
 CALLS = [
-    ("passo-1", "weather_get_current", {"city": "Cidade Alfa"}),
-    ("passo-2", "weather_get_current", {"city": "Cidade Alfa"}),
-    ("passo-3", "weather_get_details", {"city": "Cidade Alfa"}),
-    ("passo-4", "weather_get_current", {"city": "Cidade Beta"}),
+    ("passo-1", "weather_get_current", {"city": CITY}),
+    ("passo-2", "weather_get_current", {"city": CITY}),
+    ("passo-3", "weather_get_details", {"city": CITY}),
+    ("passo-4", "weather_get_details", {"city": CITY}),
 ]
 
 
@@ -132,13 +133,21 @@ def main() -> int:
         session.selector.close()
 
     total = read_log(args.logs_dir)[before:]
+    geocoding_calls = sum(1 for line in total if " /v1/search?" in line)
     report["total_upstream_calls"] = len(total)
+    report["geocoding_calls"] = geocoding_calls
+    report["criterion_passed"] = (
+        "failure" not in report
+        and len(report["steps"]) == 4
+        and all(step.get("is_error") is False for step in report["steps"])
+        and geocoding_calls == 1
+    )
     report["total_by_path"] = {
         path: sum(1 for line in total if f" {path}?" in line)
         for path in {line.split(" ")[1].split("?")[0] for line in total if " " in line}
     }
     print(json.dumps(report, indent=2, ensure_ascii=False))
-    return 0
+    return 0 if report["criterion_passed"] else 1
 
 
 if __name__ == "__main__":

@@ -4,8 +4,8 @@
 Publica o container em 127.0.0.1 (somente loopback do host) com um token
 sintetico e verifica:
 
-  * `/healthz` e `/metrics` respondem **sem** bearer (bypass intencional do
-    middleware de saude);
+  * `/healthz` responde sem bearer; `/metrics` exige bearer quando token
+    estiver configurado e permanece aberto sem token configurado;
   * `/mcp` sem bearer responde 401 e com bearer responde 200;
   * o handshake MCP completo funciona sobre streamable-http;
   * o rate limit por IP devolve 429 com `Retry-After`;
@@ -23,6 +23,7 @@ import subprocess
 import time
 import urllib.error
 import urllib.request
+import uuid
 
 TOKEN = "iac-diag-token-0123456789abcdef0123456789abcdef"
 
@@ -62,8 +63,7 @@ def wait_for(url: str, attempts: int = 20) -> bool:
 
 
 def run_http_case(image: str, port: int, token_env: str | None, rate_limit: str | None) -> dict:
-    name = "iac-wx-http"
-    subprocess.run(["docker", "rm", "-f", name], check=False, capture_output=True)
+    name = f"wx-http-{uuid.uuid4().hex[:10]}"
     command = [
         "docker",
         "run",
@@ -116,6 +116,13 @@ def run_http_case(image: str, port: int, token_env: str | None, rate_limit: str 
         "content_type": headers.get("content-type", ""),
         "sample": [line for line in body.splitlines() if line.startswith("mcp_")][:3],
     }
+    if token_env:
+        status, body, headers = http("GET", f"{base}/metrics", token=token_env)
+        result["metrics_com_bearer"] = {
+            "status": status,
+            "content_type": headers.get("content-type", ""),
+            "sample": [line for line in body.splitlines() if line.startswith("mcp_")][:3],
+        }
     status, body, _ = http(
         "POST",
         f"{base}/mcp",
@@ -173,8 +180,7 @@ def run_http_case(image: str, port: int, token_env: str | None, rate_limit: str 
 
 
 def run_rate_limit_case(image: str, port: int) -> dict:
-    name = "iac-wx-rl"
-    subprocess.run(["docker", "rm", "-f", name], check=False, capture_output=True)
+    name = f"wx-rl-{uuid.uuid4().hex[:10]}"
     subprocess.run(
         [
             "docker",
@@ -208,8 +214,22 @@ def run_rate_limit_case(image: str, port: int) -> dict:
     base = f"http://127.0.0.1:{port}"
     result: dict = {"budget_per_minute": 3, "requests": []}
     if wait_for(f"{base}/healthz"):
-        for _ in range(6):
-            status, _, headers = http("GET", f"{base}/mcp", token=TOKEN)
+        for request_id in range(1, 7):
+            status, _, headers = http(
+                "POST",
+                f"{base}/mcp",
+                token=TOKEN,
+                body={
+                    "jsonrpc": "2.0",
+                    "id": request_id,
+                    "method": "initialize",
+                    "params": {
+                        "protocolVersion": "2025-06-18",
+                        "capabilities": {},
+                        "clientInfo": {"name": "wx-http-probe", "version": "1"},
+                    },
+                },
+            )
             result["requests"].append(
                 {
                     "status": status,
@@ -217,6 +237,14 @@ def run_rate_limit_case(image: str, port: int) -> dict:
                 }
             )
     subprocess.run(["docker", "rm", "-f", name], check=False, capture_output=True)
+    result["criterion_passed"] = [item["status"] for item in result["requests"]] == [
+        200,
+        200,
+        200,
+        429,
+        429,
+        429,
+    ]
     return result
 
 
@@ -235,7 +263,20 @@ def main() -> int:
         "rate_limit": run_rate_limit_case(args.image, args.host_port + 2),
     }
     print(json.dumps(report, indent=2, ensure_ascii=False))
-    return 0
+    authenticated = report["http_com_token"]
+    auth_passed = (
+        authenticated.get("healthz", {}).get("status") == 200
+        and authenticated.get("metrics_sem_bearer", {}).get("status") == 401
+        and authenticated.get("metrics_com_bearer", {}).get("status") == 200
+        and authenticated.get("mcp_sem_bearer", {}).get("status") == 401
+        and authenticated.get("mcp_com_bearer", {}).get("status") == 200
+        and authenticated.get("mcp_bearer_errado", {}).get("status") == 401
+    )
+    no_token = report["http_sem_token_refusa_inicializacao"]
+    no_token_passed = no_token.get("exit_code") == "1" and any(
+        "requires authentication" in line for line in no_token.get("logs", [])
+    )
+    return 0 if auth_passed and no_token_passed and report["rate_limit"]["criterion_passed"] else 1
 
 
 if __name__ == "__main__":
