@@ -1,4 +1,6 @@
 schema_version: "0.2"
+# Lifecycle observations copied from the Stage-1 readiness report; they are
+# historical and do not assert conformance of the current candidate.
 id: pblabs.percival-weather
 mcp_name: io.github.p-bean-labs/percival-weather-mcp
 version: "0.9.0"
@@ -28,7 +30,7 @@ lifecycle:
     readiness: mcp-initialize
     stdin_eof_exit_code: 0
     sigterm_exit_code: 143
-    sigterm_shutdown_hook: ran
-    sigint: exits
+    sigterm_shutdown_hook: not-run
+    sigint: does-not-terminate
 review:
-  status: draft
+  status: manifest-approved

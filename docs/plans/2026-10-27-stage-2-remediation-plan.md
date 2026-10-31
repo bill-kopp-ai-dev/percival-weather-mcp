@@ -1,8 +1,8 @@
 # Stage-2 — Remediação do Percival Weather MCP
 
 **Data / revisão:** emissão 2026-10-27; atualização 2026-10-31 / 1.4.
-**ID / estado:** S2-WX / 9 de 12 ações verificadas; CI remoto aprovado para o
-SHA de código `b7c7fa4`; metadata/publicação e validação externa ainda pendentes.
+**ID / estado:** S2-WX / 10 de 12 ações verificadas; CI remoto aprovado para o
+SHA `fcc13502e5116e7825e65b1b494c99a9340353b3`; distribuição ainda não publicada.
 **Checkout executor:** `/home/bill/Projects/percival-weather-mcp`.  
 **Owner, decisor e signatário único:** Bill Kopp (`bill.kopp.dev@gmail.com`),
 responsável pelo aplicativo e pela infraestrutura IaC da Positronic Bean Labs
@@ -142,18 +142,17 @@ e comportamento normal, sem esconder timeout/retry com fallback silencioso.
   própria. Health HTTP verde sozinho não é readiness MCP.
   — Ver a tabela de vereditos na seção 6.
 - [x] CI remoto com build, scan Trivy e testes executado no GitHub.
-  — Run `40689767125`, SHA `b7c7fa42fe90a9c4669f3f408c22a59a91669e6a`,
-  concluído com sucesso em 2026-10-28; os jobs Python 3.10/3.11/3.12 e
-  `Docker build + MCP conformance` passaram, incluindo “Scan the candidate
-  for vulnerabilities” e upload dos artefatos. O HEAD local atual
-  (`5939c2f`) tem cinco commits documentais após esse SHA; `src/`, `tests/`,
-  Dockerfile e workflow de CI não diferem do código qualificado pelo run.
-- [ ] Publicação/pull por digest e validação controlada do upstream real são
-  verificações próprias; scan e CI não as substituem. A imagem segue sem digest
-  publicado; o registro anterior reportou `mcp/percival-weather-mcp` como
-  `unauthorized`, mas o destino pretendido por `R-06` é `pblabs-mcp-index`, não
-  o Docker MCP Catalog. Bill autorizou a validação controlada contra Open-Meteo;
-  ela ainda precisa ser executada.
+  — Run `41224013323`, SHA `fcc13502e5116e7825e65b1b494c99a9340353b3`,
+  concluído com sucesso em 2026-10-31: Python 3.10/3.11/3.12, Docker build,
+  MCP stdio, HTTP profile, scan Trivy, SBOM e uploads de evidência passaram.
+  O run anterior `40689767125` em `b7c7fa4` também passou.
+- [ ] Publicação e pull anônimo por digest são verificações posteriores; não
+  são substituídos pelo CI/scan. Bill definiu `docker.io/pbeanlabs` como destino
+  para etapas posteriores e escolheu o fluxo protegido da estratégia IaC:
+  release aprovada → push → digest → pull anônimo → PR no `pblabs-mcp-index`.
+  Não há janela agendada nem imagem publicada nesta etapa; namespace claim e
+  permissões de publicação não foram verificados. O smoke live controlado foi
+  executado em 2026-10-31 (uma chamada; ver 6.7), sem cobrir todas as tools.
 
 Bill Kopp é o único decisor e signatário, além de ser a única pessoa trabalhando
 na aplicação e na IaC. Uma decisão ou aceite é registrado uma vez no item
@@ -194,15 +193,15 @@ pendente de aceite.
 | A-001 | F-001 / P1 | **verificada** | Taxonomia nova (`errors.py`): `InvalidRequestError` (validação local), `NoDataError` (resposta vazia) e `UpstreamError` (status, timeout, rede, circuito). A falha de upstream não é mais rotulada como entrada inválida; o serviço que falhou é nomeado pela URL. | `failure-matrix.json` (9 cenários), `tests/test_error_taxonomy.py` |
 | A-002 | F-002 / P2 | **verificada** | Retry só para recuperáveis: 429, 5xx, timeout e erro de transporte. 4xx não recuperável (400, 404) responde na primeira tentativa. Sem multiplicação entre camadas: um cliente por chamada lógica. | `failure-matrix.json` (400 → 1, 404 → 1, 429 → 3, 500 → 3, timeout c/ 2 retries → 3) |
 | A-003 | F-003, F-004 / P2 | **verificada** | `MCP_TRANSPORT` desconhecido → exit 2 com recusa explícita no entrypoint. Validação de faixa no bootstrap (`PORT`, timeout, retries, concorrência, rate limit) → exit 1 com mensagem de operador. `ConfigurationError` controlled; sem traceback cru. | `config-matrix.json`, `tests/test_config_validation.py`, `tests/test_entrypoint_script.py` |
-| A-004 | F-005 / P2 | **parcial** | `server.yaml` legado ainda descreve o Docker MCP Catalog. Drafts locais de `server.json` e `pblabs.app.yaml` foram materializados conforme R-06 e validados contra o schema MCP `2025-12-11` e PBLabs 0.2; permanecem draft, sem alegar namespace verificado. A publicação/digest ainda não existe e dependem da janela do owner. | Drafts em `docs/mcp/percival-weather-mcp/`; validação local com `jsonschema`/YAML em 2026-10-31; CI remoto `40689767125` só para `b7c7fa4`; publicação e pull por digest pendentes |
-| A-005 | F-006, F-015 / P2 | **parcial** | A nota local `docs/percival-integration.md` segue gitignored. A orientação sanitizada foi materializada em `docs/percival-integration-guide.md`, registrando `mounts=[]`, a limitação de prompts/resources no `MCPProvider` e os modos stdio/HTTP. `docs/docker-mcp-packaging.md` agora identifica como histórico o caminho Docker MCP Catalog. A publicação no histórico Git ainda depende de commit/push. | `docs/percival-integration-guide.md`, `docs/docker-mcp-packaging.md`, `resources-probe.json`; versão local escrita em 2026-10-31 |
+| A-004 | F-005 / P2 | **parcial** | `server.yaml` legado ainda descreve o Docker MCP Catalog. O `pblabs.app.yaml` segue o conteúdo de metadata aprovado por Bill no índice em 2026-10-30 (`manifest-approved`); isso não aprova release. O `server.json` e package continuam draft, com destino selecionado `docker.io/pbeanlabs` (confirmado por Bill para etapas posteriores); namespace claim/permissões não foram testados. Ambos passaram validação local contra MCP Registry `2025-12-11` e PBLabs 0.2. Publicação/digest e janela ficam para etapa posterior. | `docs/mcp/percival-weather-mcp/{server.json,pblabs.app.yaml}`; `jsonschema`/YAML validado em 2026-10-31; CI run `41224013323` aprovado em `fcc1350`; publicação, digest e pull anônimo futuros |
+| A-005 | F-006, F-015 / P2 | **verificada** | Orientação sanitizada versionada e publicada em `fcc1350`: `mounts=[]`, stateless/no secrets, stdio/HTTP separados, recursos/prompts existentes e limitação de exposição pelo `MCPProvider`. O documento Docker MCP Catalog foi marcado como histórico. A orientação não altera a configuração do manager. | `docs/percival-integration-guide.md`, `docs/docker-mcp-packaging.md`, `resources-probe.json`; GitHub `main` em `fcc1350` |
 | A-006 | F-007, F-014 / P2 | **verificada** | Build reprodutível: `SOURCE_DATE_EPOCH` no cache key, timestamps normalizados, `uv_cache.json` e logs apt/dpkg/ldconfig removidos, provenance desativado, destinos do `COPY` criados com o timestamp. Caminho documentado: `scripts/docker-build.sh`. | Build limpo e build com cache do mesmo SHA → **mesmo image ID** `sha256:821ea0f6…`; comparação por arquivo: 8.189 arquivos, 0 divergentes |
 | A-007 | F-008 / P3 | **verificada** | `serverInfo.version` = versão do produto (`0.9.0`), não a do SDK (`1.30.0`). | `session-ok.json` (stdio) e `http-mode.json` (HTTP) |
 | A-008 | F-009 / P3 | **verificada** | Cache de geocoding é compartilhado no processo, com TTL, limite de tamanho e lock preservados. O teste executa exatamente quatro consultas à mesma cidade em duas tools e comprova uma geocodificação. O probe de integração foi corrigido para repetir a mesma cidade nas duas tools e falhar se a contagem for diferente de 1; ainda não foi reexecutado contra fixture TLS. | `tests/test_geocoding_cache.py::test_two_tools_share_one_geocoding_call`; suíte local passou nesta execução. O antigo `cache-probe.json` (duas geocodificações) não é a evidência deste critério |
 | A-009 | F-010, F-011 / P3 | **verificada** | SIGINT encerra o container (exit 130 em 0,59 s) com log de shutdown; SIGTERM mantém exit 143 e passa a registrar o shutdown. EOF: saída 0 em 20/20 com log de shutdown. Pelo critério aceito, o tempo do servidor é a medida de aceite: **0,10 s a 0,32 s**. O atraso de até ~14 s observado pelo harness é teardown do container pelo daemon e deve ser reportado separadamente. | `lifecycle.json`, `lifecycle-sigterm.json`, `eof-server-side.txt` |
 | A-010 | F-012, F-013 / P3 | **verificada** (com correção de registro) | `resources/read` com alvo desconhecido → erro JSON-RPC **-32002** (era leitura bem-sucedida com payload de erro). `prompts/get` sem argumento obrigatório → erro JSON-RPC **-32602** (antes: código 0, não conformante). **Correção do registro:** o texto do relatório de origem afirma que `prompts/get` devolvia `{"messages": []}` sem erro; a evidência bruto (`resources-probe.json` da Etapa 1) mostra `rpc_error: "Missing required arguments: {'city'}"` — o servidor já respondia com erro, e o relatório confundiu `message_count: 0` com ausência de erro. O defeito de F-012 era o **código** não conformante, não a ausência de erro. | `resources-probe.json` (com `rpc_error_code`), `tests/test_mcp_wire_contract.py` |
 | A-011 | F-016 / P3 | **verificada** (decisão do owner) | `/healthz` e `/health` seguem abertos; `/metrics` passa a exigir o bearer quando há token configurado. Decisão datada e registrada; o vazio inicial de `/metrics` está explicado nos docs. | `tests/test_metrics_auth.py` (401 sem bearer/incorreto, 200 com bearer ou sem token configurado), `docs/decisions/2026-10-28-http-endpoint-auth-policy.md`; o `wx_http_mode.py` atual não prova o caso de `/metrics` autenticado |
-| A-012 | DIST-01, DIST-02 / P2 | **parcial** | O passo Trivy está implementado e passou no CI remoto para `b7c7fa4`. Novo scan local do candidato `f62d438` (ID `sha256:680872039a8f…`) com Trivy 0.76.1/DB atualizada em 2026-10-31 encontrou 0 vulnerabilidades nas imagens Debian e Python. Não transferir o VEX anterior: seus statements estão vinculados ao image ID anterior. CI para o estado atual, publicação/digest e qualquer VEX exigível para artefato publicado continuam pendentes. | `docs/security/trivy-raw-f62d438-68087203.json`, resumo em `docs/security/README.md`; run `40689767125` cobre `b7c7fa4`, não este estado local |
+| A-012 | DIST-01, DIST-02 / P2 | **parcial** | O scan Trivy passou no CI remoto para `fcc1350`; candidato local `f62d438` (ID `sha256:680872039a8f…`) também escaneado com Trivy 0.76.1/DB atualizada em 2026-10-31 e 0 CVEs em Debian/Python. Não transferir o VEX anterior, vinculado a outro image ID. Bill decidiu não emitir VEX vazio para scan sem findings. Seguem pendentes publicação/digest e VEX assinado por CVE se findings forem encontrados no artefato final. | `docs/security/trivy-raw-f62d438-68087203.json`, `docs/security/README.md`; CI run `41224013323` em `fcc1350` com scan/upload aprovados; nenhum artefato publicado |
 
 ### 6.2 Vereditos `V-*`
 
@@ -215,7 +214,7 @@ pendente de aceite.
 | `V-MCP` | **aprovado** | `initialize` → `notifications/initialized` → `tools/list` → `tools/call`; 9/9 com `isError=false`; 3 prompts, 3 resources e 1 template; stdout só JSON-RPC; `serverInfo.version=0.9.0`; erros de `prompts/get` e `resources/read` no wire com códigos padrão |
 | `V-FUNC` | **aprovado localmente; smoke real executado** | 9 tools contra upstream simulado e matriz de falhas; em 2026-10-31 uma chamada controlada a `weather_get_current` em São Paulo executou geocoding + forecast real com HTTP 200, `isError=false`, `initialize`/9 tools e encerramento limpo. É evidência de caminho ponta a ponta, não uma matriz live de todas as tools |
 | `V-PILOT` | **não avaliado** | O par piloto continua sendo Percival + Notes (D-01); este checkout não é piloto |
-| `V-REUSE` | **demonstrado localmente no subconjunto stdio comum** | O harness compartilhado `pblabs-mcp-stdio/v1` passou em Weather e Notes. A prova não substitui testes funcionais, CI do produto ou validação HTTP; o harness local Weather continua útil para probes específicas do produto. |
+| `V-REUSE` | **demonstrado localmente no subconjunto stdio comum** | O harness compartilhado `pblabs-mcp-stdio/v1` passou em Weather e Notes. A prova não substitui testes funcionais, CI do produto ou smoke HTTP; o harness local Weather continua útil para probes específicas do produto. Smoke real Open-Meteo limitado a uma chamada separado em 2026-10-31. |
 
 ### 6.3 Revisão cruzada do código — 2026-10-30
 
@@ -244,15 +243,15 @@ pendente de aceite.
 
 | Pendência | Responsável | Observação |
 |---|---|---|
-| Publicação da imagem e `RepoDigest`; PR no índice PBLabs | Bill Kopp, owner único (Etapa 2) | Autorizada após schema válido e CI remoto aprovado; destino `pblabs-mcp-index`, sem Docker MCP Catalog. Definir a janela datada na execução; imagem ainda não publicada |
-| Materialização/validação do schema S2-C03 e alinhamento S2-C01 | Bill Kopp | Formato decidido em `R-06`; implementar e validar uma vez. Qualquer decisão de owner fica registrada diretamente neste item, sem aceite paralelo |
+| Publicação da imagem e `RepoDigest`; PR no índice PBLabs | Bill Kopp, owner único (etapa posterior) | Bill confirmou `docker.io/pbeanlabs` como destino para etapas posteriores e escolheu o fluxo protegido da estratégia IaC: release aprovada → push → digest → pull anônimo → PR no índice. Não publicar nesta etapa; a janela ainda não foi definida. |
+| Adoção dos contratos S2-C03/S2-C01 no consumer | Donos do índice/manager; Bill Kopp para decisões | Drafts `server.json` e `pblabs.app.yaml` materializados e schema-validados localmente; a adoção no catálogo/manager, policy e testes do consumer são gates futuros e não autorizam release. |
 | Validação controlada do Open-Meteo real | Bill Kopp autorizou | Smoke de uma chamada `weather_get_current` em São Paulo executado em 2026-10-31: geocoding e forecast HTTP 200, `isError=false`, encerramento limpo. Não foi uma matriz live das 9 tools; ampliar só se uma decisão de liberação exigir essa cobertura |
-| Assinatura VEX e associação ao artefato publicado | Bill Kopp | Bill assinará quando necessário; associar ao digest publicado após publicação |
-| Atualização dos probes `wx_cache_probe.py` e `wx_http_mode.py` | Executor do produto | Comentários/cenários estão desatualizados; não contradizem os testes atuais, mas não devem ser reutilizados como prova dos critérios A-008/A-011 antes da correção |
+| VEX do artefato publicado | Bill Kopp | Decisão de Bill em 2026-10-31: sem CVEs, não emitir VEX vazio; anexar scan do digest exato. Se houver CVE a dispor, VEX assinado por Bill por CVE e ligado ao digest exato. |
+| Atualização dos probes `wx_cache_probe.py` e `wx_http_mode.py` | Executor do produto | Corrigidos e lintados em `fcc1350`; probe HTTP executado no candidato. Probe de cache corrigido para o cenário A-008 mas ainda não reexecutado contra fixture TLS; o teste unitário exato permanece a evidência de A-008 |
 | Perfil de mounts do broker (`R-10`) e regressões mounts/secrets/lifecycle | Bill Kopp, owner único da infraestrutura | Decisão de política já tomada: default amplo conforme B14/B22/B23–B25; Weather usa explicitamente `mounts=[]`. Implementação e comprovação continuam pendentes |
-| Orientação sanitizada em documentação versionada | Bill Kopp | Decidido publicar; a nota atual é gitignored e não satisfaz a publicação versionada |
+| Orientação sanitizada em documentação versionada | concluída em `fcc1350` | Guia sanitizado versionado e enviado a `origin/main`; preserva `mounts=[]` e descreve o limite do consumidor |
 | `V-REUSE` comum entre MCPs | **demonstrado localmente em 2026-10-30** | A mesma revisão do harness `pblabs-mcp-stdio/v1` passou em Notes e Weather; não substitui testes funcionais nem validação HTTP. |
-| `E-042` (egresso histórico) | — | **Não reescrito**: o registro da Etapa 1 permanece como está. Nesta campanha nenhum serviço real foi exercitado; o único egresso deliberado foi o download do banco do Trivy e o push para `origin` |
+| `E-042` (egresso histórico) | — | **Registro histórico não reescrito**. Nesta campanha houve uma chamada controlada de leitura ao Open-Meteo em 2026-10-31 (geocoding + forecast); nenhum outro serviço externo de runtime foi chamado. Também houve download da DB Trivy e push do source aprovado a `origin`. |
 
 ### 6.5 Decisões do owner registradas
 
@@ -274,23 +273,37 @@ pendente de aceite.
    são registrados uma vez no item relevante; não há aprovador adicional,
    validação cruzada ou pacote de aprovação. O aceite de S2-C01 também é direto
    por Bill e não cria um gate de aprovação separado.
-8. **Publicação/homologação** → autorizadas por Bill após schema validado e CI remoto
-   aprovado; usar `pblabs-mcp-index`, sem dependência do Docker MCP Catalog.
-   Bill definirá a janela datada da publicação e do pull por digest.
-9. **VEX** → Bill Kopp assinará quando necessário para a imagem publicada.
-10. **Open-Meteo real** → validação controlada autorizada por Bill Kopp.
-11. **Documentação de integração** → publicar orientação sanitizada em arquivo
-    versionado, preservando `mounts=[]`; a nota local ignorada pelo Git não basta.
+8. **Publicação/homologação** → destino `docker.io/pbeanlabs` confirmado por Bill
+   para etapas posteriores; seguir o fluxo protegido release → digest → pull
+   anônimo → PR em `pblabs-mcp-index`, sem Docker MCP Catalog. Não há janela
+   agendada nesta etapa.
+9. **VEX** → decisão de Bill em 2026-10-31: se o scan do artefato exato não
+   encontrar CVEs, não criar OpenVEX vazio; se houver CVE, assinar VEX por CVE
+   ligado ao digest final.
+10. **Open-Meteo real** → uma validação controlada de leitura foi executada em
+    2026-10-31; não representa cobertura live de todas as tools.
+11. **Documentação de integração** → orientação sanitizada versionada e enviada
+    a `origin/main` em `fcc1350`, preservando `mounts=[]`; nota local gitignored
+    não era suficiente.
 12. **Fechamentos técnicos aceitos** → comprovar A-008 com quatro consultas à
     mesma cidade em duas tools (**comprovado em 2026-10-30** pelo teste de
     regressão); em A-009 usar o tempo de encerramento do processo do servidor
     (limite de 1 s em 20 execuções EOF) como critério e reportar separadamente o
     teardown do container; corrigir a contagem do resumo.
+13. **Padrão de distribuição** → manter estados separados: `manifest-approved`
+    aprova só metadata; release exige OCI real, digest e aprovação própria; o
+    catálogo permanece vazio até PR após pull anônimo. O destino selecionado
+    para etapa posterior é `docker.io/pbeanlabs`.
+13. **Fluxo de distribuição** → seguir o padrão documentado em IaC/index:
+    aprovação de release, publicação via pipeline protegido, digest, pull
+    anônimo e PR no índice. O status `manifest-approved` atesta apenas metadata;
+    não equivale a release nem insere o app no catálogo.
 
 | Data / owner | Ações / achados | SHA inicial → final | Mudanças / evidências locais | Resultado / V-* / pendências |
 |---|---|---|---|---|
 | 2026-10-28 / Bill Kopp (owner), agente `<positronic>` (execução); decisões adicionais 2026-10-29 | A-001 a A-012 executadas: 1 P1, 6 P2, 5 P3. F-012 corrigido no registro (o erro existia, o código não era conformante). | Inicial `5943642b6f9b98591f867258a167a461ba332cfd` → final `c82f07c` (publicado em `origin/main`); candidato construído de `ed2caa8` | 12 commits; 222 testes verdes (baseline 149), cobertura 74 %; ruff e mypy limpos; regressão verificada contra `144dd44` (17 falhas + 3 erros de coleta); candidato `sha256:821ea0f6…`; 9 cenários de falha, 19 de config/entrada, cache, resources/prompts, 20 EOF, SIGTERM/SIGINT/`docker stop`; Trivy local 0/0 com base de 2026-10-28 | **8 de 12 ações verificadas; 4 parciais** (estado registrado em 2026-10-28: A-004, A-005, A-008 e A-012). `V-BUILD`, `V-RUN`, `V-CONFIG`, `V-MCP` aprovados; `V-FUNC` aprovado localmente, validação real autorizada e pendente; `V-DATA` não aplicável; `V-PILOT` não avaliado; `V-REUSE` aceito no escopo Weather. Pendências naquele momento listadas na seção 6.4 deste plano. |
 | 2026-10-30 / agente `<positronic>` (revisão cruzada) | Revisão dos critérios A-004/A-005/A-008/A-011/A-012 e do estado local/remoto. | HEAD local `5939c2f`; código igual a `b7c7fa4`, cinco commits documentais à frente de `origin/main` | `uv run pytest`: 222 passed. GitHub Actions run `40689767125` em `b7c7fa4`: todos os jobs passaram, inclusive scan Trivy e upload da evidência. Detectados probes cache/HTTP desatualizados e documentação de catálogo em conflito com `R-06`. | **9 de 12 ações verificadas; 3 parciais** (A-004, A-005 e A-012). CI remoto aprovado; materialização/validação do schema e manifest de `R-06`, orientação versionada, publicação/digest, assinatura VEX e validação real seguem pendentes. A-008 verificada pelo teste exato. Pendências listadas em 6.4. |
+| 2026-10-31 / Bill Kopp (owner), agente `<positronic>` (execução) | A-005 fechada com guia sanitizado versionado; drafts R-06 validados; probes atualizados; decisão de distribuição/VEX registrada. | `fcc13502e5116e7825e65b1b494c99a9340353b3` enviado a `origin/main`; image local adicional `f62d438` ID `sha256:680872039a8f…` | Suíte 222, Ruff, format e mypy passaram localmente; schema `server.json`/PBLabs 0.2 passou localmente; smoke HTTP validou auth e 3×200/3×429; uma chamada real `weather_get_current` geocoding+forecast passou; Trivy 0.76.1/DB 2026-10-31 em local e GitHub Actions run `41224013323` em `fcc1350` passaram, com upload de evidência/SBOM. Index local: 10 testes passed e `catalog.py --check` passou com catálogo vazio. | **10 de 12 ações verificadas; 2 parciais** (A-004 e A-012). Bill definiu `docker.io/pbeanlabs` e padrão release → digest → pull anônimo → PR no índice para etapa posterior; não há janela agendada, claim/permissões não testados, imagem/digest não publicados. Bill decidiu sem VEX vazio se zero findings; se CVE, VEX por CVE no digest exato. Cache probe corrigido, mas execução contra fixture TLS permanece pendente. |
 
 ### 6.6. Harmonização com IaC — 2026-10-31
 
@@ -303,23 +316,29 @@ pendente de aceite.
 - O `V-REUSE` comum está demonstrado para Weather e Notes usando
   `pblabs-mcp-stdio/v1` (identidade/versão, `initialize`, `tools/list`, stdout
   protocolar, UID opcional e encerramento). É uma prova stdio limitada: não
-  substitui o harness/testes funcionais Weather, o scan/CI do candidato ou as
-  validações HTTP e do provider real que permanecem pendentes.
+  substitui o harness/testes funcionais Weather, o scan/CI do candidato ou o
+  smoke HTTP. O provider real recebeu uma chamada controlada, não uma matriz.
 - A ação A-011 do plano IaC, sobre provenance do bundle, é específica ao
   bootstrap Percival. O scan/VEX Weather permanece associado aos candidatos/image IDs
   registrados; não transfere findings, disposições ou promoção a novo candidato.
-  Cada CVE destinado à promoção exige VEX assinado por Bill para o artefato exato.
+  Decisão de Bill em 2026-10-31: se o scan exato não encontrar CVEs, não emitir
+  VEX vazio; se houver findings, VEX assinado por CVE e ligado ao digest exato.
 
 ### 6.7 Continuação da execução local — 2026-10-31
 
-- Materializados drafts de `server.json` (MCP Registry schema `2025-12-11`) e
+- Materializados `server.json` (MCP Registry schema `2025-12-11`) e
   `pblabs.app.yaml` (PBLabs 0.2) em `docs/mcp/percival-weather-mcp/`; ambos
-  passaram validação local com `jsonschema` e YAML. Permanecem `draft`: sem
-  claim de namespace, digest publicado ou aprovação de release.
+  passaram validação local com `jsonschema` e YAML. O PBLabs app manifest usa
+  `manifest-approved`, conforme a aprovação de metadata dos seis manifests
+  registrada por Bill no índice em 2026-10-30; seus lifecycle observations são
+  históricos de Stage-1. `server.json`/package permanecem draft, sem release ou
+  namespace claim verificado. Bill confirmou `docker.io/pbeanlabs` como destino
+  para etapas posteriores, sem agendar publicação nesta etapa.
 - Criada `docs/percival-integration-guide.md` com o perfil `mounts=[]`, modos
   stdio/HTTP e limite de prompts/resources do `MCPProvider`. O documento antigo
   `docs/docker-mcp-packaging.md` agora adverte que o caminho Docker MCP Catalog
-  é histórico. Os arquivos ainda precisam entrar no histórico Git.
+  é histórico. Os arquivos e manifests foram commitados e enviados a
+  `origin/main` em `fcc1350`.
 - Corrigido `wx_cache_probe.py` para quatro chamadas à mesma cidade em duas
   tools, uma geocodificação e falha explícita fora do critério; atualizado
   `wx_http_mode.py` para testar `/metrics` sem/com bearer e enviar `initialize`
@@ -337,31 +356,45 @@ pendente de aceite.
   em pacotes Debian e Python. Evidência bruta:
   `docs/security/trivy-raw-f62d438-68087203.json`. Não reutilizar o OpenVEX
   anterior, vinculado a outro image ID.
-- CI remoto ainda cobre somente `b7c7fa4` (run `40689767125`). Não houve push,
-  publicação de imagem, digest externo, claim de namespace ou promoção.
+- GitHub Actions run `41224013323` concluiu com sucesso em `fcc1350` em 2026-10-31:
+  Python 3.10/3.11/3.12 e Docker build/MCP conformance, scan Trivy e uploads de
+  vulnerabilidade/SBOM passaram. Não houve publicação de imagem, digest externo,
+  verificação de claim/permissões ou promoção. `fcc1350` é um push de fonte
+  autorizado; não equivale a publicar a imagem.
+- No checkout local do índice, já modificado por Bill, `.venv/bin/python -m
+  pytest -q` passou (10) e `scripts/catalog.py --check` validou o catálogo vazio.
+  O checkout do índice não foi editado nesta execução nem tem remote configurado.
+- Decisão de Bill para o artefato futuro: se scan exato reportar 0 CVEs, não
+  emitir OpenVEX vazio; se houver CVEs, preparar VEX por CVE, assinado por Bill
+  e associado ao digest exato. O scan local f62d438 e o scan CI fcc1350 reportaram
+  zero CVEs.
 
 ## 7. Última etapa — atualizar o plano coordenador
 
 - [x] Reler o [stage-2 geral](../../../positronic-bean-IaC/docs/plans/2026-10-27-iac-v1-stage-2-remediation-plan.md),
   atualizar **S2-WX na seção 3** e acrescentar retorno na **seção 7**, com contagens,
   SHA/evidência, aceites locais/externos, dependências liberadas e bloqueios.
-- [x] Preservar outros retornos e indicar efeito nas etapas 2/4/5; sem acesso à
-  IaC, fornecer resumo e manter **aguardando sincronização**. Concluído exige
+- [x] Preservar outros retornos e indicar efeito nas etapas 2/4/5; com o checkout
+  IaC disponível, atualizar somente S2-WX e manter o coordenador local (sem push).
+  Concluído exige
   registrar o estado técnico e a decisão única de Bill quando necessária; não
   criar rodada adicional de aprovação. Transferência não é correção demonstrada.
 
 **Status:** retorno original concluído em 2026-10-28. O plano coordenador foi
 atualizado naquele momento no checkout `positronic-bean-IaC` (commit local,
 sem push, conforme decisão do owner): linha S2-WX da seção 3 e entrada na
-tabela da seção 7. As decisões complementares de Bill foram sincronizadas no
-coordenador em 2026-10-31 como alteração local não commitada. Na revisão
-cruzada de 2026-10-30, o estado foi atualizado para **9 de 12 ações verificadas
-e 3 parciais** (A-004, A-005 e A-012): A-008 passou a verificada pelo teste de
-regressão exato. O CI remoto foi aprovado no SHA de código `b7c7fa4`. O checkout
-atual está em `f62d438`; a imagem local desse SHA foi smoke-tested, escaneada e
-validada uma vez contra Open-Meteo real em 2026-10-31. Isso não equivale a CI
-remoto do SHA atual, publicação ou homologação de release. As alterações desta
-campanha ainda estão locais e não commitadas.
+tabela da seção 7. O checkout IaC estava disponível nesta continuação; a linha
+S2-WX e o retorno foram atualizados localmente em 2026-10-31, sem push. O estado
+atual é **10 de 12 ações verificadas e 2 parciais** (A-004 e A-012); A-005 foi
+fechada pela orientação versionada em `fcc1350`, e A-008 continua verificada
+pelo teste de regressão exato. O CI remoto run `41224013323` passou para
+`fcc1350` em 2026-10-31 (Python 3.10/3.11/3.12, build Docker/MCP, scan Trivy e
+uploads de evidência). O image local `f62d438` foi smoke-tested, escaneado e
+validado uma vez contra Open-Meteo real. Bill confirmou `docker.io/pbeanlabs`
+como destino posterior, escolheu o fluxo protegido de publicação e decidiu não
+emitir VEX vazio se scan exato não encontrar CVEs. Publicação, pull anônimo,
+namespace permissions/claim e homologação seguem etapas posteriores. As
+anotações finais deste plano e do coordenador permanecem locais até commit.
 
 **Efeito nas etapas 2/4/5 do roadmap geral:** nenhum gate de publicação é
 liberado apenas pelo CI. A Etapa 2 aguarda schema/manifest de `R-06` validado;
