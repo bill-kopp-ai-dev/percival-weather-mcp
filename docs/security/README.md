@@ -14,7 +14,7 @@ restricted to the gateway's image ID, not to this server's.
 ## Scope of the document
 
 The statements cover the CVEs that the F3 triage
-([`docs/issues/2026-10-10-f3-status.md`](../issues/2026-10-10-f3-status.md))
+([`docs/issues/closed/2026-10-10-f3-status.md`](../issues/closed/2026-10-10-f3-status.md))
 recorded against the image that was running at the time
 (`sha256:e75fdd4abc8a…`, 0 Critical / 44 High). They do **not** restate the
 whole history of the gate: they record, for the current candidate, why those

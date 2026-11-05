@@ -1,6 +1,7 @@
 # Stage-2 — Remediação do Percival Weather MCP
 
-**Data / revisão:** emissão 2026-10-27; atualização 2026-10-31 / 1.8.
+**Data / revisão:** emissão 2026-10-27; atualização 2026-11-05 / 1.9
+(fechamento documental do F3).
 **ID / estado:** S2-WX / plano documental finalizado; 10 de 12 ações verificadas.
 A-004/A-012 permanecem parciais nos critérios de distribuição adiados para etapa
 futura. Percival está usando o candidato local Weather e Bill reportou um smoke
@@ -19,8 +20,10 @@ Tratar os 16 achados da **seção 6** do
 [relatório Weather](../../../positronic-bean-IaC/docs/reports/2026-10-27-percival-weather-mcp-iac-readiness-report.md#6-achados-issues-e-inconsistências),
 com ações/revalidação nas seções 7/9: 12 ações (1 P1, 6 P2, 5 P3), sem P0.
 Baseline e HEAD na emissão: `144dd44078bea4c7ba35111e15442cfc6bf14398`.
-Nota `docs/issues/2026-10-10-f3-status.md` localmente excluída antes da campanha;
-preservar a exclusão. `R-05` define `pblabs-mcp-index` como tracker F3 canônico
+Nota `docs/issues/closed/2026-10-10-f3-status.md` nunca foi excluída deste checkout
+(presente em `main` desde `9746453`, blob idêntico em `b7c7fa4` e no HEAD);
+em 2026-11-05 foi reduzida a um ponteiro, sem cópia de conteúdo, conforme
+`R-05`. `R-05` define `pblabs-mcp-index` como tracker F3 canônico
 por imagem, sem manter cópia concorrente neste checkout.
 
 [Coordenador stage-2](../../../positronic-bean-IaC/docs/plans/2026-10-27-iac-v1-stage-2-remediation-plan.md)
@@ -40,7 +43,9 @@ ou contato com serviço público é executado pela emissão deste plano.
   — SHA inicial `5943642b6f9b98591f867258a167a461ba332cfd`; uma decisão anterior
   previa restaurar a nota como espelho F3, mas `R-05` a substitui: o tracker
   canônico fica em `pblabs-mcp-index`, por imagem, sem espelho concorrente neste
-  checkout. O OpenVEX específico do artefato permanece em `docs/security/`.
+  checkout. A nota permaneceu versionada no checkout e foi reduzida a ponteiro
+  em 2026-11-05 (ver 6.11). O OpenVEX específico do artefato permanece em
+  `docs/security/`.
 - [x] Reconstruir matriz upstream com fixture TLS/host aliases controlados;
   conferir roteamento antes de iniciar para evitar egresso acidental (E-042).
   — CA local e rede `iac-wx-net` recriadas; o roteamento foi conferido
@@ -443,6 +448,34 @@ pendente de aceite.
   referência de configuração para ela. Inventário posterior confirmou que o
   container Percival continua running no novo ID e que a imagem antiga não está
   mais localmente disponível; reconstrução será necessária para recuperá-la.
+
+### 6.11 Fechamento do espelho F3 local — 2026-11-05
+
+- A nota `docs/issues/closed/2026-10-10-f3-status.md` foi reduzida a ponteiro: registra
+  o que foi resolvido, o que foi adiado e onde está o canônico, sem copiar a
+  tabela de CVEs, a política de imagem ou o relatório de triagem. Ela deixou
+  de descrever a imagem `94c7fde` (0 Critical / 44 High) como estado atual.
+- Criada a seção `percival-weather-mcp` no tracker canônico
+  `~/Projects/pblabs-mcp-index/docs/f3-tracker.md`, com a evidência de scan
+  `servers/weather/security-scan-f62d438-68087203.json` (Trivy 0.76.1, base de
+  2026-10-31, 0 em Debian e 0 em Python, image ID `sha256:68087203…`), o
+  ponteiro para o relatório bruto do produto e a disposição de VEX: nenhum VEX
+  é devido para esse image ID, pela decisão do owner de 2026-10-31; o OpenVEX
+  existente continua ligado ao digest `821ea0f6…` e não é reaproveitado.
+- O índice segue com o catálogo vazio e o manifest do Weather em
+  `manifest-approved`; a seção do tracker não autoriza publicação, claim de
+  namespace, cutover nem release.
+- Corrigida no §1 a afirmação de que a nota teria sido excluída antes da
+  campanha: o blob é o mesmo em `b7c7fa4` e no HEAD, ou seja, ela nunca foi
+  removida deste checkout.
+- **Continua em aberto, fora deste fechamento:** a recuperação dos artefatos
+  removidos do gateway (`docs/reports/2026-10-10-f3-remediation-triage.md` e
+  `docs/Decisions/2026-10-09-docker-image-posture-policy.md`, recuperáveis em
+  `nanobot` em `c185b51a^`) para o destino do `R-05` (item AP-11) e os
+  critérios de distribuição adiados em 6.8.
+- O owner moveu a nota para `docs/issues/closed/2026-10-10-f3-status.md` em
+  2026-11-05, refletindo o encerramento; os links internos e entre repositórios
+  foram ajustados ao novo caminho.
 
 ## 7. Retorno do coordenador e fechamento documental
 
