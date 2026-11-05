@@ -54,6 +54,7 @@ OUTPUT_DIR = REPO_ROOT / "docs" / "mcp" / "percival-weather-mcp"
 JSON_OUT = OUTPUT_DIR / "oci-label.json"
 YAML_OUT = OUTPUT_DIR / "oci-label.yaml"
 INLINE_OUT = OUTPUT_DIR / "oci-label.inline"
+DOCKERFILE = REPO_ROOT / "Dockerfile"
 
 
 class OciLabelSpec:
@@ -161,6 +162,19 @@ def _diff_outputs(rendered: dict[str, str]) -> list[str]:
     return mismatches
 
 
+def render_dockerfile(inline: str) -> str:
+    """Update only the single generated metadata instruction, not build settings."""
+    lines = DOCKERFILE.read_text(encoding="utf-8").splitlines(keepends=True)
+    matches = [
+        i for i, line in enumerate(lines) if line.startswith("LABEL io.docker.server.metadata=")
+    ]
+    if len(matches) != 1:
+        raise ValueError("Expected exactly one generated Dockerfile metadata label")
+    escaped = inline.replace("\\", "\\\\").replace('"', '\\"').replace("$", "\\$")
+    lines[matches[0]] = f'LABEL io.docker.server.metadata="{escaped}"\n'
+    return "".join(lines)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(
@@ -173,9 +187,12 @@ def main(argv: list[str] | None = None) -> int:
     tools = load_registry_tools()
     label = build_oci_label(tools)
     rendered = render_outputs(label)
+    dockerfile = render_dockerfile(rendered[INLINE_OUT.name])
 
     if args.check:
         mismatches = _diff_outputs(rendered)
+        if dockerfile != DOCKERFILE.read_text(encoding="utf-8"):
+            mismatches.append("drift: Dockerfile metadata label")
         if mismatches:
             print(
                 "OCI label drift detected — run `uv run python scripts/build_oci_label.py`:",
@@ -191,6 +208,8 @@ def main(argv: list[str] | None = None) -> int:
     for filename, content in rendered.items():
         (OUTPUT_DIR / filename).write_text(content, encoding="utf-8")
         print(f"wrote {OUTPUT_DIR / filename}")
+    DOCKERFILE.write_text(dockerfile, encoding="utf-8")
+    print(f"wrote generated metadata label in {DOCKERFILE}")
     return 0
 
 

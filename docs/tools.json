@@ -1,6 +1,6 @@
 {
   "server": "percival-weather-mcp",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "tools": [
     {
       "name": "weather_convert_time",
@@ -45,14 +45,14 @@
     },
     {
       "name": "weather_get_air_quality",
-      "description": "Get compact air quality information for a city. Returns agent-friendly JSON text with current conditions, summary statistics, and a short hourly sample. Use this for concise analysis.",
+      "description": "Get compact air quality information for a city. Returns agent-friendly JSON text with current conditions, summary statistics, and a short hourly sample. Use this for concise analysis. Includes selected location, UTC model timestamps, valid/missing coverage and provider-computed US AQI subindices.",
       "input_schema": {
         "properties": {
           "city": {
             "description": "City name in English, optionally with region/country to disambiguate.",
             "examples": [
               "London",
-              "S\u00e3o Paulo, BR"
+              "São Paulo, BR"
             ],
             "maxLength": 200,
             "minLength": 1,
@@ -76,6 +76,8 @@
                   ],
                   "type": "string"
                 },
+                "maxItems": 9,
+                "minItems": 1,
                 "type": "array"
               },
               {
@@ -105,14 +107,14 @@
     },
     {
       "name": "weather_get_air_quality_details",
-      "description": "Get detailed air quality data for a city as structured JSON text. Use this tool when downstream logic needs raw API-like fields in 'full_data'.",
+      "description": "Get detailed air quality data for a city as structured JSON text. Use this tool when downstream logic needs raw API-like fields in 'full_data'. Preserves all upstream arrays; adds location, temporal coverage and provider-computed US AQI (weather://aqi).",
       "input_schema": {
         "examples": [
           {
             "city": "Beijing"
           },
           {
-            "city": "S\u00e3o Paulo",
+            "city": "São Paulo",
             "variables": [
               "pm2_5",
               "ozone"
@@ -124,7 +126,7 @@
             "description": "City name in English, optionally with region/country to disambiguate.",
             "examples": [
               "Beijing",
-              "S\u00e3o Paulo"
+              "São Paulo"
             ],
             "maxLength": 200,
             "minLength": 1,
@@ -148,6 +150,8 @@
                   ],
                   "type": "string"
                 },
+                "maxItems": 9,
+                "minItems": 1,
                 "type": "array"
               },
               {
@@ -174,13 +178,13 @@
     },
     {
       "name": "weather_get_by_range",
-      "description": "Get weather data for a city between two calendar dates (inclusive). Returns a compact JSON payload optimized for agent analysis, including period metadata, summary statistics, and an hourly sample.",
+      "description": "Get weather data for a city between two calendar dates (inclusive). Returns a compact JSON payload optimized for agent analysis, including period metadata, summary statistics, and an hourly sample. Forecast window: UTC today-92 through today+15 days; default maximum 16 days inclusive. sample_mode selects first/last/spread (up to 12 rows); coverage separates past/present and future model data.",
       "input_schema": {
         "examples": [
           {
-            "city": "Lisbon",
-            "end_date": "2026-03-07",
-            "start_date": "2026-03-01"
+            "city": "Lisbon, Portugal",
+            "end_date": "2026-11-07",
+            "start_date": "2026-11-05"
           }
         ],
         "properties": {
@@ -198,9 +202,20 @@
             "type": "string"
           },
           "end_date": {
-            "description": "End date in ISO 8601 calendar format: YYYY-MM-DD (inclusive). The total range (end_date - start_date + 1) must be <= 16 days.",
+            "description": "End date in ISO 8601 calendar format: YYYY-MM-DD (inclusive). The inclusive duration limit defaults to 16 days (see response schema resource). Forecast policy: today UTC minus 92 days through today UTC plus 15 days.",
             "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
             "title": "End Date",
+            "type": "string"
+          },
+          "sample_mode": {
+            "default": "first",
+            "description": "Hourly sample selection: first, last or spread; at most 12 rows.",
+            "enum": [
+              "first",
+              "last",
+              "spread"
+            ],
+            "title": "Sample Mode",
             "type": "string"
           }
         },
@@ -215,7 +230,7 @@
     },
     {
       "name": "weather_get_current",
-      "description": "Get a concise, human-readable snapshot of current weather for a city. Use this tool when you need a short summary (temperature, humidity, wind, precipitation context, pressure, clouds, UV, visibility), not raw datasets.",
+      "description": "Get a concise, human-readable snapshot of current weather for a city. Use this tool when you need a short summary (temperature, humidity, wind, precipitation context, pressure, clouds, UV, visibility), not raw datasets. Includes selected location and the nearest hourly model valid time in UTC.",
       "input_schema": {
         "examples": [
           {
@@ -225,12 +240,12 @@
             "city": "New York"
           },
           {
-            "city": "S\u00e3o Paulo, BR"
+            "city": "São Paulo, BR"
           }
         ],
         "properties": {
           "city": {
-            "description": "City name in English, optionally with region/country to disambiguate (for example: 'Springfield, US' or 'London, UK'). Control characters, angle brackets and excessive whitespace are stripped automatically.",
+            "description": "City name in English, optionally with region/country to disambiguate (for example: 'Springfield, US' or 'London, UK'). Control characters, excessive whitespace are stripped automatically; unsafe punctuation is rejected.",
             "examples": [
               "London, UK",
               "New York"
@@ -250,7 +265,7 @@
     },
     {
       "name": "weather_get_details",
-      "description": "Get detailed structured JSON weather data for a city. Use this when you need raw fields for downstream processing. Optionally include a short forecast window.",
+      "description": "Get detailed structured JSON weather data for a city. Use this when you need raw fields for downstream processing. Optionally include a short forecast window. Includes resolved location, model provenance, reference_time and UTC valid_time.",
       "input_schema": {
         "examples": [
           {
@@ -268,7 +283,7 @@
           },
           "include_forecast": {
             "default": false,
-            "description": "When true, attaches a 'forecast' array with the next 24 hours of hourly observations. Defaults to false for a smaller payload.",
+            "description": "When true, attaches a 'forecast' array with the next 24 hours of hourly model data. Defaults to false for a smaller payload.",
             "title": "Include Forecast",
             "type": "boolean"
           }
@@ -336,7 +351,7 @@
     },
     {
       "name": "weather_get_status",
-      "description": "Check the operational status of the weather server.",
+      "description": "Check process liveness and server identity; upstream readiness is not checked.",
       "input_schema": {
         "type": "object",
         "properties": {},
@@ -403,13 +418,13 @@
     {
       "uri": "weather://aqi",
       "name": "weather_aqi",
-      "description": "Air-quality risk bands per pollutant (PM2.5, PM10, ozone, NO2, SO2, CO) following WHO 2021 / EPA breakpoints. Each band has ``min``, ``max``, ``label`` and an optional ``advice`` recommendation. Use this resource when the user asks whether the air is safe for outdoor activity.",
+      "description": "Dimensionless US AQI categories for provider-computed pollutant subindices. Includes units, temporal methods and limitations; never apply index bands to hourly concentrations.",
       "mime_type": "text/plain"
     },
     {
       "uri": "weather://codes",
       "name": "weather_codes",
-      "description": "WMO weather code reference table used by the Open-Meteo API. Each entry has a numeric ``code`` and a human-readable ``description``. Consult this resource whenever the agent needs to translate a numeric code returned by ``weather_get_details`` or ``weather_get_by_range`` into plain text (e.g. code 95 \u2192 'Thunderstorm: slight or moderate').",
+      "description": "WMO weather code reference table used by the Open-Meteo API. Each entry has a numeric ``code`` and a human-readable ``description``. Consult this resource whenever the agent needs to translate a numeric code returned by ``weather_get_details`` or ``weather_get_by_range`` into plain text (e.g. code 95 → 'Thunderstorm').",
       "mime_type": "text/plain"
     },
     {
@@ -423,7 +438,7 @@
     {
       "uri_template": "weather://schema/{tool_name}",
       "name": "weather_tool_schema",
-      "description": "Top-level keys returned by the detailed weather/air-quality tools. Pass ``tool_name`` as one of: ``weather_get_details``, ``weather_get_by_range``, ``weather_get_air_quality_details``. Consult this resource before calling those tools so the agent can plan which fields to extract."
+      "description": "Generated JSON Schema and semantic notes for weather/air-quality JSON text outputs. Pass ``tool_name`` as one of: ``weather_get_details``, ``weather_get_by_range``, ``weather_get_air_quality_details``. Consult this resource before calling those tools so the agent can plan which fields to extract."
     }
   ]
 }

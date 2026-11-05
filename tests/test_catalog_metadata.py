@@ -21,7 +21,6 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SERVER_YAML = REPO_ROOT / "docs/mcp/percival-weather-mcp/server.yaml"
 OPENVEX = REPO_ROOT / "docs/security/openvex.json"
-F3_NOTE = REPO_ROOT / "docs/issues/2026-10-10-f3-status.md"
 
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 OPENVEX_STATUSES = {"not_affected", "affected", "fixed", "under_investigation"}
@@ -81,10 +80,19 @@ def test_every_statement_is_well_formed(openvex: dict) -> None:
 
 def test_every_cve_of_the_f3_gate_has_a_statement(openvex: dict) -> None:
     """The document must cover the CVEs the F3 gate recorded, and nothing else."""
-    note = F3_NOTE.read_text(encoding="utf-8")
-    triaged = set(re.findall(r"CVE-\d{4}-\d+", note))
-    # The note abbreviates a group of advisories as "CVE-2026-78408/09/10".
-    triaged |= {f"CVE-2026-784{number}" for number in ("08", "09", "10")}
+    # Historical disposition only: frozen triage at 9746453, formerly in
+    # docs/issues/2026-10-10-f3-status.md. The live tracker was centralized;
+    # its current findings must not redefine this older digest's VEX scope.
+    triaged = {
+        "CVE-2026-76642",
+        "CVE-2026-78408",
+        "CVE-2026-78409",
+        "CVE-2026-78410",
+        "CVE-2026-54369",
+        "CVE-2025-69720",
+        "CVE-2026-16742",
+        "CVE-2026-9538",
+    }
     documented = {s["vulnerability"]["name"] for s in openvex["statements"]}
     assert triaged, "the F3 note no longer names any CVE"
     assert documented == triaged, (

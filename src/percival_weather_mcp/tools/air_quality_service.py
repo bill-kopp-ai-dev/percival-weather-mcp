@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 from typing import Any
 
-from .. import utils
-from ..errors import NoDataError
+from .. import series, utils
+from ..air_quality_index import SUBINDICES
+from ..errors import InvalidRequestError, NoDataError
 from ..http_client import ResilientHttpClient
 
 logger = logging.getLogger("mcp-weather")
@@ -28,7 +30,10 @@ class AirQualityService:
         if hourly_vars is None:
             hourly_vars = ["pm10", "pm2_5", "ozone", "nitrogen_dioxide", "carbon_monoxide"]
 
-        hourly_str = ",".join(hourly_vars)
+        if not hourly_vars:
+            raise InvalidRequestError("variables must contain at least 1 pollutant.")
+        hourly_vars = list(dict.fromkeys(hourly_vars))
+        hourly_str = ",".join(hourly_vars + [SUBINDICES[v] for v in hourly_vars if v in SUBINDICES])
         logger.info(
             "Fetching air quality data for lat=%s lon=%s variables=%s",
             latitude,
@@ -41,6 +46,7 @@ class AirQualityService:
             "longitude": longitude,
             "hourly": hourly_str,
             "timezone": "GMT",
+            "forecast_days": 5,
         }
 
         own_client = client is None
@@ -51,7 +57,7 @@ class AirQualityService:
         else:
             data = await target.get_json(self.BASE_AIR_QUALITY_URL, params=params)
 
-        hourly = data.get("hourly") if isinstance(data, dict) else None
+        hourly = data.get("hourly") or {}
         times = (hourly or {}).get("time") or []
         if not times:
             # Successful answer without usable series: neither an upstream
@@ -60,15 +66,25 @@ class AirQualityService:
                 "Open-Meteo air quality returned an empty hourly series. "
                 "No air-quality data is available for the requested coordinates."
             )
+        if not any(
+            series.is_number(series.value_at(hourly.get(v), i))
+            for v in hourly_vars
+            for i in range(len(times))
+        ):
+            raise NoDataError(
+                "Open-Meteo returned no valid numeric data for the requested pollutants."
+            )
         return data
 
-    def get_current_air_quality_index(self, aq_data: dict[str, Any]) -> dict[str, Any]:
+    def get_current_air_quality_index(
+        self, aq_data: dict[str, Any], *, reference: datetime | None = None
+    ) -> dict[str, Any]:
         """Extract the current hour slice from the air-quality hourly series."""
         hourly = aq_data.get("hourly") or {}
         times = hourly.get("time") or []
         if not times:
             return {}
-        current_index = utils.get_closest_utc_index(times)
+        current_index = utils.get_closest_utc_index(times, reference=reference)
         result: dict[str, Any] = {"time": times[current_index]}
         for key, values in hourly.items():
             if key == "time":

@@ -6,6 +6,31 @@ the project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Functional refactoring — 0.10.0 candidate (WX-RF)
+
+- Fix WMO code 0 in current/forecast data; share WMO descriptions with resources.
+  Missing wind direction, pressure and cloud cover no longer become physical zeros.
+- Preserve field/rule validation messages without echoing raw input; reject empty
+  AQ variable lists before I/O and distinguish absent pollutant data from zero.
+- Share bounded qualifier-aware geocoding, immutable identities and alternatives
+  across weather/AQ handlers and the existing TTL/size-bounded cache.
+- Enforce the conservative Forecast UTC window (today-92 through today+15,
+  default 16 days inclusive), with safe provider reasons on HTTP 400.
+- Add UTC model valid/reference times, provenance and aligned per-variable
+  valid/missing coverage split into past/present and future model timestamps.
+- Replace hourly-concentration risk labels with provider-computed US AQI
+  subindices and a shared dimensionless category reference. Legacy formatting
+  remains a concentration-only adapter, without concentration-derived advice.
+- Add optional range `sample_mode=first|last|spread` (default first, cap 12);
+  compact UTF-8 JSON preserves the complete raw AQ details payload.
+- Generate output schemas from serialization models, align discovery metadata,
+  prompts/resources and snapshots, and describe status as process liveness.
+- Fix the preexisting VEX test's dependency on a removed F3 mirror by pinning
+  the original historical CVE set; no VEX is applied to the new candidate.
+
+Image build, connected-agent acceptance and promotion remain separate pending
+runtime verification; this entry does not claim a published release.
+
 ### Added
 - ``scripts/verification/`` now carries the MCP verification harness used by
   the stage-2 remediation campaign (TLS mock of the three Open-Meteo

@@ -14,7 +14,7 @@ from mcp.types import (
     TextContent,
     Tool,
 )
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from ..errors import InvalidRequestError
 
@@ -54,7 +54,15 @@ class ToolHandler(ABC):
 
     def parse_args(self, args: dict) -> BaseModel:
         """Validate and coerce ``args`` using :attr:`input_model`."""
-        return self.input_model.model_validate(args)
+        try:
+            return self.input_model.model_validate(args)
+        except ValidationError as exc:
+            # Only Pydantic's rule/field, never the offending input or traceback.
+            rules = []
+            for error in exc.errors(include_input=False, include_url=False)[:5]:
+                field = ".".join(str(p) for p in error["loc"]) or "date range"
+                rules.append(f"{field}: {error['msg']}")
+            raise InvalidRequestError("Invalid request. " + "; ".join(rules)) from None
 
     def validate_required_args(self, args: dict, required_fields: list[str]) -> None:
         """Raise :class:`InvalidRequestError` if any required field is missing."""

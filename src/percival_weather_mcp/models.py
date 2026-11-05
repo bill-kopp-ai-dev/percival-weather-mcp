@@ -13,12 +13,23 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from .config import MAX_DATE_RANGE_DAYS
+from .series import SampleMode
+from .utils import normalize_city_name
+
 # ---------------------------------------------------------------------------
 # Weather
 # ---------------------------------------------------------------------------
 
 
-class GetCurrentWeatherInput(BaseModel):
+class CityInput(BaseModel):
+    @field_validator("city", check_fields=False)
+    @classmethod
+    def _normalize_city(cls, value: str) -> str:
+        return normalize_city_name(value)
+
+
+class GetCurrentWeatherInput(CityInput):
     model_config = ConfigDict(
         json_schema_extra={
             "examples": [
@@ -34,7 +45,7 @@ class GetCurrentWeatherInput(BaseModel):
         description=(
             "City name in English, optionally with region/country to disambiguate "
             "(for example: 'Springfield, US' or 'London, UK'). Control characters, "
-            "angle brackets and excessive whitespace are stripped automatically."
+            "excessive whitespace are stripped automatically; unsafe punctuation is rejected."
         ),
         examples=["London, UK", "New York"],
         min_length=1,
@@ -42,11 +53,11 @@ class GetCurrentWeatherInput(BaseModel):
     )
 
 
-class GetWeatherByDateRangeInput(BaseModel):
+class GetWeatherByDateRangeInput(CityInput):
     model_config = ConfigDict(
         json_schema_extra={
             "examples": [
-                {"city": "Lisbon", "start_date": "2026-03-01", "end_date": "2026-03-07"},
+                {"city": "Lisbon, Portugal", "start_date": "2026-11-05", "end_date": "2026-11-07"},
             ]
         }
     )
@@ -68,9 +79,14 @@ class GetWeatherByDateRangeInput(BaseModel):
         ...,
         description=(
             "End date in ISO 8601 calendar format: YYYY-MM-DD (inclusive). "
-            "The total range (end_date - start_date + 1) must be <= 16 days."
+            f"The inclusive duration limit defaults to {MAX_DATE_RANGE_DAYS} days (see response schema resource). "
+            "Forecast policy: today UTC minus 92 days through today UTC plus 15 days."
         ),
         pattern=r"^\d{4}-\d{2}-\d{2}$",
+    )
+
+    sample_mode: SampleMode = Field(
+        "first", description="Hourly sample selection: first, last or spread; at most 12 rows."
     )
 
     @model_validator(mode="after")
@@ -85,7 +101,7 @@ class GetWeatherByDateRangeInput(BaseModel):
         return self
 
 
-class GetWeatherDetailsInput(BaseModel):
+class GetWeatherDetailsInput(CityInput):
     model_config = ConfigDict(
         json_schema_extra={"examples": [{"city": "Berlin", "include_forecast": True}]}
     )
@@ -100,7 +116,7 @@ class GetWeatherDetailsInput(BaseModel):
         False,
         description=(
             "When true, attaches a 'forecast' array with the next 24 hours of "
-            "hourly observations. Defaults to false for a smaller payload."
+            "hourly model data. Defaults to false for a smaller payload."
         ),
     )
 
@@ -143,7 +159,7 @@ EXTENDED_AIR_QUALITY_VARIABLES: list[AirQualityVariable] = [
 ]
 
 
-class GetAirQualityInput(BaseModel):
+class GetAirQualityInput(CityInput):
     city: str = Field(
         ...,
         description="City name in English, optionally with region/country to disambiguate.",
@@ -160,10 +176,12 @@ class GetAirQualityInput(BaseModel):
             "specific pollutant (e.g. ['ozone']) or wants to exclude one."
         ),
         examples=[["pm2_5", "pm10"], ["ozone"]],
+        min_length=1,
+        max_length=9,
     )
 
 
-class GetAirQualityDetailsInput(BaseModel):
+class GetAirQualityDetailsInput(CityInput):
     model_config = ConfigDict(
         json_schema_extra={
             "examples": [
@@ -188,6 +206,8 @@ class GetAirQualityDetailsInput(BaseModel):
             "sulphur_dioxide, ammonia, dust, aerosol_optical_depth."
         ),
         examples=[["pm2_5", "ozone"]],
+        min_length=1,
+        max_length=9,
     )
 
 

@@ -133,12 +133,12 @@ def _http_guidance(service: str, status_code: int) -> str:
         return "The provider failed to answer; retry shortly."
     if status_code == 404 and service == "geocoding":
         return "The location was not found upstream; check the city name."
-    return (
-        "The request was rejected upstream; check the location name and the requested parameters."
-    )
+    return "The request was rejected upstream; check the requested parameters and provider limits."
 
 
-def upstream_http_error(label: str, status_code: int) -> UpstreamError:
+def upstream_http_error(
+    label: str, status_code: int, *, detail: str | None = None
+) -> UpstreamError:
     """Build the error for a non-200 HTTP response from the upstream.
 
     ``label`` is the human-readable name of the service that was called.
@@ -148,6 +148,8 @@ def upstream_http_error(label: str, status_code: int) -> UpstreamError:
         f"Upstream Open-Meteo {label} returned HTTP {status_code} ({reason}). "
         f"{_http_guidance(label, status_code)}"
     )
+    if detail:
+        message += f" Provider reason: {detail}"
     return UpstreamError(
         message,
         service=label,

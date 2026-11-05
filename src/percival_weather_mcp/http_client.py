@@ -23,7 +23,7 @@ import logging
 import random
 import threading
 from time import monotonic
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urlsplit
 
 import httpx
@@ -40,6 +40,9 @@ from .errors import (
 from .observability import record_http_error, record_http_request
 
 logger = logging.getLogger("mcp-weather.http")
+
+if TYPE_CHECKING:
+    from .tools.geocoding_service import ResolvedLocation
 
 
 #: The Open-Meteo services, keyed by host. The label names the service that
@@ -232,7 +235,17 @@ class ResilientHttpClient:
                     await breaker.record_success()
                 return payload
 
-            error = upstream_http_error(label, status)
+            detail = None
+            if status == 400:
+                try:
+                    body = response.json()
+                    if isinstance(body, dict) and isinstance(body.get("reason"), str):
+                        from .utils import safe_inline_text
+
+                        detail = safe_inline_text(body["reason"], max_length=300)[:300]
+                except ValueError:
+                    pass
+            error = upstream_http_error(label, status, detail=detail)
             record_http_error(self._name, error)
             last_error = error
             if breaker is not None:
@@ -275,34 +288,50 @@ class GeocodingCache:
             ttl_seconds if ttl_seconds is not None else settings.geo_cache_ttl_seconds
         )
         self._max_size = max_size if max_size is not None else settings.geo_cache_max_size
-        self._entries: dict[str, tuple[float, float, float]] = {}
+        self._entries: dict[str, tuple[tuple[float, float] | ResolvedLocation, float]] = {}
         self._lock = threading.Lock()
 
     @staticmethod
     def _key(city: str) -> str:
         return city.strip().lower()
 
-    def get(self, city: str) -> tuple[float, float] | None:
-        """Return the cached coordinates for ``city``, or ``None`` when absent/expired."""
+    def _get(self, city: str) -> tuple[float, float] | ResolvedLocation | None:
         key = self._key(city)
         with self._lock:
             cached = self._entries.get(key)
             if cached is None:
                 return None
-            latitude, longitude, expires_at = cached
+            value, expires_at = cached
             if monotonic() >= expires_at:
                 self._entries.pop(key, None)
                 return None
-            return latitude, longitude
+            return value
+
+    def get(self, city: str) -> tuple[float, float] | None:
+        """Coordinate-only compatibility adapter."""
+        value = self._get(city)
+        if value is None or isinstance(value, tuple):
+            return value
+        return value.selected.latitude, value.selected.longitude
+
+    def get_location(self, city: str) -> ResolvedLocation | None:
+        value = self._get(city)
+        return None if isinstance(value, tuple) else value
+
+    def set_location(self, city: str, value: ResolvedLocation) -> None:
+        self._store(city, value)
 
     def set(self, city: str, latitude: float, longitude: float) -> None:
         """Store the coordinates for ``city``, evicting the oldest entry if needed."""
+        self._store(city, (latitude, longitude))
+
+    def _store(self, city: str, value: tuple[float, float] | ResolvedLocation) -> None:
         key = self._key(city)
         with self._lock:
             if key not in self._entries and len(self._entries) >= self._max_size:
-                oldest_key = min(self._entries, key=lambda candidate: self._entries[candidate][2])
+                oldest_key = min(self._entries, key=lambda candidate: self._entries[candidate][1])
                 self._entries.pop(oldest_key, None)
-            self._entries[key] = (latitude, longitude, monotonic() + self._ttl_seconds)
+            self._entries[key] = (value, monotonic() + self._ttl_seconds)
 
     def clear(self) -> None:
         """Drop every entry."""

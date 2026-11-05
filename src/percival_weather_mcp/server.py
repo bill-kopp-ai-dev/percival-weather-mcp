@@ -17,14 +17,14 @@ import signal
 import sys
 import time
 from collections.abc import Callable, Iterable
-from typing import Any
+from typing import Annotated, Any
 
 import uvicorn
 from mcp import McpError
 from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.exceptions import ResourceError
 from mcp.types import INVALID_PARAMS, ErrorData
-from pydantic import AnyUrl
+from pydantic import AnyUrl, Field
 from starlette.applications import Starlette
 from starlette.responses import JSONResponse, Response
 from starlette.types import ASGIApp
@@ -72,7 +72,9 @@ logger = logging.getLogger("percival-weather-mcp")
 
 
 STATUS_TOOL_NAME = "weather_get_status"
-STATUS_TOOL_DESCRIPTION = "Check the operational status of the weather server."
+STATUS_TOOL_DESCRIPTION = (
+    "Check process liveness and server identity; upstream readiness is not checked."
+)
 
 #: JSON-RPC error code for "resource not found", from the MCP standard error
 #: codes. The SDK does not export a constant for it.
@@ -152,6 +154,16 @@ class WeatherFastMCP(FastMCP):
         resolved = resolve_tool_name(name)
         if resolved != name:
             logger.warning("Tool alias used: %s -> %s", name, resolved)
+        handler = tool_handlers.get(resolved)
+        if handler is not None and resolved in {
+            "weather_get_current",
+            "weather_get_details",
+            "weather_get_by_range",
+            "weather_get_air_quality",
+            "weather_get_air_quality_details",
+        }:
+            # Validate safely before the SDK can echo raw input in a ValidationError.
+            handler.parse_args(arguments)
         return await super().call_tool(resolved, arguments)
 
     async def get_prompt(self, name: str, arguments: dict[str, Any] | None = None) -> Any:
@@ -256,7 +268,10 @@ def _make_tool_proxy(handler: ToolHandler) -> Callable[..., Any]:
     parameters: list[inspect.Parameter] = []
     empty = inspect.Parameter.empty
     for field_name, field_info in model_fields.items():
-        annotation = field_info.annotation if field_info.annotation is not empty else Any
+        annotation: Any = Annotated[
+            field_info.rebuild_annotation(),
+            Field(description=field_info.description, examples=field_info.examples),
+        ]
         annotations[field_name] = annotation
         default: Any
         if field_info.is_required():
@@ -299,7 +314,8 @@ def _make_tool_proxy(handler: ToolHandler) -> Callable[..., Any]:
 def _register_status_tool(mcp_server: FastMCP) -> None:
     async def get_status() -> str:
         return (
-            f"Percival Weather MCP Server operational. Name: {SERVER_NAME} Version: {__version__}"
+            f"Percival Weather MCP Server alive (liveness). Name: {SERVER_NAME} Version: {__version__}. "
+            "Upstream readiness not checked."
         )
 
     get_status.__name__ = STATUS_TOOL_NAME

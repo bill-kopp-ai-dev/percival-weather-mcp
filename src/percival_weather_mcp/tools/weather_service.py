@@ -11,10 +11,12 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from .. import utils
+from .. import series, utils
 from ..config import get_settings
 from ..errors import NoDataError
-from ..http_client import ResilientHttpClient, get_geo_breaker, get_geocoding_cache
+from ..http_client import ResilientHttpClient, get_geocoding_cache
+from ..range_policy import validate_range
+from .geocoding_service import GeocodingService, ResolvedLocation
 
 logger = logging.getLogger("mcp-weather")
 
@@ -37,6 +39,7 @@ class WeatherService:
         # city geocoded by one tool is not geocoded again by another.
         self._cache = get_geocoding_cache()
         self._settings = get_settings()
+        self.geocoding = GeocodingService()
 
     # ------------------------------------------------------------------
     # Geocoding cache
@@ -53,63 +56,21 @@ class WeatherService:
         city: str,
         client: ResilientHttpClient | None = None,
     ) -> tuple[float, float]:
-        """Fetch the (latitude, longitude) for ``city`` via the geocoding API."""
-        city = utils.normalize_city_name(city)
-        cached = self._get_cached_coordinates(city)
-        if cached is not None:
-            return cached
+        """Coordinate-only compatibility adapter to the shared resolver."""
+        resolved = await self.resolve_location(city, client=client)
+        return resolved.selected.latitude, resolved.selected.longitude
 
-        breaker = get_geo_breaker()
-        params = {
-            "name": city,
-            "count": 1,
-            "language": "en",
-            "format": "json",
-        }
-        if client is None:
-            async with ResilientHttpClient(name="geocoding") as opened:
-                data = await opened.get_json(self.BASE_GEO_URL, params=params, breaker=breaker)
-        else:
-            data = await client.get_json(self.BASE_GEO_URL, params=params, breaker=breaker)
-
-        results = data.get("results") if isinstance(data, dict) else None
-        if not results:
-            # The upstream answered successfully, it simply has no entry for
-            # this city. That is neither an upstream failure nor a local
-            # validation failure, so it must not be reported as either.
-            raise NoDataError(
-                f"No location found for city '{city}' in the Open-Meteo geocoding service. "
-                "Check the spelling or add a country/region qualifier."
-            )
-
-        result = results[0]
-        latitude = float(result["latitude"])
-        longitude = float(result["longitude"])
-        self._set_cached_coordinates(city, latitude, longitude)
-        return latitude, longitude
+    async def resolve_location(
+        self, city: str, client: ResilientHttpClient | None = None
+    ) -> ResolvedLocation:
+        return await self.geocoding.resolve(city, client=client)
 
     # ------------------------------------------------------------------
     # Date range validation
     # ------------------------------------------------------------------
 
     def _validate_date_range(self, start_date: str, end_date: str) -> tuple[str, str]:
-        try:
-            parsed_start = datetime.strptime(start_date, "%Y-%m-%d").date()
-            parsed_end = datetime.strptime(end_date, "%Y-%m-%d").date()
-        except ValueError as exc:
-            raise ValueError("Dates must use YYYY-MM-DD format.") from exc
-
-        if parsed_end < parsed_start:
-            raise ValueError("end_date must be on or after start_date.")
-
-        requested_days = (parsed_end - parsed_start).days + 1
-        if requested_days > self._settings.max_date_range_days:
-            raise ValueError(
-                f"Date range exceeds {self._settings.max_date_range_days} days. "
-                "Please use a shorter interval."
-            )
-
-        return parsed_start.isoformat(), parsed_end.isoformat()
+        return validate_range(start_date, end_date)
 
     # ------------------------------------------------------------------
     # Public API
@@ -130,8 +91,10 @@ class WeatherService:
         current + forecast data with a single HTTP call.
         """
         city = utils.normalize_city_name(city)
+        now_utc = series.utc_now()
         async with ResilientHttpClient(name="weather") as http_client:
-            latitude, longitude = await self.get_coordinates(city, client=http_client)
+            resolved = await self.resolve_location(city, client=http_client)
+            latitude, longitude = resolved.selected.latitude, resolved.selected.longitude
             params: dict[str, Any] = {
                 "latitude": latitude,
                 "longitude": longitude,
@@ -161,8 +124,7 @@ class WeatherService:
                 "No forecast data is available for the requested period."
             )
 
-        current_index = utils.get_closest_utc_index(times)
-        now_utc = datetime.now(timezone.utc)
+        current_index = utils.get_closest_utc_index(times, reference=now_utc)
         forecast_window_end = now_utc + timedelta(hours=24)
         forecast_indices: list[int] = []
         if forecast_days > 1 or (start_date and end_date):
@@ -186,15 +148,18 @@ class WeatherService:
             "city": city,
             "latitude": latitude,
             "longitude": longitude,
+            **resolved.context(),
+            "source": series.provenance("weather"),
+            "selection_method": "nearest_hour",
+            "reference_time": now_utc.isoformat(),
+            "valid_time": series.parse_utc(times[current_index]).isoformat(),
+            "timezone": "UTC",
             "time": _value("time", current_index),
             "temperature_c": _value("temperature_2m", current_index),
             "relative_humidity_percent": _value("relative_humidity_2m", current_index),
             "dew_point_c": _value("dew_point_2m", current_index),
             "weather_code": _value("weather_code", current_index),
-            "weather_description": utils.weather_descriptions.get(
-                _value("weather_code", current_index) or -1,
-                "Unknown weather condition",
-            ),
+            "weather_description": utils.describe_weather(_value("weather_code", current_index)),
             "wind_speed_kmh": _value("wind_speed_10m", current_index),
             "wind_direction_degrees": _value("wind_direction_10m", current_index),
             "wind_gusts_kmh": _value("wind_gusts_10m", current_index),
@@ -219,10 +184,7 @@ class WeatherService:
                         "humidity_percent": _value("relative_humidity_2m", idx),
                         "dew_point_c": _value("dew_point_2m", idx),
                         "weather_code": _value("weather_code", idx),
-                        "weather_description": utils.weather_descriptions.get(
-                            _value("weather_code", idx) or -1,
-                            "Unknown weather condition",
-                        ),
+                        "weather_description": utils.describe_weather(_value("weather_code", idx)),
                         "wind_speed_kmh": _value("wind_speed_10m", idx),
                         "wind_direction_degrees": _value("wind_direction_10m", idx),
                         "wind_gusts_kmh": _value("wind_gusts_10m", idx),
@@ -254,7 +216,8 @@ class WeatherService:
         start_date, end_date = self._validate_date_range(start_date, end_date)
 
         async with ResilientHttpClient(name="weather") as http_client:
-            latitude, longitude = await self.get_coordinates(city, client=http_client)
+            resolved = await self.resolve_location(city, client=http_client)
+            latitude, longitude = resolved.selected.latitude, resolved.selected.longitude
             logger.info(
                 "Fetching weather history for city=%s start_date=%s end_date=%s",
                 city,
@@ -275,6 +238,10 @@ class WeatherService:
 
         hourly = data.get("hourly") or {}
         times = hourly.get("time") or []
+        if not times:
+            raise NoDataError(
+                "Open-Meteo returned an empty hourly series for the requested period."
+            )
 
         def _hourly_value(key: str, index: int) -> Any:
             values = hourly.get(key) or []
@@ -292,10 +259,7 @@ class WeatherService:
                     "humidity_percent": _hourly_value("relative_humidity_2m", i),
                     "dew_point_c": _hourly_value("dew_point_2m", i),
                     "weather_code": weather_code,
-                    "weather_description": utils.weather_descriptions.get(
-                        weather_code if weather_code is not None else -1,
-                        "Unknown weather condition",
-                    ),
+                    "weather_description": utils.describe_weather(weather_code),
                     "wind_speed_kmh": _hourly_value("wind_speed_10m", i),
                     "wind_direction_degrees": _hourly_value("wind_direction_10m", i),
                     "wind_gusts_kmh": _hourly_value("wind_gusts_10m", i),
@@ -317,6 +281,9 @@ class WeatherService:
             "city": city,
             "latitude": latitude,
             "longitude": longitude,
+            **resolved.context(),
+            "source": series.provenance("weather"),
+            "reference_time": series.utc_now().isoformat(),
             "start_date": start_date,
             "end_date": end_date,
             "weather_data": weather_data,

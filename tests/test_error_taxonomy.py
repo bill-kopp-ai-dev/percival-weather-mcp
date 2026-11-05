@@ -181,7 +181,8 @@ async def test_handler_keeps_invalid_input_as_invalid_input():
         await handler.run_tool({"city": ""})
 
     message = str(excinfo.value)
-    assert "Invalid weather request" in message
+    assert "Invalid request" in message
+    assert "city" in message and "at least 1" in message
     assert "Upstream" not in message
 
 

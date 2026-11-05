@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from .. import utils
+from ..series import is_number
 
 _COMPASS = [
     "N",
@@ -52,7 +53,7 @@ class WeatherFormatter:
 
         def _present(key: str) -> Any:
             value = weather_data.get(key)
-            return value if isinstance(value, (int, float)) else None
+            return value if is_number(value) else None
 
         temp = _present("temperature_c")
         feels_like = _present("apparent_temperature_c")
@@ -63,9 +64,18 @@ class WeatherFormatter:
             if feels_like is not None and abs(feels_like - temp) > 2:
                 temp_text += f" (feels like {feels_like}°C)"
 
-        wind_dir = self.degrees_to_compass(weather_data.get("wind_direction_degrees") or 0)
+        direction = _present("wind_direction_degrees")
+        wind_dir = self.degrees_to_compass(direction) if direction is not None else unknown
 
         safe_city = utils.safe_inline_text(weather_data.get("city", "Unknown city"))
+        location = weather_data.get("location") or {}
+        context = ", ".join(
+            utils.safe_inline_text(location[k])
+            for k in ("name", "admin1", "country")
+            if location.get(k)
+        )
+        if context:
+            safe_city += f" ({context})"
         humidity = _present("relative_humidity_percent")
         dew_point = _present("dew_point_c")
         wind_speed = _present("wind_speed_kmh")
@@ -96,9 +106,9 @@ class WeatherFormatter:
             if precip_prob > 0:
                 text += f" Precipitation probability is {precip_prob}%."
 
-        pressure = _present("pressure_hpa") or 0
-        clouds = _present("cloud_cover_percent") or 0
-        text += f" Atmospheric pressure is {pressure} hPa with {clouds}% cloud cover."
+        pressure = _present("pressure_hpa")
+        clouds = _present("cloud_cover_percent")
+        text += f" Atmospheric pressure is {pressure if pressure is not None else unknown} hPa with {clouds if clouds is not None else unknown}% cloud cover."
 
         uv = _present("uv_index")
         if uv is not None and uv > 3:
@@ -108,6 +118,23 @@ class WeatherFormatter:
         if visibility is not None and visibility > 0:
             text += f" Visibility is {visibility / 1000:.1f} km."
 
+        valid_time = weather_data.get("valid_time") or weather_data.get("time")
+        text += (
+            f" Model data valid at {utils.safe_inline_text(valid_time)} UTC (nearest_hour)."
+            if valid_time
+            else " Model valid time unavailable."
+        )
+        resolution = weather_data.get("resolution") or {}
+        if resolution.get("ambiguous"):
+            alternatives = [
+                ", ".join(str(c.get(k)) for k in ("name", "admin1", "country") if c.get(k))
+                for c in resolution.get("alternatives", [])
+            ]
+            text += (
+                " Multiple location candidates; selected first provider candidate. Alternatives: "
+                + utils.safe_inline_text("; ".join(alternatives), max_length=400)
+                + "."
+            )
         return text
 
     @staticmethod

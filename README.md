@@ -90,7 +90,7 @@ The server exposes **9 tools**, **3 prompts**, **3 static resources**, and
 
 | Tool | Description |
 | --- | --- |
-| `weather_get_status` | Liveness/readiness — name and version of the running server. |
+| `weather_get_status` | Process liveness and identity; upstream readiness is not checked. |
 
 ### MCP Prompts (workflow recipes)
 
@@ -105,9 +105,65 @@ The server exposes **9 tools**, **3 prompts**, **3 static resources**, and
 | URI | Content |
 | --- | --- |
 | `weather://codes` | WMO weather codes 0–99 with plain-English descriptions. |
-| `weather://aqi` | Risk bands per pollutant following WHO 2021 / EPA breakpoints. |
+| `weather://aqi` | Dimensionless US AQI categories, provider methods, units and limitations. |
 | `weather://timezones` | Curated list of commonly-used IANA timezones. |
-| `weather://schema/{tool_name}` | Top-level keys returned by the detailed tools. |
+| `weather://schema/{tool_name}` | Generated output JSON Schema, keys and semantic notes for the detailed tools. |
+
+### Location, time and coverage contracts (0.10.0)
+
+- Queries retain their qualifiers: `London, UK`, `São Paulo, BR` and
+  `Lisbon, Portugal`. Native region matches take precedence, including
+  `Washington, D.C.` and `Springfield, IL`. A qualified failure never falls
+  back to an unqualified city. At most two logical geocoder queries are made
+  per cache miss, with the existing retry policy on each.
+- Country fallback uses a bounded ISO-code/alias set, versioned in
+  `tools/geocoding_service.py`: GB/UK/United Kingdom/Reino Unido,
+  BR/Brazil/Brasil, FR/France/França, PT/Portugal, US/USA/United States/Estados Unidos,
+  DE/Germany/Alemanha, JP/Japan/Japão, CA/Canada/Canadá, AU/Australia,
+  ES/Spain/Espanha, IT/Italy/Italia/Itália, CN/China, IN/India/Índia and AR/Argentina.
+  Other region qualifiers require a native identity match; arbitrary translations
+  are not guaranteed. The short region aliases are IL, DC/D.C., NY and CA.
+- JSON responses retain `city`, `latitude` and `longitude` (geocoded coordinates),
+  adding `location` and `resolution`. Selection remains the first provider
+  candidate, with up to three alternatives and a ten-result search limit;
+  even one returned candidate is not proof of global uniqueness. The upstream
+  model grid may differ from the geocoded coordinates.
+- Current values select the nearest hourly model timestamp, which can be
+  ahead of the clock. JSON includes `reference_time`, `valid_time` (weather),
+  `selection_method` and UTC context; prose includes the model valid time.
+  Past timestamps are **not evidence of measured station observations**.
+- Range policy is **UTC today minus 92 days through today plus 15 days**,
+  inclusive, for at most 16 consecutive days by default. Requests outside this
+  policy fail locally with the actual allowed dates. This tool does not query
+  the Archive API. Calendar examples must be adjusted to the current window.
+- `summary_scope="entire_returned_window"` preserves whole-window summaries;
+  `coverage` gives valid/missing counts per variable and statistics separately
+  for `past_or_present` and `future`. Short arrays and nulls remain missing;
+  booleans/non-finite values are not numeric measurements. Empty statistics
+  are null, not zero. Precipitation has min/max/avg, not an accumulated total.
+- Range `sample_mode` is optional: `first` (default), `last` or `spread`, up to
+  **12** ordered rows. `spread` includes both endpoints. AQ compact samples
+  retain at most **8** rows. `sample` reports the limit, total and truncation;
+  a sample is not the complete time series.
+- `variables=[]` is invalid for both AQ tools; omission/null uses the existing
+  defaults. A fully missing requested pollutant series is a no-data error.
+  AQ subindices are requested in the same API call for supported pollutants:
+  `air_quality_index` classifies **provider-computed US AQI**, never raw hourly
+  mass concentrations. Only requested pollutant subindices are represented;
+  no partial maximum is called a global AQI. Ammonia/dust/AOD have no supported
+  index. Unavailable indices never mean "Good". Consult `weather://aqi`.
+- JSON text is compact UTF-8 and rejects NaN/Infinity. AQ details preserve
+  **all** returned `full_data` keys/arrays, including unknown provider fields;
+  payload size grows with hours × variables, without hidden truncation. The
+  deterministic 120h × 9-pollutant fixture (plus supported subindices and all
+  metadata) measures **14,378 bytes compact vs 35,232 indented**, a 59.2%
+  reduction for the same decoded object; its regression budget is 16 KiB.
+
+Weather data: [Open-Meteo Forecast API](https://open-meteo.com/en/docs).
+Air quality: [Open-Meteo / CAMS ENSEMBLE](https://open-meteo.com/en/docs/air-quality-api).
+US AQI categories are distinct from WHO concentration guidelines and do not
+claim equivalence to a Brazilian regulatory index or an independent audit of
+the provider's algorithm. HTTP `/health` and `/healthz` also express liveness.
 
 ---
 
@@ -139,7 +195,7 @@ Add the following entry under `tools.mcpServers` in your Nanobot config
 
 `uv run --project …` resolves the local venv automatically, so no manual
 `pip install` is required at either location. After editing, run
-`percival-weather-mcp_weather_get_current city="Lisbon, UK"` from the agent
+`percival-weather-mcp_weather_get_current city="Lisbon, Portugal"` from the agent
 to verify the wiring.
 
 `toolTimeout` (seconds) caps each `tools/call` round-trip. The

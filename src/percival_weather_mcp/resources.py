@@ -20,8 +20,8 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING
 
+from .air_quality_index import reference_payload
 from .knowledge_base import (
-    aqi_table,
     timezone_table,
     tool_response_schemas,
     weather_code_table,
@@ -59,7 +59,7 @@ def register_resources(mcp_server: FastMCP) -> None:
             "Each entry has a numeric ``code`` and a human-readable ``description``. "
             "Consult this resource whenever the agent needs to translate a numeric "
             "code returned by ``weather_get_details`` or ``weather_get_by_range`` "
-            "into plain text (e.g. code 95 → 'Thunderstorm: slight or moderate')."
+            "into plain text (e.g. code 95 → 'Thunderstorm')."
         ),
     )
     def weather_codes() -> str:
@@ -69,14 +69,12 @@ def register_resources(mcp_server: FastMCP) -> None:
         f"{RESOURCE_PREFIX}aqi",
         name="weather_aqi",
         description=(
-            "Air-quality risk bands per pollutant (PM2.5, PM10, ozone, NO2, SO2, CO) "
-            "following WHO 2021 / EPA breakpoints. Each band has ``min``, ``max``, "
-            "``label`` and an optional ``advice`` recommendation. Use this resource "
-            "when the user asks whether the air is safe for outdoor activity."
+            "Dimensionless US AQI categories for provider-computed pollutant subindices. "
+            "Includes units, temporal methods and limitations; never apply index bands to hourly concentrations."
         ),
     )
     def weather_aqi() -> str:
-        return _serialise({"bands": aqi_table()})
+        return _serialise(reference_payload())
 
     @mcp_server.resource(
         f"{RESOURCE_PREFIX}timezones",
@@ -95,7 +93,7 @@ def register_resources(mcp_server: FastMCP) -> None:
         f"{RESOURCE_PREFIX}schema/{{tool_name}}",
         name="weather_tool_schema",
         description=(
-            "Top-level keys returned by the detailed weather/air-quality tools. "
+            "Generated JSON Schema and semantic notes for weather/air-quality JSON text outputs. "
             "Pass ``tool_name`` as one of: ``weather_get_details``, "
             "``weather_get_by_range``, ``weather_get_air_quality_details``. "
             "Consult this resource before calling those tools so the agent can "

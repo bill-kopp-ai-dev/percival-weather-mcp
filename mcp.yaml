@@ -15,7 +15,7 @@ description: |
   ecosystem. Backed entirely by the public Open-Meteo APIs (no API
   keys required). Exposes nine tools, three prompts, three static
   resources and one resource template via FastMCP.
-version: "0.9.0"
+version: "0.10.0"
 license: MIT
 homepage: https://github.com/bill-kopp-ai-dev/percival-weather-mcp
 source:

@@ -19,6 +19,7 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+from pathlib import Path
 
 from percival_weather_mcp import tool_export
 
@@ -28,6 +29,8 @@ def test_primitives_document_is_json_serialisable():
     # Must be JSON-encodable without a custom encoder.
     payload = json.dumps(document)
     assert payload
+    snapshot = Path(__file__).resolve().parents[1] / "docs/tools.json"
+    assert json.loads(snapshot.read_text(encoding="utf-8")) == document
 
 
 def test_primitives_document_includes_status_tool():

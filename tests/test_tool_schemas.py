@@ -70,7 +70,9 @@ def test_normalize_aq_variables_defaults():
 
 
 def test_normalize_aq_variables_rejects_unknown():
-    with pytest.raises(ValueError):
+    from percival_weather_mcp.errors import InvalidRequestError
+
+    with pytest.raises(InvalidRequestError):
         _normalize_aq_variables(["unknown"], ["pm2_5"])
 
 

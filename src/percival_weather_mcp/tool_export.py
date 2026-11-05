@@ -1,13 +1,15 @@
 """Generate a machine-readable dump of every primitive exposed by the server.
 
 Usage:
-    uv run python -m percival_weather_mcp.tool_export > docs/tools.json
+    uv run python -m percival_weather_mcp.tool_export --output docs/tools.json
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import sys
+from pathlib import Path
 
 from . import __version__
 from .prompts import register_prompts
@@ -228,9 +230,16 @@ def build_tools_document() -> dict[str, object]:
 
 
 def main() -> None:
-    document = build_primitives_document()
-    json.dump(document, sys.stdout, indent=2)
-    sys.stdout.write("\n")
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--registry", action="store_true")
+    parser.add_argument("--output", type=Path, help="Write the generated document to this path.")
+    args = parser.parse_args()
+    document = registry_tools_array() if args.registry else build_primitives_document()
+    text = json.dumps(document, indent=2, ensure_ascii=False) + "\n"
+    if args.output:
+        args.output.write_text(text, encoding="utf-8")
+    else:
+        sys.stdout.write(text)
 
 
 def registry_main() -> None:
@@ -245,7 +254,4 @@ def registry_main() -> None:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] == "--registry":
-        registry_main()
-    else:
-        main()
+    main()

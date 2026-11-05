@@ -2,21 +2,21 @@
 
 from __future__ import annotations
 
-import json
 import logging
 from collections.abc import Sequence
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 from typing import cast
 
 from mcp.types import EmbeddedResource, ImageContent, TextContent, Tool
 
-from .. import utils
+from .. import series, utils
 from ..errors import InvalidRequestError, UpstreamError, WeatherMCPError
 from ..models import (
     GetCurrentWeatherInput,
     GetWeatherByDateRangeInput,
     GetWeatherDetailsInput,
 )
+from ..output_models import WeatherDetails, serialize
 from ..presentation import WeatherFormatter
 from .toolhandler import ToolHandler
 from .weather_service import WeatherService
@@ -48,6 +48,7 @@ class GetCurrentWeatherToolHandler(_BaseWeatherHandler):
                 "Get a concise, human-readable snapshot of current weather for a city. "
                 "Use this tool when you need a short summary (temperature, humidity, wind, "
                 "precipitation context, pressure, clouds, UV, visibility), not raw datasets."
+                " Includes selected location and the nearest hourly model valid time in UTC."
             ),
             inputSchema=GetCurrentWeatherInput.model_json_schema(),
         )
@@ -94,6 +95,8 @@ class GetWeatherByDateRangeToolHandler(_BaseWeatherHandler):
                 "Get weather data for a city between two calendar dates (inclusive). "
                 "Returns a compact JSON payload optimized for agent analysis, "
                 "including period metadata, summary statistics, and an hourly sample."
+                " Forecast window: UTC today-92 through today+15 days; default maximum 16 days inclusive."
+                " sample_mode selects first/last/spread (up to 12 rows); coverage separates past/present and future model data."
             ),
             inputSchema=GetWeatherByDateRangeInput.model_json_schema(),
         )
@@ -112,6 +115,7 @@ class GetWeatherByDateRangeToolHandler(_BaseWeatherHandler):
             weather_data = await self.weather_service.get_weather_by_date_range(
                 city, payload.start_date, payload.end_date
             )
+            weather_data["sample_mode"] = payload.sample_mode
             formatted = self.formatter.format_range(weather_data)
             return [TextContent(type="text", text=formatted)]
         except WeatherMCPError:
@@ -147,6 +151,7 @@ class GetWeatherDetailsToolHandler(_BaseWeatherHandler):
                 "Get detailed structured JSON weather data for a city. "
                 "Use this when you need raw fields for downstream processing. "
                 "Optionally include a short forecast window."
+                " Includes resolved location, model provenance, reference_time and UTC valid_time."
             ),
             inputSchema=GetWeatherDetailsInput.model_json_schema(),
         )
@@ -163,7 +168,7 @@ class GetWeatherDetailsToolHandler(_BaseWeatherHandler):
             )
 
             if payload.include_forecast:
-                now_utc = datetime.now(timezone.utc)
+                now_utc = series.utc_now()
                 today = now_utc.strftime("%Y-%m-%d")
                 tomorrow = (now_utc + timedelta(days=1)).strftime("%Y-%m-%d")
                 weather_data = await self.weather_service.get_current_weather(
@@ -175,7 +180,7 @@ class GetWeatherDetailsToolHandler(_BaseWeatherHandler):
             else:
                 weather_data = await self.weather_service.get_current_weather(city)
 
-            return [TextContent(type="text", text=json.dumps(weather_data, indent=2))]
+            return [TextContent(type="text", text=serialize(WeatherDetails, weather_data))]
         except WeatherMCPError:
             # Taxonomy errors already carry the agent-facing message and
             # the true cause (upstream failure, empty result, local validation).

@@ -1,0 +1,66 @@
+{
+  "scope": "native-source-not-container",
+  "image_id": null,
+  "occurred_at": "2026-11-05T22:01:13.411479+00:00",
+  "live_open_meteo": true,
+  "stdio": {
+    "transport": "stdio",
+    "calls": [
+      {
+        "tool": "weather_get_status",
+        "passed": true
+      },
+      {
+        "tool": "weather_convert_time",
+        "passed": true
+      },
+      {
+        "tool": "weather_get_time",
+        "passed": true
+      },
+      {
+        "tool": "weather_get_timezone",
+        "passed": true
+      },
+      {
+        "tool": "weather_get_current",
+        "passed": true
+      },
+      {
+        "tool": "weather_get_details",
+        "passed": true
+      },
+      {
+        "tool": "weather_get_by_range",
+        "passed": true
+      },
+      {
+        "tool": "weather_get_air_quality",
+        "passed": true
+      },
+      {
+        "tool": "weather_get_air_quality_details",
+        "passed": true
+      }
+    ],
+    "version": "0.10.0",
+    "counts": [
+      9,
+      3,
+      3,
+      1
+    ],
+    "resources_read": 6,
+    "prompts_rendered": 3
+  },
+  "http": {
+    "transport": "streamable-http",
+    "bind": "127.0.0.1:ephemeral",
+    "healthz": 200,
+    "health": 200,
+    "unauthorized_mcp": 401,
+    "unauthorized_metrics": 401,
+    "authorized_metrics": 200,
+    "authenticated_mcp_call": "passed"
+  }
+}

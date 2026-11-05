@@ -72,7 +72,8 @@ def test_air_quality_legacy_format_includes_pollutants():
     aq = {"pm2_5": 5, "pm10": 10, "ozone": 30}
     out = AirQualityFormatter().format_legacy("Paris", 48.85, 2.35, aq)
     assert "PM2.5" in out
-    assert "Good" in out
+    assert "Good" not in out  # Hourly concentration alone cannot determine an AQI category.
+    assert "weather://aqi" in out
     assert "PM10" in out
     assert "Ozone" in out
 

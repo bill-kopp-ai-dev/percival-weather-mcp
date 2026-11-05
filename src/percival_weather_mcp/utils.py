@@ -1,6 +1,4 @@
-import json
 import re
-from collections import Counter
 from datetime import datetime, timezone
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -81,133 +79,17 @@ def get_zoneinfo(timezone_name: str) -> ZoneInfo:
 
 
 def format_get_weather_bytime(data_result: Any) -> str:
-    """
-    Format weather data into a compact, agent-friendly payload.
+    """Compatibility adapter to the validated range formatter."""
+    from .presentation.payloads import weather_range
 
-    Args:
-        data_result: Dictionary containing weather forecast data
-
-    Returns:
-        Formatted string with weather data and field explanations
-    """
-    weather_data = data_result.get("weather_data", []) or []
-
-    def _numeric_series(key: str) -> list[float]:
-        values: list[float] = []
-        for row in weather_data:
-            value = row.get(key)
-            if isinstance(value, (int, float)):
-                values.append(float(value))
-        return values
-
-    def _stats(values: list[float]) -> dict[str, float | None]:
-        if not values:
-            return {"min": None, "max": None, "avg": None}
-        return {
-            "min": round(min(values), 2),
-            "max": round(max(values), 2),
-            "avg": round(sum(values) / len(values), 2),
-        }
-
-    weather_counter = Counter(
-        row.get("weather_description", "Unknown")
-        for row in weather_data
-        if row.get("weather_description")
-    )
-
-    payload = {
-        "city": data_result.get("city"),
-        "latitude": data_result.get("latitude"),
-        "longitude": data_result.get("longitude"),
-        "period": {
-            "start_date": data_result.get("start_date"),
-            "end_date": data_result.get("end_date"),
-            "hourly_points": len(weather_data),
-        },
-        "summary": {
-            "temperature_c": _stats(_numeric_series("temperature_c")),
-            "apparent_temperature_c": _stats(_numeric_series("apparent_temperature_c")),
-            "precipitation_mm": _stats(_numeric_series("precipitation_mm")),
-            "wind_speed_kmh": _stats(_numeric_series("wind_speed_kmh")),
-            "uv_index": _stats(_numeric_series("uv_index")),
-            "top_conditions": weather_counter.most_common(3),
-        },
-        "hourly_sample": weather_data[:12],
-    }
-    return json.dumps(payload, indent=2)
+    return weather_range(data_result)
 
 
 def format_air_quality_data(data_result: Any) -> str:
-    """
-    Format air quality data into a compact, agent-friendly payload.
+    """Compatibility adapter to the validated air-quality formatter."""
+    from .presentation.payloads import air_quality
 
-    Args:
-        data_result: Dictionary containing air quality data
-
-    Returns:
-        Formatted string with air quality data and field explanations
-    """
-    full_data = data_result.get("full_data", {}) or {}
-    hourly = full_data.get("hourly", {}) if isinstance(full_data, dict) else {}
-    raw_times = hourly.get("time", [])
-    times = raw_times if isinstance(raw_times, list) else []
-
-    def _numeric_series(key: str) -> list[float]:
-        raw_values = hourly.get(key, [])
-        if not isinstance(raw_values, list):
-            return []
-        values: list[float] = []
-        for value in raw_values:
-            if isinstance(value, (int, float)):
-                values.append(float(value))
-        return values
-
-    def _stats(values: list[float]) -> dict[str, float | None]:
-        if not values:
-            return {"min": None, "max": None, "avg": None}
-        return {
-            "min": round(min(values), 2),
-            "max": round(max(values), 2),
-            "avg": round(sum(values) / len(values), 2),
-        }
-
-    pollutants = [
-        "pm2_5",
-        "pm10",
-        "ozone",
-        "nitrogen_dioxide",
-        "carbon_monoxide",
-        "sulphur_dioxide",
-        "ammonia",
-        "dust",
-        "aerosol_optical_depth",
-    ]
-
-    hourly_sample = []
-    for i, timestamp in enumerate(times[:8]):
-        row: dict[str, Any] = {"time": timestamp}
-        for pollutant in pollutants:
-            values = hourly.get(pollutant, [])
-            if isinstance(values, list) and i < len(values):
-                row[pollutant] = values[i]
-        hourly_sample.append(row)
-
-    payload = {
-        "city": data_result.get("city"),
-        "latitude": data_result.get("latitude"),
-        "longitude": data_result.get("longitude"),
-        "current_air_quality": data_result.get("current_air_quality"),
-        "summary": {
-            "hourly_points": len(times),
-            "pollutants": {
-                pollutant: _stats(_numeric_series(pollutant))
-                for pollutant in pollutants
-                if pollutant in hourly
-            },
-        },
-        "hourly_sample": hourly_sample,
-    }
-    return json.dumps(payload, indent=2)
+    return air_quality(data_result)
 
 
 def _parse_utc(timestamp: str) -> datetime:
@@ -217,7 +99,7 @@ def _parse_utc(timestamp: str) -> datetime:
     return parsed.astimezone(timezone.utc)
 
 
-def get_closest_utc_index(hourly_times: list[str]) -> int:
+def get_closest_utc_index(hourly_times: list[str], *, reference: datetime | None = None) -> int:
     """
     Returns the index of the datetime in `hourly_times` closest to the current UTC time
     or a provided datetime.
@@ -226,7 +108,9 @@ def get_closest_utc_index(hourly_times: list[str]) -> int:
     :return: Index of the closest datetime in the list
     """
 
-    current_time = datetime.now(timezone.utc)
+    from .series import utc_now
+
+    current_time = reference or utc_now()
     parsed_times = [_parse_utc(t) for t in hourly_times]
 
     return min(range(len(parsed_times)), key=lambda i: abs(parsed_times[i] - current_time))
@@ -263,3 +147,13 @@ weather_descriptions = {
     96: "Thunderstorm with slight hail",
     99: "Thunderstorm with heavy hail",
 }
+
+
+def describe_weather(code: Any) -> str:
+    if code is None:
+        return "Weather condition unavailable"
+    from .series import is_number
+
+    if not is_number(code) or code != int(code):
+        return "Unknown weather condition"
+    return weather_descriptions.get(code, "Unknown weather condition")

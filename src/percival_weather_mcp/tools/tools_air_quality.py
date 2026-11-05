@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-import json
 import logging
 from collections.abc import Sequence
 from typing import cast
 
 from mcp.types import EmbeddedResource, ImageContent, TextContent, Tool
 
-from .. import utils
+from .. import series, utils
+from ..air_quality_index import index_payload
 from ..errors import InvalidRequestError, UpstreamError, WeatherMCPError
 from ..http_client import ResilientHttpClient
 from ..models import (
@@ -18,6 +18,7 @@ from ..models import (
     GetAirQualityDetailsInput,
     GetAirQualityInput,
 )
+from ..output_models import AirQualityDetails, serialize
 from ..presentation import AirQualityFormatter
 from .air_quality_service import AirQualityService
 from .toolhandler import ToolHandler
@@ -39,18 +40,25 @@ def _normalize_aq_variables(
     if raw_variables is None:
         return list(default_variables)
     if not isinstance(raw_variables, (list, tuple)):
-        raise ValueError("variables must be an array of strings.")
+        raise InvalidRequestError("variables must be an array of strings.")
+    if not raw_variables:
+        raise InvalidRequestError(
+            "variables must contain at least 1 pollutant; omit it for defaults."
+        )
     if len(raw_variables) > len(EXTENDED_AIR_QUALITY_VARIABLES):
-        raise ValueError("Too many variables requested.")
+        raise InvalidRequestError("variables must contain at most 9 entries.")
 
     allowed = set(EXTENDED_AIR_QUALITY_VARIABLES)
     normalized: list[str] = []
     for variable in raw_variables:
         if not isinstance(variable, str):
-            raise ValueError("variables must contain only strings.")
+            raise InvalidRequestError("variables must contain only strings.")
         if variable not in allowed:
-            raise ValueError(f"Unsupported air quality variable: {variable}")
-        normalized.append(variable)
+            raise InvalidRequestError(
+                "variables contains an unsupported pollutant; consult the input schema enum."
+            )
+        if variable not in normalized:
+            normalized.append(variable)
     return normalized
 
 
@@ -60,6 +68,34 @@ class _BaseAirQualityHandler(ToolHandler):
         self.air_quality_service = AirQualityService()
         self.weather_service = WeatherService()  # for geocoding
         self.formatter = AirQualityFormatter()
+
+    async def _query(self, city: str, variables: list[str]) -> dict:
+        reference = series.utc_now()
+        async with ResilientHttpClient(name="air-quality-tools") as http_client:
+            resolved = await self.weather_service.resolve_location(city, client=http_client)
+            latitude, longitude = resolved.selected.latitude, resolved.selected.longitude
+            aq_data = await self.air_quality_service.get_air_quality(
+                latitude, longitude, variables, client=http_client
+            )
+        current = self.air_quality_service.get_current_air_quality_index(
+            aq_data, reference=reference
+        )
+        return {
+            "city": city,
+            "latitude": latitude,
+            "longitude": longitude,
+            **resolved.context(),
+            "source": series.provenance("air-quality"),
+            "selection_method": "nearest_hour",
+            "reference_time": reference.isoformat(),
+            "timezone": "UTC",
+            "current_air_quality": current,
+            "full_data": aq_data,
+            "air_quality_index": index_payload(current, variables),
+            "coverage": series.series_metadata(
+                aq_data.get("hourly") or {}, variables, reference=reference, expected_points=120
+            ),
+        }
 
 
 class GetAirQualityToolHandler(_BaseAirQualityHandler):
@@ -77,6 +113,7 @@ class GetAirQualityToolHandler(_BaseAirQualityHandler):
                 "Get compact air quality information for a city. "
                 "Returns agent-friendly JSON text with current conditions, summary statistics, "
                 "and a short hourly sample. Use this for concise analysis."
+                " Includes selected location, UTC model timestamps, valid/missing coverage and provider-computed US AQI subindices."
             ),
             inputSchema=GetAirQualityInput.model_json_schema(),
         )
@@ -90,21 +127,7 @@ class GetAirQualityToolHandler(_BaseAirQualityHandler):
 
             logger.info("Getting air quality for city=%s variables=%s", city, variables)
 
-            async with ResilientHttpClient(name="air-quality-tools") as http_client:
-                latitude, longitude = await self.weather_service.get_coordinates(
-                    city, client=http_client
-                )
-                aq_data = await self.air_quality_service.get_air_quality(
-                    latitude, longitude, variables, client=http_client
-                )
-            current_aq = self.air_quality_service.get_current_air_quality_index(aq_data)
-            response_data = {
-                "city": city,
-                "latitude": latitude,
-                "longitude": longitude,
-                "current_air_quality": current_aq,
-                "full_data": aq_data,
-            }
+            response_data = await self._query(city, variables)
             formatted = self.formatter.format_comprehensive(response_data)
             return [TextContent(type="text", text=formatted)]
         except WeatherMCPError:
@@ -139,6 +162,7 @@ class GetAirQualityDetailsToolHandler(_BaseAirQualityHandler):
             description=(
                 "Get detailed air quality data for a city as structured JSON text. "
                 "Use this tool when downstream logic needs raw API-like fields in 'full_data'."
+                " Preserves all upstream arrays; adds location, temporal coverage and provider-computed US AQI (weather://aqi)."
             ),
             inputSchema=GetAirQualityDetailsInput.model_json_schema(),
         )
@@ -152,22 +176,8 @@ class GetAirQualityDetailsToolHandler(_BaseAirQualityHandler):
 
             logger.info("Getting detailed air quality for city=%s", city)
 
-            async with ResilientHttpClient(name="air-quality-tools") as http_client:
-                latitude, longitude = await self.weather_service.get_coordinates(
-                    city, client=http_client
-                )
-                aq_data = await self.air_quality_service.get_air_quality(
-                    latitude, longitude, variables, client=http_client
-                )
-            current_aq = self.air_quality_service.get_current_air_quality_index(aq_data)
-            response_data = {
-                "city": city,
-                "latitude": latitude,
-                "longitude": longitude,
-                "current_air_quality": current_aq,
-                "full_data": aq_data,
-            }
-            return [TextContent(type="text", text=json.dumps(response_data, indent=2))]
+            response_data = await self._query(city, variables)
+            return [TextContent(type="text", text=serialize(AirQualityDetails, response_data))]
         except WeatherMCPError:
             # Taxonomy errors already carry the agent-facing message and
             # the true cause (upstream failure, empty result, local validation).

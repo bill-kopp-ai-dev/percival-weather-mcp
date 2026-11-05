@@ -20,12 +20,15 @@ from typing import TYPE_CHECKING, Annotated
 from mcp.server.fastmcp.prompts.base import AssistantMessage, UserMessage
 from pydantic import Field
 
+from .config import get_settings
+
 if TYPE_CHECKING:
     from mcp.server.fastmcp import FastMCP
 
 
 def register_prompts(mcp_server: FastMCP) -> None:
     """Attach every prompt template to the given FastMCP server."""
+    range_limit = get_settings().max_date_range_days
 
     @mcp_server.prompt(
         name="weather_quick_answer",
@@ -65,8 +68,8 @@ def register_prompts(mcp_server: FastMCP) -> None:
             "     the user explicitly asks for a short-term forecast).\n"
             "  3. When the response mentions a numeric ``weather_code`` and the "
             "     user wants plain text, consult ``weather://codes``.\n"
-            "  4. On error, retry once with a less specific city name (drop the "
-            "     country suffix); if it still fails, ask the user to clarify.\n"
+            "  4. Preserve country/region qualifiers on errors; ask for clarification rather than dropping them. "
+            "     Report the selected location and UTC model valid time, not an observed station measurement.\n"
             "\n"
             "Never call ``weather_get_by_range`` for current-conditions "
             "questions — it is intended for historical/forecast windows."
@@ -109,7 +112,7 @@ def register_prompts(mcp_server: FastMCP) -> None:
                 description=(
                     "Inclusive end of the range, ISO 8601 calendar date "
                     "(YYYY-MM-DD). Must be ``>= start_date`` and the total "
-                    "range must be ``<= 16 days``."
+                    f"range must be ``<= {get_settings().max_date_range_days} days``."
                 )
             ),
         ],
@@ -128,11 +131,14 @@ def register_prompts(mcp_server: FastMCP) -> None:
             "\n"
             "For a date-range analysis:\n"
             "  1. Call ``weather_get_by_range`` with ``city``, ``start_date`` and "
-            "     ``end_date``. The range must be ≤ 16 days inclusive.\n"
+            f"     ``end_date``. The range must be ≤ {range_limit} days inclusive.\n"
             "  2. The tool returns a structured JSON payload with ``summary`` "
             "     statistics and an ``hourly_sample``. Use ``summary`` for "
             "     averages/extremes; use ``hourly_sample`` for charts or "
-            "     hourly detail. Consult ``weather://schema/weather_get_by_range`` "
+            "     sample context only, not a complete time series (at most 12 points; sample_mode first/last/spread). "
+            "     Check coverage, valid/missing counts and past_or_present/future segments. "
+            "     Data are models, including past timestamps; the Forecast window is UTC today-92 through today+15 days. "
+            "     Consult ``weather://schema/weather_get_by_range`` "
             "     if you need the exact keys.\n"
             "  3. Translate numeric ``weather_code`` values via "
             "     ``weather://codes`` before showing them to the user.\n"
