@@ -1,0 +1,17 @@
+{
+  "base_images": [
+    "python:3.12-slim-trixie@sha256:2b4f19dae3a777dfc3b76730bda1e82e1f66ab2a2686fa93ca78edbfb4f04ffe",
+    "ghcr.io/astral-sh/uv:0.9.30-python3.12-trixie-slim@sha256:eacce4ec0ff855c8be0cca407d8c5e8e20139dd3f8f64c018fb654bac0a40bd8",
+    "debian:forky-slim@sha256:4cee6ff3ebc49e32d55a857e25164ef8e5f8fecff2a186c6393f7e8bd8c23b53"
+  ],
+  "dependency_locks_sha256": {
+    "uv.lock": "566167b23b8f2d257119ac53944a59c5dd3a534ed1ded2f542e1647f87ddd94c"
+  },
+  "image": "percival-weather-mcp:ci",
+  "image_id": "sha256:f356343fdd67146d6aef8555c76f5e518bbfa137294e5f4d3d01cae3b338a559",
+  "platform": "linux/amd64",
+  "repo_digests": [],
+  "revision": "c55e23472c3012ee776e6d5f44a8433f6271a37c",
+  "source_sha": "c55e23472c3012ee776e6d5f44a8433f6271a37c",
+  "version": "0.10.0"
+}

@@ -1,0 +1,32 @@
+{
+  "files": {
+    "docker-build-manifest.json": {
+      "bytes": 793,
+      "sha256": "2fba418686a21abd4465c6155eb3b9fd50ca54850995e571f013365cd039902c"
+    },
+    "sbom.cdx.json": {
+      "bytes": 1342930,
+      "sha256": "364df07eb3d2439638f8cb9236c7c6df09499fd2893fdac75f6ca4a71bb5469c"
+    },
+    "trivy-raw.json": {
+      "bytes": 459048,
+      "sha256": "e5d3d305324abcf1258749bb2cbf5a5f298455b15cfee60f7b663540bfcb75ef"
+    }
+  },
+  "image": {
+    "platform": "linux/amd64",
+    "ref": "percival-weather-mcp:ci"
+  },
+  "scanner": {
+    "name": "Trivy",
+    "version": "0.76.1"
+  },
+  "schemaVersion": 1,
+  "source": {
+    "repository": "bill-kopp-ai-dev/percival-weather-mcp",
+    "runAttempt": "1",
+    "runId": "42265870029",
+    "sha": "c55e23472c3012ee776e6d5f44a8433f6271a37c",
+    "workflow": "CI"
+  }
+}
