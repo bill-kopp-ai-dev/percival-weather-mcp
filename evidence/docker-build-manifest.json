@@ -8,10 +8,10 @@
     "uv.lock": "566167b23b8f2d257119ac53944a59c5dd3a534ed1ded2f542e1647f87ddd94c"
   },
   "image": "percival-weather-mcp:ci",
-  "image_id": "sha256:f356343fdd67146d6aef8555c76f5e518bbfa137294e5f4d3d01cae3b338a559",
+  "image_id": "sha256:d9a6e2bca7a8c8ec61b0e93672015585eeac392fafd16a09b8a5e9b63e1f5587",
   "platform": "linux/amd64",
   "repo_digests": [],
-  "revision": "c55e23472c3012ee776e6d5f44a8433f6271a37c",
-  "source_sha": "c55e23472c3012ee776e6d5f44a8433f6271a37c",
+  "revision": "48a14467126eb54cd552e6ba40fe0920246f0402",
+  "source_sha": "48a14467126eb54cd552e6ba40fe0920246f0402",
   "version": "0.10.0"
 }

@@ -1,35 +1,35 @@
 {
   "SchemaVersion": 2,
   "Trivy": {
-    "Version": "0.70.0"
+    "Version": "0.76.1"
   },
-  "ReportID": "01a1b200-8292-72ce-89a7-b08d845a45df",
-  "CreatedAt": "2026-11-06T17:55:40.306184748Z",
-  "ArtifactID": "sha256:e45d3103a7cdf1601b7e0df6a646632d6fec532bc45a70b93a976165e2baa4d8",
+  "ReportID": "01a1b21b-ca98-7dea-b046-0f643ac07540",
+  "CreatedAt": "2026-11-06T18:25:28.216913374Z",
+  "ArtifactID": "sha256:90b0ed4af9032f3036db0ea1e9c4a50896912321449498d9266adeaf464baeff",
   "ArtifactName": "percival-weather-mcp:ci",
   "ArtifactType": "container_image",
   "Metadata": {
-    "Size": 181246464,
+    "Size": 181250048,
     "OS": {
       "Family": "debian",
       "Name": "forky/sid"
     },
-    "ImageID": "sha256:f356343fdd67146d6aef8555c76f5e518bbfa137294e5f4d3d01cae3b338a559",
+    "ImageID": "sha256:d9a6e2bca7a8c8ec61b0e93672015585eeac392fafd16a09b8a5e9b63e1f5587",
     "DiffIDs": [
       "sha256:f5c176052ead0ab04f2b6d0d859ce0d239d8f988cd8203195942eee8f209fa6c",
       "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
-      "sha256:c135564b97b90a93b40168f6b82f70a0ec16377ff1788968bd8c8c53f86f8fb5",
-      "sha256:ae2c932ee12393c2616e2f75b14915005898aebdaae26b2c7aa7a0bf0fc5cd36",
-      "sha256:104a5333c0c54dd2f0e79015ddf79d9ab4c38f82b8c1c24dd1a34a994171cae3",
-      "sha256:129bab0ac9dbb89e2080d1eb58d85f46d1e7e2d45472eaea4cca104fabc2451f",
-      "sha256:355d0fac6d6fb4a2f7fddf29e7e28be03a367cc47d75528020e9252d325aa06e",
-      "sha256:d5df78073d34ec029cb11e48ded6282aca420a807c55997d199506cfe7136f14",
-      "sha256:12a8d0bd1e36196757f7d7a698ba71b189e5269f5b9df3dca4b246456a0513f1",
-      "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60",
-      "sha256:f5eca4a8d47a80945e58f8b343ef4f11bbf1a1b04c3506a10c662036f09f1e03",
-      "sha256:4c1a66c9790ec42f64e32d721545feef712712b246855d161dcede51ba67f4fc",
-      "sha256:ea38b14aa2bb2c71d2acb29b2e13bcada79786aebae920db5061d623b61e5aef",
-      "sha256:d343300ee8f6c987ef6f32e910e52f5a2d0c422b41c8bf2534f771a4dac18b7e",
+      "sha256:19d5480a1ad071573dcc2a71bbebf7bd06e8ad62aee96c390bf7bf78a83609c4",
+      "sha256:f14c2e2a06d3adf8bce17fd22fcf86a6be51d2e8e08e7070c8a1aecce8b0815e",
+      "sha256:76f4650da96d7402da86a5641a3ede30fd0353fd07f871a541e611a6ff32aa08",
+      "sha256:3d4b2b45f78f45235800c634d24084390fe12ac6a97fb546d084a06729ece595",
+      "sha256:203b44196566748c12012edc361ab77caf8f64f4ab1df6726dd6c220df16d42a",
+      "sha256:22c8f8241a5e9238b6bc5266704806d6eb48af002b7d534dbe988ee9de840fa5",
+      "sha256:586e2918880ca1dcc3d582b043834d81d711f7a78327d4b4005424019e9fff42",
+      "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1",
+      "sha256:310cec2cd76f2a935a310fe1af328060b1c5910bc5c0e2de9923a84dc4d4f40c",
+      "sha256:e0de4d469b03f8db1423c89d1dc69128ff7707db9b47dd28615d1bc0aff9b63c",
+      "sha256:38e31d1c54c36e069f993111706be207130cf4efa95037260aaf0cb72496a5c0",
+      "sha256:a133d9fa0202f88001594a890b9e29e4e52d0157a7ddd2d67748ac57cb4c7d35",
       "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef"
     ],
     "RepoTags": [
@@ -38,7 +38,7 @@
     "Reference": "percival-weather-mcp:ci",
     "ImageConfig": {
       "architecture": "amd64",
-      "created": "2026-11-06T17:53:53Z",
+      "created": "2026-11-06T18:24:25Z",
       "history": [
         {
           "created": "2026-10-20T21:32:55Z",
@@ -46,137 +46,137 @@
           "comment": "debuerreotype 0.17"
         },
         {
-          "created": "2026-11-06T17:53:53Z",
+          "created": "2026-11-06T18:24:25Z",
           "created_by": "ARG SOURCE_DATE_EPOCH=0",
           "comment": "buildkit.dockerfile.v0",
           "empty_layer": true
         },
         {
-          "created": "2026-11-06T17:53:53Z",
-          "created_by": "RUN |1 SOURCE_DATE_EPOCH=1793987633 /bin/sh -c mkdir -p /usr/local/bin /usr/local/lib     \u0026\u0026 touch --no-dereference --date=\"@${SOURCE_DATE_EPOCH}\" /usr/local/bin /usr/local/lib # buildkit",
+          "created": "2026-11-06T18:24:25Z",
+          "created_by": "RUN |1 SOURCE_DATE_EPOCH=1793989465 /bin/sh -c mkdir -p /usr/local/bin /usr/local/lib     \u0026\u0026 touch --no-dereference --date=\"@${SOURCE_DATE_EPOCH}\" /usr/local/bin /usr/local/lib # buildkit",
           "comment": "buildkit.dockerfile.v0"
         },
         {
-          "created": "2026-11-06T17:53:53Z",
+          "created": "2026-11-06T18:24:25Z",
           "created_by": "COPY /usr/local/bin/python3.12 /usr/local/bin/python3.12 # buildkit",
           "comment": "buildkit.dockerfile.v0"
         },
         {
-          "created": "2026-11-06T17:53:53Z",
+          "created": "2026-11-06T18:24:25Z",
           "created_by": "COPY /usr/local/lib/python3.12 /usr/local/lib/python3.12 # buildkit",
           "comment": "buildkit.dockerfile.v0"
         },
         {
-          "created": "2026-11-06T17:53:53Z",
+          "created": "2026-11-06T18:24:25Z",
           "created_by": "COPY /usr/local/lib/libpython3.12.so.1.0 /usr/local/lib/libpython3.12.so.1.0 # buildkit",
           "comment": "buildkit.dockerfile.v0"
         },
         {
-          "created": "2026-11-06T17:53:53Z",
+          "created": "2026-11-06T18:24:25Z",
           "created_by": "ARG DEBIAN_SNAPSHOT=20261020T000000Z",
           "comment": "buildkit.dockerfile.v0",
           "empty_layer": true
         },
         {
-          "created": "2026-11-06T17:53:53Z",
-          "created_by": "RUN |2 SOURCE_DATE_EPOCH=1793987633 DEBIAN_SNAPSHOT=20261020T000000Z /bin/sh -c printf 'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian/%s forky main\\n' \"$DEBIAN_SNAPSHOT\" \u003e /etc/apt/sources.list     \u0026\u0026 printf 'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian-security/%s forky-security main\\n' \"$DEBIAN_SNAPSHOT\" \u003e\u003e /etc/apt/sources.list     \u0026\u0026 rm -f /etc/apt/sources.list.d/debian.sources     \u0026\u0026 apt-get -o Acquire::Check-Valid-Until=false update     \u0026\u0026 apt-get upgrade -y --no-install-recommends     \u0026\u0026 DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends         ca-certificates=20260816         libssl3t64=3.6.5-1 libffi8=3.8.0-2 libsqlite3-0=3.53.4-2         libreadline8t64=8.3-4 libncursesw6=6.6+20260608-2 libtinfo6=6.6+20260608-2         libdb5.3t64=5.3.28+dfsg2-11+b1 libgdbm6t64=1.26-1+b2         libbz2-1.0=1.0.8-6+b2 liblzma5=5.8.4-1 libuuid1=2.42.4-1         libzstd1=1.5.7+dfsg-4 zlib1g=1:1.3.dfsg+really1.3.2-3         libtk8.6=8.6.18-1 libtcl8.6=8.6.18+dfsg-1     \u0026\u0026 ln -sf /usr/local/lib/libpython3.12.so.1.0 /usr/local/lib/libpython3.12.so     \u0026\u0026 ln -sf /usr/local/bin/python3.12 /usr/local/bin/python3     \u0026\u0026 ln -sf /usr/local/bin/python3.12 /usr/local/bin/python     \u0026\u0026 rm -rf /usr/local/lib/python3.12/site-packages/pip         /usr/local/lib/python3.12/site-packages/pip-*.dist-info         /usr/local/lib/python3.12/ensurepip/_bundled     \u0026\u0026 rm -rf /var/lib/apt/lists/*     \u0026\u0026 rm -rf /var/log/apt /var/log/dpkg.log /var/cache/ldconfig /var/cache/debconf     \u0026\u0026 rm -f /var/lib/dpkg/lock-frontend     \u0026\u0026 ( find /var/lib/dpkg /etc         -not -path '/etc/resolv.conf' -not -path '/etc/hosts'         -exec touch --no-dereference --date=\"@${SOURCE_DATE_EPOCH}\" {} + || true ) # buildkit",
+          "created": "2026-11-06T18:24:25Z",
+          "created_by": "RUN |2 SOURCE_DATE_EPOCH=1793989465 DEBIAN_SNAPSHOT=20261020T000000Z /bin/sh -c printf 'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian/%s forky main\\n' \"$DEBIAN_SNAPSHOT\" \u003e /etc/apt/sources.list     \u0026\u0026 printf 'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian-security/%s forky-security main\\n' \"$DEBIAN_SNAPSHOT\" \u003e\u003e /etc/apt/sources.list     \u0026\u0026 rm -f /etc/apt/sources.list.d/debian.sources     \u0026\u0026 apt-get -o Acquire::Check-Valid-Until=false update     \u0026\u0026 apt-get upgrade -y --no-install-recommends     \u0026\u0026 DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends         ca-certificates=20260816         libssl3t64=3.6.5-1 libffi8=3.8.0-2 libsqlite3-0=3.53.4-2         libreadline8t64=8.3-4 libncursesw6=6.6+20260608-2 libtinfo6=6.6+20260608-2         libdb5.3t64=5.3.28+dfsg2-11+b1 libgdbm6t64=1.26-1+b2         libbz2-1.0=1.0.8-6+b2 liblzma5=5.8.4-1 libuuid1=2.42.4-1         libzstd1=1.5.7+dfsg-4 zlib1g=1:1.3.dfsg+really1.3.2-3         libtk8.6=8.6.18-1 libtcl8.6=8.6.18+dfsg-1     \u0026\u0026 ln -sf /usr/local/lib/libpython3.12.so.1.0 /usr/local/lib/libpython3.12.so     \u0026\u0026 ln -sf /usr/local/bin/python3.12 /usr/local/bin/python3     \u0026\u0026 ln -sf /usr/local/bin/python3.12 /usr/local/bin/python     \u0026\u0026 rm -rf /usr/local/lib/python3.12/site-packages/pip         /usr/local/lib/python3.12/site-packages/pip-*.dist-info         /usr/local/lib/python3.12/ensurepip/_bundled     \u0026\u0026 rm -rf /var/lib/apt/lists/*     \u0026\u0026 rm -rf /var/log/apt /var/log/dpkg.log /var/cache/ldconfig /var/cache/debconf     \u0026\u0026 rm -f /var/lib/dpkg/lock-frontend     \u0026\u0026 ( find /var/lib/dpkg /etc         -not -path '/etc/resolv.conf' -not -path '/etc/hosts'         -exec touch --no-dereference --date=\"@${SOURCE_DATE_EPOCH}\" {} + || true ) # buildkit",
           "comment": "buildkit.dockerfile.v0"
         },
         {
-          "created": "2026-11-06T17:53:53Z",
-          "created_by": "RUN |2 SOURCE_DATE_EPOCH=1793987633 DEBIAN_SNAPSHOT=20261020T000000Z /bin/sh -c chmod u-s /usr/bin/mount \u0026\u0026 rm -f /usr/bin/nsenter /usr/bin/infocmp # buildkit",
+          "created": "2026-11-06T18:24:25Z",
+          "created_by": "RUN |2 SOURCE_DATE_EPOCH=1793989465 DEBIAN_SNAPSHOT=20261020T000000Z /bin/sh -c chmod u-s /usr/bin/mount \u0026\u0026 rm -f /usr/bin/nsenter /usr/bin/infocmp # buildkit",
           "comment": "buildkit.dockerfile.v0"
         },
         {
-          "created": "2026-11-06T17:53:53Z",
+          "created": "2026-11-06T18:24:25Z",
           "created_by": "ARG VERSION=0.0.0",
           "comment": "buildkit.dockerfile.v0",
           "empty_layer": true
         },
         {
-          "created": "2026-11-06T17:53:53Z",
+          "created": "2026-11-06T18:24:25Z",
           "created_by": "ARG GIT_SHA=unknown",
           "comment": "buildkit.dockerfile.v0",
           "empty_layer": true
         },
         {
-          "created": "2026-11-06T17:53:53Z",
+          "created": "2026-11-06T18:24:25Z",
           "created_by": "ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PATH=/opt/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin MCP_TRANSPORT=stdio",
           "comment": "buildkit.dockerfile.v0",
           "empty_layer": true
         },
         {
-          "created": "2026-11-06T17:53:53Z",
-          "created_by": "RUN |4 SOURCE_DATE_EPOCH=1793987633 DEBIAN_SNAPSHOT=20261020T000000Z VERSION=0.10.0 GIT_SHA=c55e23472c3012ee776e6d5f44a8433f6271a37c /bin/sh -c groupadd --system app \u0026\u0026 useradd --system --gid app --home /app app # buildkit",
+          "created": "2026-11-06T18:24:25Z",
+          "created_by": "RUN |4 SOURCE_DATE_EPOCH=1793989465 DEBIAN_SNAPSHOT=20261020T000000Z VERSION=0.10.0 GIT_SHA=48a14467126eb54cd552e6ba40fe0920246f0402 /bin/sh -c groupadd --system app \u0026\u0026 useradd --system --gid app --home /app app # buildkit",
           "comment": "buildkit.dockerfile.v0"
         },
         {
-          "created": "2026-11-06T17:53:53Z",
+          "created": "2026-11-06T18:24:25Z",
           "created_by": "WORKDIR /app",
           "comment": "buildkit.dockerfile.v0"
         },
         {
-          "created": "2026-11-06T17:53:53Z",
+          "created": "2026-11-06T18:24:25Z",
           "created_by": "COPY /opt/venv /opt/venv # buildkit",
           "comment": "buildkit.dockerfile.v0"
         },
         {
-          "created": "2026-11-06T17:53:53Z",
+          "created": "2026-11-06T18:24:25Z",
           "created_by": "COPY --chown=app:app pyproject.toml README.md LICENSE CHANGELOG.md ./ # buildkit",
           "comment": "buildkit.dockerfile.v0"
         },
         {
-          "created": "2026-11-06T17:53:53Z",
+          "created": "2026-11-06T18:24:25Z",
           "created_by": "COPY --chown=app:app src ./src # buildkit",
           "comment": "buildkit.dockerfile.v0"
         },
         {
-          "created": "2026-11-06T17:53:53Z",
+          "created": "2026-11-06T18:24:25Z",
           "created_by": "COPY --chown=app:app docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh # buildkit",
           "comment": "buildkit.dockerfile.v0"
         },
         {
-          "created": "2026-11-06T17:53:53Z",
+          "created": "2026-11-06T18:24:25Z",
           "created_by": "COPY --chown=app:app mcp.yaml /mcp/mcp.yaml # buildkit",
           "comment": "buildkit.dockerfile.v0"
         },
         {
-          "created": "2026-11-06T17:53:53Z",
-          "created_by": "RUN |4 SOURCE_DATE_EPOCH=1793987633 DEBIAN_SNAPSHOT=20261020T000000Z VERSION=0.10.0 GIT_SHA=c55e23472c3012ee776e6d5f44a8433f6271a37c /bin/sh -c chmod 0755 /usr/local/bin/docker-entrypoint.sh # buildkit",
+          "created": "2026-11-06T18:24:25Z",
+          "created_by": "RUN |4 SOURCE_DATE_EPOCH=1793989465 DEBIAN_SNAPSHOT=20261020T000000Z VERSION=0.10.0 GIT_SHA=48a14467126eb54cd552e6ba40fe0920246f0402 /bin/sh -c chmod 0755 /usr/local/bin/docker-entrypoint.sh # buildkit",
           "comment": "buildkit.dockerfile.v0"
         },
         {
-          "created": "2026-11-06T17:53:53Z",
+          "created": "2026-11-06T18:24:25Z",
           "created_by": "USER app",
           "comment": "buildkit.dockerfile.v0",
           "empty_layer": true
         },
         {
-          "created": "2026-11-06T17:53:53Z",
+          "created": "2026-11-06T18:24:25Z",
           "created_by": "EXPOSE map[8080/tcp:{}]",
           "comment": "buildkit.dockerfile.v0",
           "empty_layer": true
         },
         {
-          "created": "2026-11-06T17:53:53Z",
-          "created_by": "LABEL org.opencontainers.image.title=Percival Weather MCP org.opencontainers.image.description=Weather, air quality and time MCP server for the percival.OS ecosystem (Open-Meteo backed) org.opencontainers.image.source=https://github.com/bill-kopp-ai-dev/percival-weather-mcp org.opencontainers.image.documentation=https://github.com/bill-kopp-ai-dev/percival-weather-mcp/blob/main/README.md org.opencontainers.image.licenses=MIT org.opencontainers.image.vendor=Positronic Bean Labs org.opencontainers.image.version=0.10.0 org.opencontainers.image.revision=c55e23472c3012ee776e6d5f44a8433f6271a37c",
+          "created": "2026-11-06T18:24:25Z",
+          "created_by": "LABEL org.opencontainers.image.title=Percival Weather MCP org.opencontainers.image.description=Weather, air quality and time MCP server for the percival.OS ecosystem (Open-Meteo backed) org.opencontainers.image.source=https://github.com/bill-kopp-ai-dev/percival-weather-mcp org.opencontainers.image.documentation=https://github.com/bill-kopp-ai-dev/percival-weather-mcp/blob/main/README.md org.opencontainers.image.licenses=MIT org.opencontainers.image.vendor=Positronic Bean Labs org.opencontainers.image.version=0.10.0 org.opencontainers.image.revision=48a14467126eb54cd552e6ba40fe0920246f0402",
           "comment": "buildkit.dockerfile.v0",
           "empty_layer": true
         },
         {
-          "created": "2026-11-06T17:53:53Z",
+          "created": "2026-11-06T18:24:25Z",
           "created_by": "LABEL io.docker.server.metadata={\"name\": \"percival-weather-mcp\", \"type\": \"server\", \"title\": \"Percival Weather, Air Quality and Time\", \"description\": \"Weather, air quality and time MCP server for the percival.OS ecosystem. Backed entirely by the public Open-Meteo APIs (no API keys required). Nine tools, three prompts, three static resources and one resource template via FastMCP. Defaults to stdio so the Docker MCP Toolkit gateway spawns it drop-in.\", \"icon\": \"https://avatars.githubusercontent.com/u/182288589?s=200\u0026v=4\", \"env\": [{\"name\": \"MCP_TRANSPORT\"}, {\"name\": \"PORT\"}, {\"name\": \"MCP_WEATHER_HOST\"}, {\"name\": \"MCP_WEATHER_AUTH_TOKEN_ENV\"}, {\"name\": \"MCP_WEATHER_HTTP_TIMEOUT\"}, {\"name\": \"MCP_WEATHER_HTTP_MAX_RETRIES\"}, {\"name\": \"MCP_WEATHER_HTTP_BACKOFF_BASE\"}, {\"name\": \"MCP_WEATHER_HTTP_BACKOFF_CAP\"}, {\"name\": \"MCP_WEATHER_HTTP_MAX_CONCURRENCY\"}, {\"name\": \"MCP_WEATHER_RATE_LIMIT_PER_MINUTE\"}, {\"name\": \"MCP_WEATHER_LOG_FORMAT\"}, {\"name\": \"MCP_WEATHER_ENABLE_METRICS\"}, {\"name\": \"MCP_WEATHER_ENABLE_TRACING\"}], \"tools\": [{\"name\": \"weather_convert_time\", \"description\": \"Convert a datetime from one timezone to another. Returns a JSON payload with the original and converted timestamps and the time difference in hours. Accepts 'now' or ISO 8601 input (including trailing 'Z').\", \"arguments\": [{\"name\": \"datetime_str\", \"type\": \"string\", \"desc\": \"Datetime to convert. Either the literal string 'now' (case-insensitive, whitespace allowed) or an ISO 8601 datetime (e.g. '2026-03-28T14:30:00', '2026-03-28T14:30:00Z', or '2026-03-28T14:30:00+02:00'). Strings without an offset are interpreted in ``from_timezone``.\", \"optional\": false}, {\"name\": \"from_timezone\", \"type\": \"string\", \"desc\": \"Source timezone (IANA name).\", \"optional\": false}, {\"name\": \"to_timezone\", \"type\": \"string\", \"desc\": \"Target timezone (IANA name).\", \"optional\": false}]}, {\"name\": \"weather_get_air_quality\", \"description\": \"Get compact air quality information for a city. Returns agent-friendly JSON text with current conditions, summary statistics, and a short hourly sample. Use this for concise analysis. Includes selected location, UTC model timestamps, valid/missing coverage and provider-computed US AQI subindices.\", \"arguments\": [{\"name\": \"city\", \"type\": \"string\", \"desc\": \"City name in English, optionally with region/country to disambiguate.\", \"optional\": false}, {\"name\": \"variables\", \"type\": \"array\", \"desc\": \"Optional subset of pollutant variables to query. If omitted, the default compact set is used: pm10, pm2_5, ozone, nitrogen_dioxide, carbon_monoxide. Pass an explicit list when the user asks for a specific pollutant (e.g. ['ozone']) or wants to exclude one.\", \"optional\": true, \"items\": {\"type\": \"string\"}}]}, {\"name\": \"weather_get_air_quality_details\", \"description\": \"Get detailed air quality data for a city as structured JSON text. Use this tool when downstream logic needs raw API-like fields in 'full_data'. Preserves all upstream arrays; adds location, temporal coverage and provider-computed US AQI (weather://aqi).\", \"arguments\": [{\"name\": \"city\", \"type\": \"string\", \"desc\": \"City name in English, optionally with region/country to disambiguate.\", \"optional\": false}, {\"name\": \"variables\", \"type\": \"array\", \"desc\": \"Optional pollutant list. If omitted, the extended default set is used: pm10, pm2_5, ozone, nitrogen_dioxide, carbon_monoxide, sulphur_dioxide, ammonia, dust, aerosol_optical_depth.\", \"optional\": true, \"items\": {\"type\": \"string\"}}]}, {\"name\": \"weather_get_by_range\", \"description\": \"Get weather data for a city between two calendar dates (inclusive). Returns a compact JSON payload optimized for agent analysis, including period metadata, summary statistics, and an hourly sample. Forecast window: UTC today-92 through today+15 days; default maximum 16 days inclusive. sample_mode selects first/last/spread (up to 12 rows); coverage separates past/present and future model data.\", \"arguments\": [{\"name\": \"city\", \"type\": \"string\", \"desc\": \"City name in English, optionally with region/country to disambiguate.\", \"optional\": false}, {\"name\": \"start_date\", \"type\": \"string\", \"desc\": \"Start date in ISO 8601 calendar format: YYYY-MM-DD. Must be on or before end_date.\", \"optional\": false}, {\"name\": \"end_date\", \"type\": \"string\", \"desc\": \"End date in ISO 8601 calendar format: YYYY-MM-DD (inclusive). The inclusive duration limit defaults to 16 days (see response schema resource). Forecast policy: today UTC minus 92 days through today UTC plus 15 days.\", \"optional\": false}, {\"name\": \"sample_mode\", \"type\": \"string\", \"desc\": \"Hourly sample selection: first, last or spread; at most 12 rows.\", \"optional\": true}]}, {\"name\": \"weather_get_current\", \"description\": \"Get a concise, human-readable snapshot of current weather for a city. Use this tool when you need a short summary (temperature, humidity, wind, precipitation context, pressure, clouds, UV, visibility), not raw datasets. Includes selected location and the nearest hourly model valid time in UTC.\", \"arguments\": [{\"name\": \"city\", \"type\": \"string\", \"desc\": \"City name in English, optionally with region/country to disambiguate (for example: 'Springfield, US' or 'London, UK'). Control characters, excessive whitespace are stripped automatically; unsafe punctuation is rejected.\", \"optional\": false}]}, {\"name\": \"weather_get_details\", \"description\": \"Get detailed structured JSON weather data for a city. Use this when you need raw fields for downstream processing. Optionally include a short forecast window. Includes resolved location, model provenance, reference_time and UTC valid_time.\", \"arguments\": [{\"name\": \"city\", \"type\": \"string\", \"desc\": \"City name in English, optionally with region/country to disambiguate.\", \"optional\": false}, {\"name\": \"include_forecast\", \"type\": \"boolean\", \"desc\": \"When true, attaches a 'forecast' array with the next 24 hours of hourly model data. Defaults to false for a smaller payload.\", \"optional\": true}]}, {\"name\": \"weather_get_time\", \"description\": \"Get the current local datetime for a specific IANA timezone. Returns structured JSON with timezone and ISO 8601 datetime.\", \"arguments\": [{\"name\": \"timezone_name\", \"type\": \"string\", \"desc\": \"IANA timezone name (for example: 'America/New_York', 'Europe/London', 'UTC'). Case-sensitive; must match the IANA database exactly. Refer to the ``weather://timezones`` resource for the curated list.\", \"optional\": false}]}, {\"name\": \"weather_get_timezone\", \"description\": \"Get timezone metadata for an IANA timezone as structured JSON: current local time, UTC time, offset in hours, DST flag, and timezone abbreviation. Use this when the user asks about DST, UTC offset, or abbreviation (e.g. 'PST', 'CET').\", \"arguments\": [{\"name\": \"timezone_name\", \"type\": \"string\", \"desc\": \"IANA timezone name (for example: 'America/Sao_Paulo', 'Asia/Tokyo'). Refer to ``weather://timezones`` for the curated list.\", \"optional\": false}]}, {\"name\": \"weather_get_status\", \"description\": \"Check process liveness and server identity; upstream readiness is not checked.\", \"arguments\": []}], \"metadata\": {\"category\": \"data\", \"tags\": [\"weather\", \"air-quality\", \"time\", \"timezone\", \"open-meteo\"], \"license\": \"MIT\", \"owner\": \"bill-kopp-ai-dev\"}}",
           "comment": "buildkit.dockerfile.v0",
           "empty_layer": true
         },
         {
-          "created": "2026-11-06T17:53:53Z",
+          "created": "2026-11-06T18:24:25Z",
           "created_by": "ENTRYPOINT [\"/usr/local/bin/docker-entrypoint.sh\"]",
           "comment": "buildkit.dockerfile.v0",
           "empty_layer": true
         },
         {
-          "created": "2026-11-06T17:53:53Z",
+          "created": "2026-11-06T18:24:25Z",
           "created_by": "CMD [\"stdio\"]",
           "comment": "buildkit.dockerfile.v0",
           "empty_layer": true
@@ -188,18 +188,18 @@
         "diff_ids": [
           "sha256:f5c176052ead0ab04f2b6d0d859ce0d239d8f988cd8203195942eee8f209fa6c",
           "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
-          "sha256:c135564b97b90a93b40168f6b82f70a0ec16377ff1788968bd8c8c53f86f8fb5",
-          "sha256:ae2c932ee12393c2616e2f75b14915005898aebdaae26b2c7aa7a0bf0fc5cd36",
-          "sha256:104a5333c0c54dd2f0e79015ddf79d9ab4c38f82b8c1c24dd1a34a994171cae3",
-          "sha256:129bab0ac9dbb89e2080d1eb58d85f46d1e7e2d45472eaea4cca104fabc2451f",
-          "sha256:355d0fac6d6fb4a2f7fddf29e7e28be03a367cc47d75528020e9252d325aa06e",
-          "sha256:d5df78073d34ec029cb11e48ded6282aca420a807c55997d199506cfe7136f14",
-          "sha256:12a8d0bd1e36196757f7d7a698ba71b189e5269f5b9df3dca4b246456a0513f1",
-          "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60",
-          "sha256:f5eca4a8d47a80945e58f8b343ef4f11bbf1a1b04c3506a10c662036f09f1e03",
-          "sha256:4c1a66c9790ec42f64e32d721545feef712712b246855d161dcede51ba67f4fc",
-          "sha256:ea38b14aa2bb2c71d2acb29b2e13bcada79786aebae920db5061d623b61e5aef",
-          "sha256:d343300ee8f6c987ef6f32e910e52f5a2d0c422b41c8bf2534f771a4dac18b7e",
+          "sha256:19d5480a1ad071573dcc2a71bbebf7bd06e8ad62aee96c390bf7bf78a83609c4",
+          "sha256:f14c2e2a06d3adf8bce17fd22fcf86a6be51d2e8e08e7070c8a1aecce8b0815e",
+          "sha256:76f4650da96d7402da86a5641a3ede30fd0353fd07f871a541e611a6ff32aa08",
+          "sha256:3d4b2b45f78f45235800c634d24084390fe12ac6a97fb546d084a06729ece595",
+          "sha256:203b44196566748c12012edc361ab77caf8f64f4ab1df6726dd6c220df16d42a",
+          "sha256:22c8f8241a5e9238b6bc5266704806d6eb48af002b7d534dbe988ee9de840fa5",
+          "sha256:586e2918880ca1dcc3d582b043834d81d711f7a78327d4b4005424019e9fff42",
+          "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1",
+          "sha256:310cec2cd76f2a935a310fe1af328060b1c5910bc5c0e2de9923a84dc4d4f40c",
+          "sha256:e0de4d469b03f8db1423c89d1dc69128ff7707db9b47dd28615d1bc0aff9b63c",
+          "sha256:38e31d1c54c36e069f993111706be207130cf4efa95037260aaf0cb72496a5c0",
+          "sha256:a133d9fa0202f88001594a890b9e29e4e52d0157a7ddd2d67748ac57cb4c7d35",
           "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef"
         ]
       },
@@ -221,7 +221,7 @@
           "org.opencontainers.image.description": "Weather, air quality and time MCP server for the percival.OS ecosystem (Open-Meteo backed)",
           "org.opencontainers.image.documentation": "https://github.com/bill-kopp-ai-dev/percival-weather-mcp/blob/main/README.md",
           "org.opencontainers.image.licenses": "MIT",
-          "org.opencontainers.image.revision": "c55e23472c3012ee776e6d5f44a8433f6271a37c",
+          "org.opencontainers.image.revision": "48a14467126eb54cd552e6ba40fe0920246f0402",
           "org.opencontainers.image.source": "https://github.com/bill-kopp-ai-dev/percival-weather-mcp",
           "org.opencontainers.image.title": "Percival Weather MCP",
           "org.opencontainers.image.vendor": "Positronic Bean Labs",
@@ -246,51 +246,51 @@
       },
       {
         "Size": 17920,
-        "DiffID": "sha256:c135564b97b90a93b40168f6b82f70a0ec16377ff1788968bd8c8c53f86f8fb5"
+        "DiffID": "sha256:19d5480a1ad071573dcc2a71bbebf7bd06e8ad62aee96c390bf7bf78a83609c4"
       },
       {
         "Size": 26635776,
-        "DiffID": "sha256:ae2c932ee12393c2616e2f75b14915005898aebdaae26b2c7aa7a0bf0fc5cd36"
+        "DiffID": "sha256:f14c2e2a06d3adf8bce17fd22fcf86a6be51d2e8e08e7070c8a1aecce8b0815e"
       },
       {
         "Size": 6633984,
-        "DiffID": "sha256:104a5333c0c54dd2f0e79015ddf79d9ab4c38f82b8c1c24dd1a34a994171cae3"
+        "DiffID": "sha256:76f4650da96d7402da86a5641a3ede30fd0353fd07f871a541e611a6ff32aa08"
       },
       {
         "Size": 25082880,
-        "DiffID": "sha256:129bab0ac9dbb89e2080d1eb58d85f46d1e7e2d45472eaea4cca104fabc2451f"
+        "DiffID": "sha256:3d4b2b45f78f45235800c634d24084390fe12ac6a97fb546d084a06729ece595"
       },
       {
         "Size": 83968,
-        "DiffID": "sha256:355d0fac6d6fb4a2f7fddf29e7e28be03a367cc47d75528020e9252d325aa06e"
+        "DiffID": "sha256:203b44196566748c12012edc361ab77caf8f64f4ab1df6726dd6c220df16d42a"
       },
       {
         "Size": 10752,
-        "DiffID": "sha256:d5df78073d34ec029cb11e48ded6282aca420a807c55997d199506cfe7136f14"
+        "DiffID": "sha256:22c8f8241a5e9238b6bc5266704806d6eb48af002b7d534dbe988ee9de840fa5"
       },
       {
         "Size": 1536,
-        "DiffID": "sha256:12a8d0bd1e36196757f7d7a698ba71b189e5269f5b9df3dca4b246456a0513f1"
+        "DiffID": "sha256:586e2918880ca1dcc3d582b043834d81d711f7a78327d4b4005424019e9fff42"
       },
       {
         "Size": 38955520,
-        "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+        "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
       },
       {
-        "Size": 61440,
-        "DiffID": "sha256:f5eca4a8d47a80945e58f8b343ef4f11bbf1a1b04c3506a10c662036f09f1e03"
+        "Size": 65024,
+        "DiffID": "sha256:310cec2cd76f2a935a310fe1af328060b1c5910bc5c0e2de9923a84dc4d4f40c"
       },
       {
         "Size": 229888,
-        "DiffID": "sha256:4c1a66c9790ec42f64e32d721545feef712712b246855d161dcede51ba67f4fc"
+        "DiffID": "sha256:e0de4d469b03f8db1423c89d1dc69128ff7707db9b47dd28615d1bc0aff9b63c"
       },
       {
         "Size": 6656,
-        "DiffID": "sha256:ea38b14aa2bb2c71d2acb29b2e13bcada79786aebae920db5061d623b61e5aef"
+        "DiffID": "sha256:38e31d1c54c36e069f993111706be207130cf4efa95037260aaf0cb72496a5c0"
       },
       {
         "Size": 6656,
-        "DiffID": "sha256:d343300ee8f6c987ef6f32e910e52f5a2d0c422b41c8bf2534f771a4dac18b7e"
+        "DiffID": "sha256:a133d9fa0202f88001594a890b9e29e4e52d0157a7ddd2d67748ac57cb4c7d35"
       },
       {
         "Size": 1024,
@@ -845,7 +845,7 @@
             "openssl@3.6.5-1"
           ],
           "Layer": {
-            "DiffID": "sha256:129bab0ac9dbb89e2080d1eb58d85f46d1e7e2d45472eaea4cca104fabc2451f"
+            "DiffID": "sha256:3d4b2b45f78f45235800c634d24084390fe12ac6a97fb546d084a06729ece595"
           },
           "InstalledFiles": [
             "/usr/sbin/update-ca-certificates",
@@ -2000,7 +2000,7 @@
             "fonts-dejavu-core@2.37-9"
           ],
           "Layer": {
-            "DiffID": "sha256:129bab0ac9dbb89e2080d1eb58d85f46d1e7e2d45472eaea4cca104fabc2451f"
+            "DiffID": "sha256:3d4b2b45f78f45235800c634d24084390fe12ac6a97fb546d084a06729ece595"
           },
           "InstalledFiles": [
             "/usr/share/doc/fontconfig-config/changelog.Debian.gz",
@@ -2081,7 +2081,7 @@
             "fonts-dejavu-mono@2.37-9"
           ],
           "Layer": {
-            "DiffID": "sha256:129bab0ac9dbb89e2080d1eb58d85f46d1e7e2d45472eaea4cca104fabc2451f"
+            "DiffID": "sha256:3d4b2b45f78f45235800c634d24084390fe12ac6a97fb546d084a06729ece595"
           },
           "InstalledFiles": [
             "/usr/share/doc/fonts-dejavu-core/AUTHORS",
@@ -2123,7 +2123,7 @@
             "Class": "official"
           },
           "Layer": {
-            "DiffID": "sha256:129bab0ac9dbb89e2080d1eb58d85f46d1e7e2d45472eaea4cca104fabc2451f"
+            "DiffID": "sha256:3d4b2b45f78f45235800c634d24084390fe12ac6a97fb546d084a06729ece595"
           },
           "InstalledFiles": [
             "/usr/share/doc/fonts-dejavu-mono/AUTHORS",
@@ -2745,7 +2745,7 @@
             "libc6@2.43-7"
           ],
           "Layer": {
-            "DiffID": "sha256:129bab0ac9dbb89e2080d1eb58d85f46d1e7e2d45472eaea4cca104fabc2451f"
+            "DiffID": "sha256:3d4b2b45f78f45235800c634d24084390fe12ac6a97fb546d084a06729ece595"
           },
           "InstalledFiles": [
             "/usr/lib/x86_64-linux-gnu/libbrotlicommon.so.1.2.0",
@@ -3525,7 +3525,7 @@
             "Class": "official"
           },
           "Layer": {
-            "DiffID": "sha256:129bab0ac9dbb89e2080d1eb58d85f46d1e7e2d45472eaea4cca104fabc2451f"
+            "DiffID": "sha256:3d4b2b45f78f45235800c634d24084390fe12ac6a97fb546d084a06729ece595"
           },
           "InstalledFiles": [
             "/usr/lib/x86_64-linux-gnu/libexpat.so.1.13.0",
@@ -3567,7 +3567,7 @@
             "libc6@2.43-7"
           ],
           "Layer": {
-            "DiffID": "sha256:129bab0ac9dbb89e2080d1eb58d85f46d1e7e2d45472eaea4cca104fabc2451f"
+            "DiffID": "sha256:3d4b2b45f78f45235800c634d24084390fe12ac6a97fb546d084a06729ece595"
           },
           "InstalledFiles": [
             "/usr/lib/x86_64-linux-gnu/libffi.so.8.5.0",
@@ -3600,7 +3600,7 @@
             "libfreetype6@2.14.3+dfsg-3"
           ],
           "Layer": {
-            "DiffID": "sha256:129bab0ac9dbb89e2080d1eb58d85f46d1e7e2d45472eaea4cca104fabc2451f"
+            "DiffID": "sha256:3d4b2b45f78f45235800c634d24084390fe12ac6a97fb546d084a06729ece595"
           },
           "InstalledFiles": [
             "/usr/lib/x86_64-linux-gnu/libfontconfig.so.1.16.1",
@@ -3650,7 +3650,7 @@
             "zlib1g@1:1.3.dfsg+really1.3.2-3"
           ],
           "Layer": {
-            "DiffID": "sha256:129bab0ac9dbb89e2080d1eb58d85f46d1e7e2d45472eaea4cca104fabc2451f"
+            "DiffID": "sha256:3d4b2b45f78f45235800c634d24084390fe12ac6a97fb546d084a06729ece595"
           },
           "InstalledFiles": [
             "/usr/lib/x86_64-linux-gnu/libfreetype.so.6.20.6",
@@ -3720,7 +3720,7 @@
             "libc6@2.43-7"
           ],
           "Layer": {
-            "DiffID": "sha256:129bab0ac9dbb89e2080d1eb58d85f46d1e7e2d45472eaea4cca104fabc2451f"
+            "DiffID": "sha256:3d4b2b45f78f45235800c634d24084390fe12ac6a97fb546d084a06729ece595"
           },
           "InstalledFiles": [
             "/usr/lib/x86_64-linux-gnu/libgdbm.so.6.0.0",
@@ -4033,7 +4033,7 @@
             "libtinfo6@6.6+20260608-2"
           ],
           "Layer": {
-            "DiffID": "sha256:129bab0ac9dbb89e2080d1eb58d85f46d1e7e2d45472eaea4cca104fabc2451f"
+            "DiffID": "sha256:3d4b2b45f78f45235800c634d24084390fe12ac6a97fb546d084a06729ece595"
           },
           "InstalledFiles": [
             "/usr/lib/x86_64-linux-gnu/libformw.so.6.6",
@@ -4568,7 +4568,7 @@
             "zlib1g@1:1.3.dfsg+really1.3.2-3"
           ],
           "Layer": {
-            "DiffID": "sha256:129bab0ac9dbb89e2080d1eb58d85f46d1e7e2d45472eaea4cca104fabc2451f"
+            "DiffID": "sha256:3d4b2b45f78f45235800c634d24084390fe12ac6a97fb546d084a06729ece595"
           },
           "InstalledFiles": [
             "/usr/lib/x86_64-linux-gnu/libpng16.so.16.59.0",
@@ -4616,7 +4616,7 @@
             "readline-common@8.3-4"
           ],
           "Layer": {
-            "DiffID": "sha256:129bab0ac9dbb89e2080d1eb58d85f46d1e7e2d45472eaea4cca104fabc2451f"
+            "DiffID": "sha256:3d4b2b45f78f45235800c634d24084390fe12ac6a97fb546d084a06729ece595"
           },
           "InstalledFiles": [
             "/usr/lib/x86_64-linux-gnu/libhistory.so.8.3",
@@ -4896,7 +4896,7 @@
             "libc6@2.43-7"
           ],
           "Layer": {
-            "DiffID": "sha256:129bab0ac9dbb89e2080d1eb58d85f46d1e7e2d45472eaea4cca104fabc2451f"
+            "DiffID": "sha256:3d4b2b45f78f45235800c634d24084390fe12ac6a97fb546d084a06729ece595"
           },
           "InstalledFiles": [
             "/usr/lib/x86_64-linux-gnu/libsqlite3.so.3.53.4",
@@ -5061,7 +5061,7 @@
             "zlib1g@1:1.3.dfsg+really1.3.2-3"
           ],
           "Layer": {
-            "DiffID": "sha256:129bab0ac9dbb89e2080d1eb58d85f46d1e7e2d45472eaea4cca104fabc2451f"
+            "DiffID": "sha256:3d4b2b45f78f45235800c634d24084390fe12ac6a97fb546d084a06729ece595"
           },
           "InstalledFiles": [
             "/usr/lib/x86_64-linux-gnu/libtcl8.6.so",
@@ -5366,7 +5366,7 @@
             "libxss1@1:1.2.3-1+b4"
           ],
           "Layer": {
-            "DiffID": "sha256:129bab0ac9dbb89e2080d1eb58d85f46d1e7e2d45472eaea4cca104fabc2451f"
+            "DiffID": "sha256:3d4b2b45f78f45235800c634d24084390fe12ac6a97fb546d084a06729ece595"
           },
           "InstalledFiles": [
             "/usr/lib/tcltk/x86_64-linux-gnu/tk8.6/pkgIndex.tcl",
@@ -5590,7 +5590,7 @@
             "libxcb1@1.17.0-2+b2"
           ],
           "Layer": {
-            "DiffID": "sha256:129bab0ac9dbb89e2080d1eb58d85f46d1e7e2d45472eaea4cca104fabc2451f"
+            "DiffID": "sha256:3d4b2b45f78f45235800c634d24084390fe12ac6a97fb546d084a06729ece595"
           },
           "InstalledFiles": [
             "/usr/lib/x86_64-linux-gnu/libX11.so.6.4.0",
@@ -5622,7 +5622,7 @@
             "Class": "official"
           },
           "Layer": {
-            "DiffID": "sha256:129bab0ac9dbb89e2080d1eb58d85f46d1e7e2d45472eaea4cca104fabc2451f"
+            "DiffID": "sha256:3d4b2b45f78f45235800c634d24084390fe12ac6a97fb546d084a06729ece595"
           },
           "InstalledFiles": [
             "/usr/share/X11/XErrorDB",
@@ -5845,7 +5845,7 @@
             "libc6@2.43-7"
           ],
           "Layer": {
-            "DiffID": "sha256:129bab0ac9dbb89e2080d1eb58d85f46d1e7e2d45472eaea4cca104fabc2451f"
+            "DiffID": "sha256:3d4b2b45f78f45235800c634d24084390fe12ac6a97fb546d084a06729ece595"
           },
           "InstalledFiles": [
             "/usr/lib/x86_64-linux-gnu/libXau.so.6.0.0",
@@ -5879,7 +5879,7 @@
             "libxdmcp6@1:1.1.5-2+b1"
           ],
           "Layer": {
-            "DiffID": "sha256:129bab0ac9dbb89e2080d1eb58d85f46d1e7e2d45472eaea4cca104fabc2451f"
+            "DiffID": "sha256:3d4b2b45f78f45235800c634d24084390fe12ac6a97fb546d084a06729ece595"
           },
           "InstalledFiles": [
             "/usr/lib/x86_64-linux-gnu/libxcb.so.1.1.0",
@@ -5916,7 +5916,7 @@
             "libc6@2.43-7"
           ],
           "Layer": {
-            "DiffID": "sha256:129bab0ac9dbb89e2080d1eb58d85f46d1e7e2d45472eaea4cca104fabc2451f"
+            "DiffID": "sha256:3d4b2b45f78f45235800c634d24084390fe12ac6a97fb546d084a06729ece595"
           },
           "InstalledFiles": [
             "/usr/lib/x86_64-linux-gnu/libXdmcp.so.6.0.0",
@@ -5951,7 +5951,7 @@
             "libx11-6@2:1.8.13-1"
           ],
           "Layer": {
-            "DiffID": "sha256:129bab0ac9dbb89e2080d1eb58d85f46d1e7e2d45472eaea4cca104fabc2451f"
+            "DiffID": "sha256:3d4b2b45f78f45235800c634d24084390fe12ac6a97fb546d084a06729ece595"
           },
           "InstalledFiles": [
             "/usr/lib/x86_64-linux-gnu/libXext.so.6.4.0",
@@ -5987,7 +5987,7 @@
             "libxrender1@1:0.9.12-1+b2"
           ],
           "Layer": {
-            "DiffID": "sha256:129bab0ac9dbb89e2080d1eb58d85f46d1e7e2d45472eaea4cca104fabc2451f"
+            "DiffID": "sha256:3d4b2b45f78f45235800c634d24084390fe12ac6a97fb546d084a06729ece595"
           },
           "InstalledFiles": [
             "/usr/lib/x86_64-linux-gnu/libXft.so.2.3.6",
@@ -6022,7 +6022,7 @@
             "libx11-6@2:1.8.13-1"
           ],
           "Layer": {
-            "DiffID": "sha256:129bab0ac9dbb89e2080d1eb58d85f46d1e7e2d45472eaea4cca104fabc2451f"
+            "DiffID": "sha256:3d4b2b45f78f45235800c634d24084390fe12ac6a97fb546d084a06729ece595"
           },
           "InstalledFiles": [
             "/usr/lib/x86_64-linux-gnu/libXrender.so.1.3.0",
@@ -6059,7 +6059,7 @@
             "x11-common@1:7.7+26"
           ],
           "Layer": {
-            "DiffID": "sha256:129bab0ac9dbb89e2080d1eb58d85f46d1e7e2d45472eaea4cca104fabc2451f"
+            "DiffID": "sha256:3d4b2b45f78f45235800c634d24084390fe12ac6a97fb546d084a06729ece595"
           },
           "InstalledFiles": [
             "/usr/lib/x86_64-linux-gnu/libXss.so.1.0.0",
@@ -6550,7 +6550,7 @@
             "libssl3t64@3.6.5-1"
           ],
           "Layer": {
-            "DiffID": "sha256:129bab0ac9dbb89e2080d1eb58d85f46d1e7e2d45472eaea4cca104fabc2451f"
+            "DiffID": "sha256:3d4b2b45f78f45235800c634d24084390fe12ac6a97fb546d084a06729ece595"
           },
           "InstalledFiles": [
             "/usr/bin/openssl",
@@ -7950,7 +7950,7 @@
             "Class": "official"
           },
           "Layer": {
-            "DiffID": "sha256:129bab0ac9dbb89e2080d1eb58d85f46d1e7e2d45472eaea4cca104fabc2451f"
+            "DiffID": "sha256:3d4b2b45f78f45235800c634d24084390fe12ac6a97fb546d084a06729ece595"
           },
           "InstalledFiles": [
             "/usr/share/doc/readline-common/changelog.Debian.gz",
@@ -9001,7 +9001,7 @@
             "Class": "official"
           },
           "Layer": {
-            "DiffID": "sha256:129bab0ac9dbb89e2080d1eb58d85f46d1e7e2d45472eaea4cca104fabc2451f"
+            "DiffID": "sha256:3d4b2b45f78f45235800c634d24084390fe12ac6a97fb546d084a06729ece595"
           },
           "InstalledFiles": [
             "/usr/share/doc/x11-common/changelog.Debian.old.gz",
@@ -9069,7 +9069,7 @@
             "MIT"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/pyjwt-2.15.1.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9085,7 +9085,7 @@
             "BSD-2-Clause"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/pygments-2.21.0.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9101,7 +9101,7 @@
             "MIT"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/annotated_types-0.7.0.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9117,7 +9117,7 @@
             "MIT"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/anyio-4.15.1.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9133,7 +9133,7 @@
             "MIT"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/attrs-25.4.0.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9149,7 +9149,7 @@
             "MPL-2.0"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/certifi-2026.10.23.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9165,7 +9165,7 @@
             "MIT-0"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/cffi-2.1.1.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9181,7 +9181,7 @@
             "BSD-3-Clause"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/click-8.1.8.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9197,7 +9197,7 @@
             "Apache-2.0 OR BSD-3-Clause"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/cryptography-50.0.2.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9213,7 +9213,7 @@
             "MIT"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/h11-0.16.0.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9229,7 +9229,7 @@
             "BSD-3-Clause"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/httpcore-1.0.9.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9245,7 +9245,7 @@
             "BSD-3-Clause"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/httpx-0.28.1.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9261,7 +9261,7 @@
             "MIT"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/httpx_sse-0.4.3.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9277,7 +9277,7 @@
             "BSD-3-Clause"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/idna-3.20.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9293,7 +9293,7 @@
             "MIT"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/jsonschema-4.25.1.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9309,7 +9309,7 @@
             "MIT"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/jsonschema_specifications-2025.9.1.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9325,7 +9325,7 @@
             "MIT"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/markdown_it_py-3.0.0.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9341,7 +9341,7 @@
             "MIT"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/mcp-1.30.0.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9357,7 +9357,7 @@
             "MIT"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/mdurl-0.1.2.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9373,7 +9373,7 @@
             "MIT"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/percival_weather_mcp-0.10.0.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9389,7 +9389,7 @@
             "Apache-2.0 AND BSD-2-Clause"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/prometheus_client-0.25.0.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9405,7 +9405,7 @@
             "BSD-3-Clause"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/pycparser-3.11.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9421,7 +9421,7 @@
             "MIT"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/pydantic-2.14.0.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9437,7 +9437,7 @@
             "MIT"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/pydantic_settings-2.15.0.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9453,7 +9453,7 @@
             "MIT"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/pydantic_core-2.50.0.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9470,7 +9470,7 @@
             "Apache-2.0"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/python_dateutil-2.9.0.post0.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9486,7 +9486,7 @@
             "BSD-3-Clause"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/python_dotenv-1.2.4.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9502,7 +9502,7 @@
             "Apache-2.0"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/python_multipart-0.0.32.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9518,7 +9518,7 @@
             "MIT"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/referencing-0.37.0.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9534,7 +9534,7 @@
             "MIT"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/rich-13.9.4.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9550,7 +9550,7 @@
             "MIT"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/rpds_py-0.27.1.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9566,7 +9566,7 @@
             "ISC"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/shellingham-1.5.4.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9582,7 +9582,7 @@
             "MIT"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/six-1.17.0.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9598,7 +9598,7 @@
             "BSD-3-Clause"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/sse_starlette-3.5.0.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9614,7 +9614,7 @@
             "BSD-3-Clause"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/starlette-1.7.0.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9630,7 +9630,7 @@
             "MIT"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/typer-0.19.2.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9646,7 +9646,7 @@
             "MIT"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/typing_inspection-0.4.4.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9662,7 +9662,7 @@
             "PSF-2.0"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/typing_extensions-4.16.0.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9678,7 +9678,7 @@
             "Apache-2.0"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/tzdata-2025.2.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
@@ -9694,7 +9694,7 @@
             "BSD-3-Clause"
           ],
           "Layer": {
-            "DiffID": "sha256:8183b9f8712f807957bf03d5229986d2f1fe884c2e630d4de92a5bf3e9041d60"
+            "DiffID": "sha256:77996f2c28209b0478192f564357c7506ca9c71244a465333aebb9c0c3ee69f1"
           },
           "FilePath": "opt/venv/lib/python3.12/site-packages/uvicorn-0.38.0.dist-info/METADATA",
           "AnalyzedBy": "python-pkg"
