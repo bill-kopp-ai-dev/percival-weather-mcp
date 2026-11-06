@@ -42,10 +42,19 @@ checkout (internal decision record `R-06`).
 
 The PBLabs extension is `manifest-approved` as metadata only; the `server.json`
 package/release remains draft and no catalog entry exists. This approval does
-not verify the Docker Hub namespace claim, publish an image, produce a digest
-or authorize release. Lifecycle observations in the extension are explicitly
-historical; consult the Stage-2 plan for current candidate evidence. Follow
-that plan's gates before publication or deployment.
+not verify the container registry namespace claim, publish an image, produce a
+digest or authorize release. Lifecycle observations in the extension are
+explicitly historical; consult the Stage-2 plan for current candidate
+evidence. Follow that plan's gates before publication or deployment.
+
+The destination of a publication is the GitHub container registry of the
+project account, `ghcr.io/bill-kopp-ai-dev/percival-weather-mcp`. Publication
+runs when the owner pushes a release tag `v<version>`: the workflow builds the
+image from the tagged commit, verifies the published digest, scans it at the
+UNKNOWN/LOW/MEDIUM/HIGH/CRITICAL gate, and attaches the raw report, the build
+manifest and the SBOM to the release. A second job pulls the published digest
+without credentials, which is the gate the release flow requires — the
+package has to be readable without a token for that pull to succeed.
 
 ## Verification boundaries
 

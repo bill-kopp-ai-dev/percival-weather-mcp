@@ -37,11 +37,15 @@ test suite, but it is a **development** path — see
 [Running from source](#-running-from-source-development).
 
 > **Publication status.** The image is currently **built and consumed
-> locally**; it has not been published to a public registry. The planned
-> destination is `docker.io/pbeanlabs`, with a release → digest → pull →
-> index-PR flow. Until that happens, build the image locally with
-> `scripts/docker-build.sh` and reference it by its local tag or image ID.
-> See [docs/percival-integration-guide.md](docs/percival-integration-guide.md)
+> locally**; it has not been published to a public registry. The destination
+> is the GitHub container registry of the project account,
+> `ghcr.io/bill-kopp-ai-dev/percival-weather-mcp`. Publishing happens when
+> the owner pushes a release tag `v0.10.0`: the workflow builds the tagged
+> commit, verifies the published digest, scans it, and attaches the raw
+> report, the build manifest and the SBOM to the release. Until that happens,
+> build the image locally with `scripts/docker-build.sh` and reference it by
+> its local tag or image ID. See
+> [docs/percival-integration-guide.md](docs/percival-integration-guide.md)
 > for the distribution contract.
 
 ### Current release
@@ -281,7 +285,8 @@ digest:
 docker run -i --rm --init percival-weather-mcp:0.10.0
 
 # by digest (survives tag moves) — available once the image is published
-docker run -i --rm --init pbeanlabs/percival-weather-mcp@sha256:<digest>
+docker run -i --rm --init \
+  ghcr.io/bill-kopp-ai-dev/percival-weather-mcp@sha256:<digest>
 ```
 
 The `:latest` tag is a convenience for local iteration; production

@@ -11,23 +11,94 @@ restricted to the gateway's image ID, not to this server's.
 |---|---|
 | `openvex.json` | OpenVEX document (schema 0.2.0) restricted to the audited image digest, with one statement per CVE triaged by the F3 gate. |
 | `trivy-raw-f62d438-68087203.json` | Raw Trivy output for the 2026-10-31 local candidate scan. |
+| `trivy-raw-c55e2347-f356343f.json` | Raw Trivy output for the CI candidate of commit `c55e2347`, image `sha256:f356343f…`. |
+| `evidence-c55e2347-f356343f.json` | The manifest that describes that evidence set: source revision, image, scanner and the sha256 of every file. |
 
-## Current state — 0.10.0 candidate
+## Current state — 0.10.0
 
-The candidate that is live for this product was built on 2026-11-06 from
-commit `875fff909c4786baba87dbf3fad68ca71d566001` (clean tree):
+The image that is pinned for this product was built on 2026-11-06 by the
+maintenance executor from commit
+`11350202f1875213d0f09b51e172cfd73004bee5` (clean tree):
 
 | Field | Value |
 |---|---|
 | Version | 0.10.0 |
-| Image ID | `sha256:40fa10fffabb0678fdbf584a3a2d4c6531f633b4f2282ab92b33fbc3568e3b25` |
+| Image ID | `sha256:3118650a7bb632fd59a3e1965dec8458a94fa472f719b05956b787e9b0513d91` |
 | Scan | **0 findings** at the LOW/MEDIUM/HIGH/CRITICAL gate |
 | Published | No — no registry digest exists yet |
 
-The scan was executed by the maintenance executor (build → scan → SBOM) and
-is not reproducible from this directory as a raw file; the CI job
-(`.github/workflows/ci.yml`, step "Scan the candidate for vulnerabilities")
-reproduces the same gate on every push and fails on any finding.
+The executor scan is recorded as a receipt: the raw report is
+`sha256:372d67a4b29c8c53e96ed37853c8ad15211c12025152d56e21c10266b380005e`,
+the SBOM is
+`sha256:e8f988afa407ff0e298afbf3df66f56b87c37714c958cef995721086b0a4c295`,
+and the scanner is
+`sha256:7689b4dacbf7f73c3182005654b07aa84c7f63e060201f09de748b31610c739f`.
+The executor keeps those bytes on the host and exposes no operation that
+returns them, so the receipt is the only form of that scan available here.
+
+## The CI evidence set
+
+The CI job (`.github/workflows/ci.yml`) builds the same source, scans it with
+the same gate and now publishes the result to the `evidence/trivy` branch,
+where it is readable without a token. The set for commit `c55e2347` is
+archived in this directory and states its own subject:
+
+| Field | Value |
+|---|---|
+| Source revision | `c55e23472c3012ee776e6d5f44a8433f6271a37c` |
+| Image ID | `sha256:f356343fdd67146d6aef8555c76f5e518bbfa137294e5f4d3d01cae3b338a559` |
+| Raw report | `sha256:e5d3d305324abcf1258749bb2cbf5a5f298455b15cfee60f7b663540bfcb75ef` (459048 bytes) |
+| SBOM | `sha256:364df07eb3d2439638f8cb9236c7c6df09499fd2893fdac75f6ca4a71bb5469c` |
+| Scanner | Trivy **0.70.0**, `--scanners vuln`, severities UNKNOWN/LOW/MEDIUM/HIGH/CRITICAL |
+| Result | **0 vulnerabilities** — 0 in the Debian OS packages (104 packages), 0 in the Python packages (40 packages) |
+
+The archived report covers the commit that produced it. Every later commit
+produces a different image and a different report, because the build stamps
+the layers with the commit timestamp, so this file always trails `main` by one
+commit. The scan that closes a release is the one bound to the published
+digest.
+
+The raw file was renamed here to follow this directory's convention; its
+bytes are unchanged and the manifest records their sha256.
+
+## The scanner pin did not hold
+
+This report was produced by Trivy 0.70.0, although the workflow claimed to pin
+0.76.1. `aquasecurity/trivy-action@v0.36.0` reads the `version` input and
+ignores the `TRIVY_VERSION` environment variable, so the scan ran with the
+action's own default, `v0.70.0` — older than the scanner the local scan uses,
+and older than the database the local scan used.
+
+A zero-finding result from a stale scanner is weaker evidence than the same
+result from the current one, so the pin is now set on the input the action
+reads, and the evidence manifest records the version that actually produced
+the report next to the version the workflow pins. The CI fails the job when
+the two disagree, which is what would have caught this. The archived manifest
+shows the disagreement it recorded: 0.70.0 observed against 0.76.1 expected.
+
+## The two builders do not agree on the same commit
+
+Built from `c55e2347`, the executor produced
+`sha256:30fb6e706cdae348d1c359855832d4b986dd4bf1d7066801dd25a892810d3bc7`
+and the CI produced
+`sha256:f356343fdd67146d6aef8555c76f5e518bbfa137294e5f4d3d01cae3b338a559`.
+Both report 0 findings, and each report is valid for its own image, but the
+two images are not the same bytes and a report must never be read as covering
+an image other than the one it names.
+
+## The superseded candidate contradicted its own label
+
+The candidate `sha256:40fa10ff…` was built from commit `875fff9`, before the
+licence was aligned to MIT. Its Dockerfile copies `LICENSE` and `README.md`
+into the image, so that image shipped the Apache-2.0 licence text and a
+README announcing version 0.9.0, while its own OCI label declared
+`licenses=MIT` and `version=0.10.0`. Publishing that image would have
+published a licence contradicting the label.
+
+The image was rebuilt from the current source, which carries the MIT
+licence and the rewritten README, and the server was re-pinned to it. The
+superseded image stays authorized so the previous state remains a rollback
+target.
 
 Because this candidate reports zero findings, no OpenVEX is due for it. The
 document in `openvex.json` stays bound to the older digest below and must not
@@ -94,11 +165,13 @@ Each statement was checked against the image, not only against the scanner:
   `mount`. None of them provides the privileged mount/nsenter/fstab flow the
   util-linux advisories describe, and the deployed profile runs the rootfs
   read-only with `cap_drop: ALL`, but the owner should know they are there.
-- The image is not published: the planned destination `docker.io/pbeanlabs`
-  has no release yet, so no `RepoDigest` exists. The `RepoDigest` of a
-  published image will differ from the image IDs above, and the OpenVEX will
-  have to be re-issued against the published digest — the statements
-  themselves do not change, only the product identifier.
+- The image is not published: the destination is the GitHub container
+  registry of the project account,
+  `ghcr.io/bill-kopp-ai-dev/percival-weather-mcp`, and no release exists
+  there yet, so no `RepoDigest` exists. The `RepoDigest` of a published
+  image will differ from the image IDs above, and the OpenVEX will have to
+  be re-issued against the published digest — the statements themselves do
+  not change, only the product identifier.
 
 ## Maintenance
 

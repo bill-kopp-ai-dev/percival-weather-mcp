@@ -105,10 +105,12 @@ jobs:
           test "$(docker image inspect percival-weather-mcp:ci --format '{{index .Config.Labels "org.opencontainers.image.version"}}')" = "${{ steps.meta.outputs.version }}"
       - name: Scan the candidate for vulnerabilities
         uses: aquasecurity/trivy-action@v0.36.0
-        env:
-          # Pinned so the CI scan and the local scan use the same scanner.
-          TRIVY_VERSION: 0.76.1
         with:
+          # The action reads this input, not the TRIVY_VERSION environment
+          # variable: its own default is v0.70.0, which is older than the
+          # scanner the local scan uses. The manifest below fails the job when
+          # the scanner that ran is not the one pinned here.
+          version: v0.76.1
           image-ref: percival-weather-mcp:ci
           format: json
           output: trivy-raw.json
@@ -179,8 +181,6 @@ jobs:
       # readable without a token and can be archived in the repository. The
       # branch is not a trigger of this workflow, so it cannot loop.
       - name: Publish the evidence to the public evidence branch
-        env:
-          TRIVY_VERSION: "0.76.1"
         run: |
           set -euo pipefail
           mkdir -p evidence
@@ -192,8 +192,10 @@ jobs:
             --output evidence/evidence.json \
             --source-sha "$GITHUB_SHA" \
             --image-ref "percival-weather-mcp:ci" \
+            --scan-report evidence/trivy-raw.json \
             --scanner-name Trivy \
-            --scanner-version "$TRIVY_VERSION" \
+            --expected-scanner-version "0.76.1" \
+            --require-scanner-match \
             --repository "$GITHUB_REPOSITORY" \
             --workflow "$GITHUB_WORKFLOW" \
             --run-id "$GITHUB_RUN_ID" \

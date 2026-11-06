@@ -11,7 +11,7 @@
   "packages": [
     {
       "registryType": "oci",
-      "identifier": "docker.io/pbeanlabs/percival-weather-mcp:0.10.0",
+      "identifier": "ghcr.io/bill-kopp-ai-dev/percival-weather-mcp:0.10.0",
       "version": "0.10.0",
       "transport": {
         "type": "stdio"

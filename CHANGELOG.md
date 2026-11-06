@@ -110,8 +110,50 @@ runtime verification; this entry does not claim a published release.
 - The scanner and its test are exempt from the rules by path, because they
   have to spell the patterns out. The exemption is minimal and asserted by
   a test, so it cannot widen silently.
+- The CI scan now runs on the scanner the workflow pins. The pin was set
+  through the ``TRIVY_VERSION`` environment variable, which
+  ``aquasecurity/trivy-action@v0.36.0`` ignores: it reads the ``version``
+  input, whose own default is ``v0.70.0``. The published candidate report
+  was therefore produced by Trivy 0.70.0 while the workflow claimed 0.76.1,
+  and a zero-finding result from a stale scanner is weaker evidence than the
+  same result from the current one.
+- The evidence manifest now records the scanner version that actually
+  produced the report next to the version the workflow pins, and the CI
+  fails the job when the two disagree. The report, the build manifest and
+  the SBOM of a candidate are published to a dedicated ``evidence/trivy``
+  branch, where they are readable without a token, and the raw report of
+  the current candidate is archived in ``docs/security/``.
+- The image that was pinned for this product contradicted its own label: it
+  was built before the licence was aligned to MIT, so it shipped the
+  Apache-2.0 licence text and a README announcing version 0.9.0 while its
+  OCI label declared ``licenses=MIT`` and ``version=0.10.0``. The image was
+  rebuilt from the current source and the server was re-pinned to it. The
+  superseded image stays authorized as a rollback target.
+
+### Added
+- A publication workflow that runs when the owner pushes a release tag
+  `v<version>`. It refuses a tag that does not match the product version,
+  builds the tagged commit for `linux/amd64`, pushes it to the GitHub
+  container registry as `ghcr.io/bill-kopp-ai-dev/percival-weather-mcp`,
+  verifies the published digest against the image labels and the installed
+  package version, scans the published digest at the
+  UNKNOWN/LOW/MEDIUM/HIGH/CRITICAL gate, and attaches the raw report, the
+  build manifest, the SBOM and the evidence manifest to the release. A
+  second job pulls the published digest without credentials, which is the
+  gate the release flow requires. Publication is never automatic: a tag is
+  the only trigger.
+- ``scripts/write_evidence_manifest.py`` writes the manifest that describes a
+  published evidence set: the source revision, the image, the scanner and
+  the sha256 of every file. It reads the scanner version from the report
+  itself instead of from the workflow, so the manifest states the scanner
+  that ran rather than the one the workflow intended.
 
 ### Changed
+- The registry reference in the public metadata moved from
+  ``docker.io/pbeanlabs`` to ``ghcr.io/bill-kopp-ai-dev/percival-weather-mcp``,
+  the container registry of the project account, by owner decision on
+  2026-11-06. The README and the integration guide state the same
+  destination and the release flow.
 - ``/metrics`` now requires the bearer token whenever one is configured;
   ``/healthz`` and ``/health`` stay open as liveness probes.
 - The geocoding cache became a process-wide component with the same TTL and

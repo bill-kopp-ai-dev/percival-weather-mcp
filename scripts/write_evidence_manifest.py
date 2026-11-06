@@ -21,12 +21,18 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--source-sha", required=True)
     parser.add_argument("--image-ref", required=True)
+    parser.add_argument("--scan-report", type=Path, required=True)
     parser.add_argument("--scanner-name", required=True)
-    parser.add_argument("--scanner-version", required=True)
+    parser.add_argument("--expected-scanner-version", required=True)
     parser.add_argument("--repository", required=True)
     parser.add_argument("--workflow", required=True)
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--run-attempt", required=True)
+    parser.add_argument(
+        "--require-scanner-match",
+        action="store_true",
+        help="fail when the scanner that produced the report is not the expected one",
+    )
     args = parser.parse_args()
     if re.fullmatch(r"[0-9a-f]{40}|[0-9a-f]{64}", args.source_sha) is None:
         raise SystemExit("source SHA must be a full 40- or 64-character Git object ID")
@@ -43,6 +49,20 @@ def main() -> None:
         }
     if not files:
         raise SystemExit("no evidence file was described")
+    if not args.scan_report.is_file():
+        raise SystemExit(f"scan report does not exist: {args.scan_report}")
+    report = json.loads(args.scan_report.read_text(encoding="utf-8"))
+    observed = report.get("Trivy", {}).get("Version")
+    if not isinstance(observed, str) or not observed:
+        raise SystemExit("scan report does not name the scanner that produced it")
+    expected = args.expected_scanner_version.lstrip("v")
+    if observed.lstrip("v") != expected:
+        message = (
+            f"scanner mismatch: the report was produced by {observed}, the workflow pins {expected}"
+        )
+        if args.require_scanner_match:
+            raise SystemExit(message)
+        print(f"warning: {message}")
     payload = {
         "schemaVersion": 1,
         "source": {
@@ -58,7 +78,9 @@ def main() -> None:
         },
         "scanner": {
             "name": args.scanner_name,
-            "version": args.scanner_version,
+            "version": observed,
+            "expectedVersion": expected,
+            "reportCreatedAt": report.get("CreatedAt"),
         },
         "files": files,
     }

@@ -1,0 +1,195 @@
+name: publish
+
+# Publication is the owner's act: it runs when the owner pushes a release tag.
+# A tag is the only trigger, so a push to main can never publish anything.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write # create the release and attach the evidence
+  packages: write # push the image to the GitHub container registry
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: build, scan and publish the candidate
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+      image: ${{ steps.meta.outputs.image }}
+      version: ${{ steps.meta.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up BuildKit
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to the GitHub container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve the release identity
+        id: meta
+        run: |
+          set -euo pipefail
+          version=$(python3 -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')
+          tag="${GITHUB_REF_NAME}"
+          if [ "$tag" != "v$version" ]; then
+            echo "the tag $tag does not match the product version $version" >&2
+            exit 1
+          fi
+          epoch=$(git log -1 --format=%ct)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "epoch=$epoch" >> "$GITHUB_OUTPUT"
+          echo "image=ghcr.io/${GITHUB_REPOSITORY}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push the candidate
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          platforms: linux/amd64
+          provenance: false
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}
+            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}-${{ github.sha }}
+          build-args: |
+            VERSION=${{ steps.meta.outputs.version }}
+            GIT_SHA=${{ github.sha }}
+            SOURCE_DATE_EPOCH=${{ steps.meta.outputs.epoch }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Check the published identity
+        env:
+          IMAGE: ${{ steps.meta.outputs.image }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          set -euo pipefail
+          if [ -z "$DIGEST" ]; then
+            echo "the build did not report a digest" >&2
+            exit 1
+          fi
+          echo "published digest: $DIGEST"
+          docker pull "$IMAGE@$DIGEST"
+          test "$(docker image inspect "$IMAGE@$DIGEST" --format '{{.Os}}/{{.Architecture}}')" = linux/amd64
+          test "$(docker image inspect "$IMAGE@$DIGEST" --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')" = "$GITHUB_SHA"
+          test "$(docker image inspect "$IMAGE@$DIGEST" --format '{{index .Config.Labels "org.opencontainers.image.version"}}')" = "$VERSION"
+          test "$(docker run --rm --entrypoint python "$IMAGE@$DIGEST" -c 'from importlib.metadata import version; print(version("percival-weather-mcp"))')" = "$VERSION"
+
+      - name: Scan the published digest
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          # The action reads this input, not the TRIVY_VERSION environment
+          # variable: its own default is v0.70.0.
+          version: v0.76.1
+          image-ref: ${{ steps.meta.outputs.image }}@${{ steps.build.outputs.digest }}
+          format: json
+          output: trivy-raw.json
+          severity: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+          ignore-unfixed: false
+          exit-code: '1'
+
+      - name: Generate the SBOM of the published digest
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ steps.meta.outputs.image }}@${{ steps.build.outputs.digest }}
+          format: cyclonedx-json
+          output-file: sbom.cdx.json
+          upload-artifact: false
+
+      - name: Write the build manifest
+        run: >-
+          python3 scripts/write_docker_ci_manifest.py
+          --image ${{ steps.meta.outputs.image }}@${{ steps.build.outputs.digest }}
+          --source-sha "${{ github.sha }}"
+          --lock uv.lock
+          --output docker-build-manifest.json
+
+      - name: Write the evidence manifest
+        env:
+          IMAGE: ${{ steps.meta.outputs.image }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          mv trivy-raw.json docker-build-manifest.json sbom.cdx.json evidence/
+          python3 scripts/write_evidence_manifest.py \
+            --input evidence/trivy-raw.json \
+            --input evidence/docker-build-manifest.json \
+            --input evidence/sbom.cdx.json \
+            --output evidence/evidence.json \
+            --source-sha "$GITHUB_SHA" \
+            --image-ref "$IMAGE@$DIGEST" \
+            --scan-report evidence/trivy-raw.json \
+            --scanner-name Trivy \
+            --expected-scanner-version "0.76.1" \
+            --require-scanner-match \
+            --repository "$GITHUB_REPOSITORY" \
+            --workflow "$GITHUB_WORKFLOW" \
+            --run-id "$GITHUB_RUN_ID" \
+            --run-attempt "$GITHUB_RUN_ATTEMPT"
+
+      - name: Attach the evidence to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE: ${{ steps.meta.outputs.image }}
+          VERSION: ${{ steps.meta.outputs.version }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          notes=$(printf 'Image: `%s@%s`\n\nVersion: %s\n\nSource revision: `%s`\n\nScanner: Trivy 0.76.1, gate UNKNOWN/LOW/MEDIUM/HIGH/CRITICAL\n\nResult: 0 findings — the scan failed the job on any finding.\n\nThe attached files are the raw scanner report, the build manifest and the CycloneDX SBOM of the published digest, with `evidence.json` stating the sha256 of each.\n' "$IMAGE" "$DIGEST" "$VERSION" "$GITHUB_SHA")
+          gh release create "$GITHUB_REF_NAME" \
+            --title "${IMAGE##*/} ${VERSION}" \
+            --notes "$notes" \
+            evidence/trivy-raw.json \
+            evidence/docker-build-manifest.json \
+            evidence/sbom.cdx.json \
+            evidence/evidence.json
+
+      - name: Upload the evidence as workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-evidence-${{ github.sha }}
+          path: evidence/
+          if-no-files-found: error
+
+  verify:
+    name: anonymous pull by digest
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    needs: publish
+    permissions:
+      contents: read
+    steps:
+      - name: Pull the published digest without credentials
+        env:
+          IMAGE: ghcr.io/${{ github.repository }}
+          DIGEST: ${{ needs.publish.outputs.digest }}
+        run: |
+          set -euo pipefail
+          # A package published with the workflow token is private by default.
+          # The anonymous pull is the gate the release flow requires, so it is
+          # checked here and the package has to be made public for it to pass.
+          docker logout ghcr.io >/dev/null 2>&1 || true
+          rm -f ~/.docker/config.json
+          if ! docker pull "$IMAGE@$DIGEST"; then
+            echo "the package is not readable without credentials: make it public in the package settings" >&2
+            exit 1
+          fi
+          echo "the published digest is readable without credentials"
