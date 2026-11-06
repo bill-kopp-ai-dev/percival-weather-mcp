@@ -61,6 +61,10 @@ jobs:
     name: Docker build + MCP conformance
     runs-on: ubuntu-22.04
     timeout-minutes: 35
+    permissions:
+      # The evidence branch is written by this job only; the test matrix keeps
+      # the default read-only permissions.
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -169,3 +173,45 @@ jobs:
             docker-build-manifest.json
             sbom.cdx.json
           if-no-files-found: error
+      # The artifacts of a run can only be downloaded with an authenticated
+      # request, which makes the raw scan unusable as public evidence. This
+      # step publishes the same files to a dedicated branch, where they are
+      # readable without a token and can be archived in the repository. The
+      # branch is not a trigger of this workflow, so it cannot loop.
+      - name: Publish the evidence to the public evidence branch
+        env:
+          TRIVY_VERSION: "0.76.1"
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          mv trivy-raw.json docker-build-manifest.json sbom.cdx.json evidence/
+          python3 scripts/write_evidence_manifest.py \
+            --input evidence/trivy-raw.json \
+            --input evidence/docker-build-manifest.json \
+            --input evidence/sbom.cdx.json \
+            --output evidence/evidence.json \
+            --source-sha "$GITHUB_SHA" \
+            --image-ref "percival-weather-mcp:ci" \
+            --scanner-name Trivy \
+            --scanner-version "$TRIVY_VERSION" \
+            --repository "$GITHUB_REPOSITORY" \
+            --workflow "$GITHUB_WORKFLOW" \
+            --run-id "$GITHUB_RUN_ID" \
+            --run-attempt "$GITHUB_RUN_ATTEMPT"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch --no-tags origin \
+            +refs/heads/evidence/trivy:refs/remotes/origin/evidence/trivy || true
+          if git rev-parse --verify --quiet refs/remotes/origin/evidence/trivy >/dev/null; then
+            git checkout -B evidence/trivy refs/remotes/origin/evidence/trivy
+          else
+            git checkout --orphan evidence/trivy
+            git rm -rf --cached . >/dev/null 2>&1 || true
+          fi
+          git add -f evidence
+          if git diff --cached --quiet; then
+            echo "evidence unchanged for ${GITHUB_SHA}; nothing to publish"
+          else
+            git commit -m "evidence: scan, build manifest and SBOM for ${GITHUB_SHA}"
+            git push origin HEAD:refs/heads/evidence/trivy
+          fi
