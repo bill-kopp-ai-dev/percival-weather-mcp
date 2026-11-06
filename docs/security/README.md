@@ -18,19 +18,20 @@ restricted to the gateway's image ID, not to this server's.
 
 The image that is pinned for this product was built on 2026-11-06 by the
 maintenance executor from commit
-`11350202f1875213d0f09b51e172cfd73004bee5` (clean tree):
+`48a14467126eb54cd552e6ba40fe0920246f0402` (clean tree):
 
 | Field | Value |
 |---|---|
 | Version | 0.10.0 |
-| Image ID | `sha256:3118650a7bb632fd59a3e1965dec8458a94fa472f719b05956b787e9b0513d91` |
+| Image ID | `sha256:e1b73fa5bb9b124e420ad03c77ab8ff23b698e9b7e8ab8849e2bc386f369921f` |
+| Build context | `sha256:26adbf29d7d50a7247fc8d50b96abf29f6de92a88ab94c1151338ce252cfda1e` |
 | Scan | **0 findings** at the LOW/MEDIUM/HIGH/CRITICAL gate |
 | Published | No — no registry digest exists yet |
 
 The executor scan is recorded as a receipt: the raw report is
-`sha256:372d67a4b29c8c53e96ed37853c8ad15211c12025152d56e21c10266b380005e`,
+`sha256:e41158e2c43607da08cb5fc2fc545323334f1b4088c5bcfdf269e9daa86c5c9a`,
 the SBOM is
-`sha256:e8f988afa407ff0e298afbf3df66f56b87c37714c958cef995721086b0a4c295`,
+`sha256:0591828c5c878833215b73995a69ddf4a75440f100c0da8caa7801ae78dc0157`,
 and the scanner is
 `sha256:7689b4dacbf7f73c3182005654b07aa84c7f63e060201f09de748b31610c739f`.
 The executor keeps those bytes on the host and exposes no operation that
@@ -84,7 +85,8 @@ and the CI produced
 `sha256:f356343fdd67146d6aef8555c76f5e518bbfa137294e5f4d3d01cae3b338a559`.
 Both report 0 findings, and each report is valid for its own image, but the
 two images are not the same bytes and a report must never be read as covering
-an image other than the one it names.
+an image other than the one it names. The published image will be built by
+the CI as well, so its evidence is the scan of the published digest.
 
 ## The superseded candidate contradicted its own label
 
