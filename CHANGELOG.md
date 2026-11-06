@@ -95,6 +95,19 @@ runtime verification; this entry does not claim a published release.
   meaningful description for ``city``, ``start_date``, ``end_date``,
   ``datetime_str`` and the timezone arguments.
 
+### Security
+- ``scripts/leak_scan.py`` is a new CI gate that fails the build when the
+  published tree carries a reference that belongs to internal work: an
+  absolute path into a home directory, a path inside the internal agent
+  runtime, the name of a sibling repository that is not published, or the
+  owner's personal address outside the attribution map. The scan reads the
+  tracked files, so the gitignored ``internal/`` corpus is out of scope by
+  construction and cannot fail the build. The four ignore and attribution
+  files that must name those paths are exempt by rule, each with its
+  rationale. This replaces a history rewrite as the way to keep internal
+  references out of the published repository: the published tree is now
+  clean, and a regression that reintroduces one fails the build.
+
 ### Changed
 - ``/metrics`` now requires the bearer token whenever one is configured;
   ``/healthz`` and ``/health`` stay open as liveness probes.

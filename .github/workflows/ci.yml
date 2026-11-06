@@ -47,6 +47,9 @@ jobs:
       - name: Run tests
         run: uv run pytest --cov=percival_weather_mcp --cov-report=xml
 
+      - name: Scan the published tree for internal references
+        run: uv run python scripts/leak_scan.py
+
       - name: Upload coverage
         if: matrix.python-version == '3.12'
         uses: actions/upload-artifact@v4
