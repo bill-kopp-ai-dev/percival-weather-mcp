@@ -183,16 +183,21 @@ jobs:
       - name: Publish the evidence to the public evidence branch
         run: |
           set -euo pipefail
-          mkdir -p evidence
-          mv trivy-raw.json docker-build-manifest.json sbom.cdx.json evidence/
+          # The evidence is assembled outside the checkout: the branch tracks
+          # the evidence directory, so files written into the working tree
+          # before the checkout would collide with it.
+          evidence_dir="${RUNNER_TEMP}/weather-evidence"
+          rm -rf "$evidence_dir"
+          mkdir -p "$evidence_dir"
+          mv trivy-raw.json docker-build-manifest.json sbom.cdx.json "$evidence_dir"/
           python3 scripts/write_evidence_manifest.py \
-            --input evidence/trivy-raw.json \
-            --input evidence/docker-build-manifest.json \
-            --input evidence/sbom.cdx.json \
-            --output evidence/evidence.json \
+            --input "$evidence_dir/trivy-raw.json" \
+            --input "$evidence_dir/docker-build-manifest.json" \
+            --input "$evidence_dir/sbom.cdx.json" \
+            --output "$evidence_dir/evidence.json" \
             --source-sha "$GITHUB_SHA" \
             --image-ref "percival-weather-mcp:ci" \
-            --scan-report evidence/trivy-raw.json \
+            --scan-report "$evidence_dir/trivy-raw.json" \
             --scanner-name Trivy \
             --expected-scanner-version "0.76.1" \
             --require-scanner-match \
@@ -210,6 +215,8 @@ jobs:
             git checkout --orphan evidence/trivy
             git rm -rf --cached . >/dev/null 2>&1 || true
           fi
+          mkdir -p evidence
+          cp "$evidence_dir"/* evidence/
           git add -f evidence
           if git diff --cached --quiet; then
             echo "evidence unchanged for ${GITHUB_SHA}; nothing to publish"
