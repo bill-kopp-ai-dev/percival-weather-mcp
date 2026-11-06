@@ -1,6 +1,6 @@
 # Classificação da qualidade do ar ausente nas tools e bands de AQI contraditórios com o classificador interno
 
-- **Status:** correção implementada e validada localmente; aberta para aceite da imagem — [WX-RF](../plans/2026-11-05-weather-functional-implementation-report.md)
+- **Status:** correção implementada; candidata 0.10.0 construída, escaneada sem findings, pinada e validada pelo agente conectado; aberta para a decisão de retenção — [WX-RF](../plans/2026-11-05-weather-functional-implementation-report.md)
 - **Reportado em:** 2026-11-05
 - **Severidade proposta:** média — o agente recebe concentração bruta sem faixa de risco, e as duas fontes de verdade do repositório discordam entre si
 - **Área:** semântica de qualidade do ar (faixas AQI/WHO) e consistência entre recurso, classificador interno e tools

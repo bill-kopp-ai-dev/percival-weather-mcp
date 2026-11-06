@@ -3,9 +3,10 @@
 **Data:** 2026-11-05. **Owner:** Bill Kopp. **Candidato de fonte:** 0.10.0.
 
 **Resultado:** R0–R6 implementados e validados localmente. Os 12 achados têm
-correção e regressão. R7/M4 estão **parciais e bloqueados para aceite de imagem**:
-Docker CLI não está disponível neste ambiente. Nenhuma issue foi encerrada
-como resolvida em produção; nenhum pin foi atualizado.
+correção e regressão. R7/M4 executados: a candidata 0.10.0 foi construída pelo
+executor host, escaneada com **0 findings**, pinada no Positronic e validada
+funcionalmente pelo agente conectado. Restam a decisão de retenção/limpeza da
+imagem anterior e o registro do incidente de registry descrito na §10.
 
 Plano e decisão de execução: [WX-RF, §3 e §9](2026-11-05-weather-functional-refactoring-plan.md).
 
@@ -169,3 +170,100 @@ de build pelo executor host. A causa e os critérios de solução estão na
 Por instrução de Bill em 2026-11-05, resolver essa issue antes de retomar R7/M4
 e finalizar a tarefa Weather. Não houve nova imagem, promoção ou encerramento
 das issues funcionais por causa deste registro.
+
+## 10. Ciclo de imagem, pin e validação pelo agente conectado — 2026-11-06
+
+A capacidade de manutenção do agente foi implantada pela issue 0028 e ficou
+operacional. O ciclo abaixo foi executado pelo agente OCI, sem comando
+Docker no shell.
+
+### Construção
+
+| Campo | Valor |
+|---|---|
+| Job de manutenção | `b9f2723b7660434bd232cb8694bafe380ef9f53a3830aa1af2825e0c4435fe60` |
+| Receita | `weather/canonical` (`6b9e05e927e01e16cd12e252adbbec11893a13c0bfc119aa4d2eb9f2f66880cb`) |
+| Commit | `875fff909c4786baba87dbf3fad68ca71d566001` (árvore limpa, `dirty: false`) |
+| Contexto | `f3138f4e6bbd54d6d1d8e643061c0e881255fc07a051f233891ce913bca0be63` |
+| Engine | `57ae74da2442b4382413e691d56abf49617d4e6eb1e5fac298b973fbd263c43f` |
+| Imagem | `sha256:40fa10fffabb0678fdbf584a3a2d4c6531f633b4f2282ab92b33fbc3568e3b25` |
+| Scan | `7dc09118dc4993c3f34507f05cfcbd59b5d993ba12677d2cc0b900526909a92e` — **0 findings** no gate LOW/MEDIUM/HIGH/CRITICAL |
+| SBOM | `b78118415ac9045f34c0bba3289d301b0d34696bd29629537d8a9d77667a2eec` |
+| Scanner | `84e54b2d02a5de1ad8dff546f152fb3aa252379d25a3a8d0f982d6d3a1fe4cba` |
+
+Fases do recibo: engine 0, build 0, scanner-version 0, scan 0, sbom 0.
+
+### Causa das quatro primeiras falhas
+
+As submissões `714fe825…` (sessão anterior), `16162b15…`, `24a764d0…` e
+`5f679ae0…` falharam em `phase=build`, exit 1. A causa era o **Debian
+Snapshot**: respostas em cache de borda (`x-cache: HIT`) voltavam 200 em
+~80 ms, e as requisições sem cache (`MISS`) recebiam 504/503 após 10–30 s.
+O `apt-get update` do Dockerfile busca `forky` e `forky-security`; o índice
+`Packages.xz` da suíte de segurança estava em `MISS` e causava a falha do
+build. Retentativas aqueceram o cache de borda e a quinta submissão
+concluiu. Nenhum arquivo do projeto, pin de imagem ou data de snapshot foi
+alterado para contornar isso.
+
+Checagens locais que isolaram a causa: `apt-get update` com o mesmo
+`sources.list` e as mesmas opções do Dockerfile (exit 0), `uv sync --frozen
+--no-dev --no-editable` com o uv 0.9.30 pinado no builder contra o lock
+atual (exit 0), as 16 versões de pacote fixadas presentes no snapshot
+(0 ausentes) e os três digests de imagem-base resolvendo com 200.
+
+### Pin e configuração
+
+| Passo | Resultado |
+|---|---|
+| `update-image weather sha256:40fa10ff… 5` | revisão do servidor 5 → **6**, nova `configurationId` `ec08d7f2-be33-491f-90c2-4f3b4ac35337` |
+| `configure weather 6 …` | recusado: `MCP configuration revision conflict` — o `update-image` invalida a `configurationId` e a configuração anterior fica invisível |
+| `configure weather 0 …` | configuração recriada **idêntica**: bridge, zero mounts, env vazio, as nove tools na allowlist, revisão 1 |
+| `metadata weather 6 --version=0.10.0` | gravou `version: false` no registry — ver §10.3 |
+
+Rollback: a imagem anterior `sha256:680872039a8f530f7feb53610478087c5271d5a5aec451c1f668f799e0e8a0ee`
+continua autorizada e disponível para reversão. Nenhuma imagem foi removida.
+
+### Validação pelo agente conectado
+
+| Verificação | Resultado |
+|---|---|
+| `weather_get_status` | `Version: 0.10.0. Upstream readiness not checked.` — texto novo, prova de que a sessão usa a candidata |
+| `positronic mcp server discover weather` | 9 tools descobertas |
+| `weather_get_current city="London, UK"` | contexto `London, England, United Kingdom`; `Model data valid at 2026-11-06T02:00:00+00:00 UTC (nearest_hour)`; ambiguidade reportada com alternativas |
+| `weather_get_by_range city="São Paulo, BR", sample_mode="spread"` | identidade `country_code: BR`; 24 pontos, 12 na amostra `spread`; `coverage` com `valid_points`/`missing_points` por variável; segmentos `past_or_present` (24) e `future` (0); `source.data_kind: model` |
+| `weather_get_air_quality city="Paris, FR"` | subíndices do provedor: PM2.5 75 → `Moderate`, O₃ 0 → `Good`; cobertura 120 pontos com 109 válidos e 11 ausentes; amostra compacta de 8 |
+
+Nenhuma chamada usou o proxy opaco do ambiente: as três passaram pela
+superfície MCP do agente conectado.
+
+### 10.3 Incidente de registry e reparo
+
+A mutação `metadata weather 6 --version=0.10.0` gravou `"version": false` no
+registry: `version` é chave reservada do yargs e a flag global do comando raiz
+consumiu o valor. O registry deixou de satisfazer o schema e **todo o gestor
+passou a falhar** com `invalid MCP server registry`, para os seis servidores.
+
+O arquivo corrompido foi preservado antes do reparo
+(`~/.positronic/runtime/tmp/opencode/registry.corrupted-20261106T0133Z.json`,
+SHA-256 `b0c7e111ca655ea3d3184a6941e98783c9f4e39e7a89d77096f8d72fc87a28d8`) e
+o reparo foi uma edição cirúrgica de um único campo, de `false` para
+`"0.10.0"`, o valor pretendido na operação original. Essa é uma **exceção
+explícita** à regra de não editar estado gerenciado: as interfaces suportadas
+não consequentem operar sobre um registry ilegível e o estado quebrado
+derrubaria a gestão dos seis MCPs. Nenhum pin, allowlist, montagem, escopo,
+credencial ou container foi alterado pelo reparo, e o gestor voltou a
+responder normalmente em seguida.
+
+A causa foi corrigida no código do agente — opção não reservada
+`--server-version` e validação de tipo no lado da escrita do gestor — e
+registrada na [issue 0029 do Positronic](../../../alternative-positronic/positronic/docs/issues/0029-mcp-metadata-version-flag-corrupts-the-registry.md).
+A correção só vale na próxima imagem do agente.
+
+### Estado do aceite
+
+R7 está executado para a candidata: construção, scan sem findings, pin,
+configuração preservada e validação funcional pelo agente conectado. M4
+depende ainda da decisão de retenção: a imagem anterior permanece autorizada
+para rollback, e a sua remoção exige a lista nominal e a autorização
+específica previstas no runbook. As 12 issues funcionais permanecem abertas
+até essa decisão, sem mudança de código adicional.

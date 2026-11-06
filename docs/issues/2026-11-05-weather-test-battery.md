@@ -1,8 +1,11 @@
 # Bateria de testes do servidor MCP Weather — registro da campanha
 
 - **Status da campanha original:** concluída — 2026-11-05; 12 issues registradas.
-- **Seguimento:** correções implementadas e validadas localmente em WX-RF;
-  aceite da nova imagem pendente. Ver [relatório de implementação](../plans/2026-11-05-weather-functional-implementation-report.md).
+- **Seguimento:** correções implementadas em WX-RF; a candidata 0.10.0
+  (`sha256:40fa10fffabb0678fdbf584a3a2d4c6531f633b4f2282ab92b33fbc3568e3b25`)
+  foi construída, escaneada sem findings, pinada e validada pelo agente
+  conectado em 2026-11-06. Permanece a decisão de retenção da imagem
+  anterior. Ver [relatório de implementação](../plans/2026-11-05-weather-functional-implementation-report.md).
 - **Executado por:** agente `<positronic>`, a pedido do owner
 - **Alvo:** imagem `sha256:680872039a8f530f7feb53610478087c5271d5a5aec451c1f668f799e0e8a0ee`
   (tag `percival-weather-mcp:0.9.0-f62d438`, revisão de origem

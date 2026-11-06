@@ -1,6 +1,6 @@
 # Intervalo de datas sem validação da janela do upstream: erro HTTP 400 opaco, e o endpoint de arquivo histórico não é usado
 
-- **Status:** correção implementada e validada localmente; aberta para aceite da imagem — [WX-RF](../plans/2026-11-05-weather-functional-implementation-report.md)
+- **Status:** correção implementada; candidata 0.10.0 construída, escaneada sem findings, pinada e validada pelo agente conectado; aberta para a decisão de retenção — [WX-RF](../plans/2026-11-05-weather-functional-implementation-report.md)
 - **Reportado em:** 2026-11-05
 - **Severidade proposta:** média-alta — a ferramenta aceita entradas que sempre falham no upstream, devolve um 400 sem causa e atribui a falha ao nome da cidade; histórico além de ~3 meses é recusado mesmo existindo endpoint próprio para isso
 - **Área:** `weather_get_by_range` — validação de intervalo e janela de disponibilidade

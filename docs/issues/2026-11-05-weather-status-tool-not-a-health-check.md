@@ -1,6 +1,6 @@
 # `weather_get_status` devolve texto estático, não um health check
 
-- **Status:** correção implementada e validada localmente; aberta para aceite da imagem — [WX-RF](../plans/2026-11-05-weather-functional-implementation-report.md)
+- **Status:** correção implementada; candidata 0.10.0 construída, escaneada sem findings, pinada e validada pelo agente conectado; aberta para a decisão de retenção — [WX-RF](../plans/2026-11-05-weather-functional-implementation-report.md)
 - **Reportado em:** 2026-11-05
 - **Severidade proposta:** média-baixa — a tool promete "status operacional" e o README a classifica como "Liveness/readiness", mas ela não verifica nada; em transporte stdio não existe outro sinal de saúde
 - **Área:** tool de status e coerência com os endpoints `/healthz` e `/health` do modo HTTP

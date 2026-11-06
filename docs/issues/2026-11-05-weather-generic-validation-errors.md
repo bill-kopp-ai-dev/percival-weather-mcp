@@ -1,6 +1,6 @@
 # Detalhes de validação são descartados: todo erro de entrada vira "Invalid weather request"
 
-- **Status:** correção implementada e validada localmente; aberta para aceite da imagem — [WX-RF](../plans/2026-11-05-weather-functional-implementation-report.md)
+- **Status:** correção implementada; candidata 0.10.0 construída, escaneada sem findings, pinada e validada pelo agente conectado; aberta para a decisão de retenção — [WX-RF](../plans/2026-11-05-weather-functional-implementation-report.md)
 - **Reportado em:** 2026-11-05
 - **Severidade proposta:** média — o servidor produz mensagens específicas e as substitui por texto genérico, tirando do agente a informação que ele precisa para se corrigir
 - **Área:** taxonomia de erros da camada de tools

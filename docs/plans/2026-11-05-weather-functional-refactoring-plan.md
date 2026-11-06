@@ -1,14 +1,15 @@
 # Weather MCP — plano de refatoração funcional
 
-**ID / revisão:** WX-RF / 1.1 — 2026-11-05.
+**ID / revisão:** WX-RF / 1.2 — 2026-11-05, atualizado em 2026-11-06.
 
-**Estado:** R0–R6 implementados e validados localmente; R7/M4 parciais,
-com aceite operacional bloqueado pela lacuna de build/manutenção Docker no agente OCI.
+**Estado:** R0–R6 implementados e validados localmente; R7 executado para a
+candidata 0.10.0 (build, scan sem findings, pin e validação pelo agente
+conectado). M4 aguarda a decisão de retenção da imagem anterior.
 
 **Dependência de retomada:** [Positronic issue 0028 — ciclo de vida de imagens e containers](../../../alternative-positronic/positronic/docs/issues/0028-oci-agent-cannot-maintain-container-image-lifecycle.md).
-Bill determinou resolver essa capacidade do agente antes de finalizar WX-RF.
-O Engine funciona pela ponte MCP; o bloqueio é a ausência do caminho de
-build/manutenção no ambiente OCI, conforme diagnóstico registrado na issue.
+A capacidade de manutenção foi implantada e está funcional. Bill determinou
+resolver essa issue antes de finalizar WX-RF; o ciclo de imagem está
+registrado em [§10 do relatório de implementação](2026-11-05-weather-functional-implementation-report.md).
 
 **Owner e decisor único:** Bill Kopp. Executor proposto: agente Positronic.
 
@@ -513,3 +514,21 @@ diff. Nenhuma issue está resolvida pela criação deste documento.
 - Tentativa de build canônico terminou com exit 1: Docker não está em PATH.
   Inventário final mantém o pin/revisão inicial. As 12 issues receberam
   seguimento de correção local, mas continuam abertas para aceite da imagem.
+- **2026-11-06 — ciclo de imagem executado.** A capacidade de manutenção do
+  agente (issue 0028) está operacional: a candidata
+  `sha256:40fa10fffabb0678fdbf584a3a2d4c6531f633b4f2282ab92b33fbc3568e3b25`
+  foi construída a partir do commit `875fff909c4786baba87dbf3fad68ca71d566001`
+  com árvore limpa, escaneada com **0 findings** no gate
+  LOW/MEDIUM/HIGH/CRITICAL, autorizada, pinada e validada pelo agente
+  conectado (status, descoberta e as três tools de dados com conteúdo
+  conferido). As quatro primeiras submissões falharam por indisponibilidade
+  transitória do Debian Snapshot (503/504 em cache de borda); nenhuma mudança
+  de fonte, pin ou snapshot foi feita para contornar isso. Um incidente
+  distinto no registry do gestor, causado pela flag `--version` do comando
+  `mcp server metadata`, foi reparado e registrado na
+  [issue 0029 do Positronic](../../../alternative-positronic/positronic/docs/issues/0029-mcp-metadata-version-flag-corrupts-the-registry.md).
+  Evidência completa em [§10 do relatório](2026-11-05-weather-functional-implementation-report.md).
+- **Pendências:** decisão de retenção da imagem anterior
+  `sha256:680872039a8f530f7feb53610478087c5271d5a5aec451c1f668f799e0e8a0ee`
+  (ainda autorizada para rollback; remoção exige lista nominal e autorização
+  específica), fechamento das 12 issues e fechamento formal da issue 0028.

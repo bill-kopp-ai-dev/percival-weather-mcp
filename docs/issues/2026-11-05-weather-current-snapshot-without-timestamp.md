@@ -1,6 +1,6 @@
 # `weather_get_current` não informa o horário da observação
 
-- **Status:** correção implementada e validada localmente; aberta para aceite da imagem — [WX-RF](../plans/2026-11-05-weather-functional-implementation-report.md)
+- **Status:** correção implementada; candidata 0.10.0 construída, escaneada sem findings, pinada e validada pelo agente conectado; aberta para a decisão de retenção — [WX-RF](../plans/2026-11-05-weather-functional-implementation-report.md)
 - **Reportado em:** 2026-11-05
 - **Severidade proposta:** baixa — o snapshot é correto nos valores, mas o agente não consegue saber a idade do dado
 - **Área:** formato de saída de `weather_get_current`

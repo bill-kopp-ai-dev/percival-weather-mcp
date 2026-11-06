@@ -1,6 +1,6 @@
 # Resolução silenciosa de cidades ambíguas: o resultado não informa país ou região
 
-- **Status:** correção implementada e validada localmente; aberta para aceite da imagem — [WX-RF](../plans/2026-11-05-weather-functional-implementation-report.md)
+- **Status:** correção implementada; candidata 0.10.0 construída, escaneada sem findings, pinada e validada pelo agente conectado; aberta para a decisão de retenção — [WX-RF](../plans/2026-11-05-weather-functional-implementation-report.md)
 - **Reportado em:** 2026-11-05
 - **Severidade proposta:** baixa — o servidor escolhe um entre muitos homônimos e não expõe o contexto da escolha
 - **Área:** geocoding — seleção de resultado e metadados de saída

@@ -1,6 +1,6 @@
 # Sumário mistura hora observada com hora prevista e não informa a contagem de pontos válidos
 
-- **Status:** correção implementada e validada localmente; aberta para aceite da imagem — [WX-RF](../plans/2026-11-05-weather-functional-implementation-report.md)
+- **Status:** correção implementada; candidata 0.10.0 construída, escaneada sem findings, pinada e validada pelo agente conectado; aberta para a decisão de retenção — [WX-RF](../plans/2026-11-05-weather-functional-implementation-report.md)
 - **Reportado em:** 2026-11-05
 - **Severidade proposta:** baixa-média — as estatísticas são calculadas sobre uma janela que mistura passado e futuro, e o payload sugere cobertura completa mesmo quando há buracos
 - **Área:** semântica das janelas de dados e das estatísticas agregadas

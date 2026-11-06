@@ -1,6 +1,6 @@
 # O formato de cidade documentado "Cidade, País" falha, e a mensagem de erro recomenda justamente a forma que falha
 
-- **Status:** correção implementada e validada localmente; aberta para aceite da imagem — [WX-RF](../plans/2026-11-05-weather-functional-implementation-report.md)
+- **Status:** correção implementada; candidata 0.10.0 construída, escaneada sem findings, pinada e validada pelo agente conectado; aberta para a decisão de retenção — [WX-RF](../plans/2026-11-05-weather-functional-implementation-report.md)
 - **Reportado em:** 2026-11-05
 - **Severidade proposta:** alta — os exemplos publicados no schema, no README e nos prompts do produto falham, e o erro orienta o agente para uma correção que não resolve
 - **Área:** geocoding (resolução de cidade) e texto de erro de "cidade não encontrada"

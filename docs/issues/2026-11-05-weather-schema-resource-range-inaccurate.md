@@ -1,6 +1,6 @@
 # Recurso `weather://schema/weather_get_by_range` descreve incorretamente o payload
 
-- **Status:** correção implementada e validada localmente; aberta para aceite da imagem — [WX-RF](../plans/2026-11-05-weather-functional-implementation-report.md)
+- **Status:** correção implementada; candidata 0.10.0 construída, escaneada sem findings, pinada e validada pelo agente conectado; aberta para a decisão de retenção — [WX-RF](../plans/2026-11-05-weather-functional-implementation-report.md)
 - **Reportado em:** 2026-11-05
 - **Severidade proposta:** média-baixa — o recurso que existe para orientar o agente descreve a saída de forma incorreta em três pontos
 - **Área:** recurso `weather://schema/{tool_name}`

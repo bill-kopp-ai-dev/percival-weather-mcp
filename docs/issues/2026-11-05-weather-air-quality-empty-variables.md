@@ -1,6 +1,6 @@
 # `variables: []` é aceito e devolve sucesso sem nenhum dado de poluente
 
-- **Status:** correção implementada e validada localmente; aberta para aceite da imagem — [WX-RF](../plans/2026-11-05-weather-functional-implementation-report.md)
+- **Status:** correção implementada; candidata 0.10.0 construída, escaneada sem findings, pinada e validada pelo agente conectado; aberta para a decisão de retenção — [WX-RF](../plans/2026-11-05-weather-functional-implementation-report.md)
 - **Reportado em:** 2026-11-05
 - **Severidade proposta:** média — entrada vazia produz resposta bem-sucedida e sem conteúdo, que o agente pode interpretar como "qualidade do ar sem poluentes"
 - **Área:** validação do argumento `variables` nas tools de qualidade do ar

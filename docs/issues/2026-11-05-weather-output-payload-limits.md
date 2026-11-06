@@ -1,6 +1,6 @@
 # `weather_get_by_range` entrega apenas as 12 primeiras horas do período e `weather_get_air_quality_details` devolve payload de ~25 KB
 
-- **Status:** correção implementada e validada localmente; aberta para aceite da imagem — [WX-RF](../plans/2026-11-05-weather-functional-implementation-report.md)
+- **Status:** correção implementada; candidata 0.10.0 construída, escaneada sem findings, pinada e validada pelo agente conectado; aberta para a decisão de retenção — [WX-RF](../plans/2026-11-05-weather-functional-implementation-report.md)
 - **Reportado em:** 2026-11-05
 - **Severidade proposta:** baixa — duas limitações de contrato de saída que limitam o uso analítico das tools
 - **Área:** formato de saída das tools de análise
