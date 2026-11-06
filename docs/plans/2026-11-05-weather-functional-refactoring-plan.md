@@ -436,7 +436,7 @@ não por cada edição intermediária.
 | Janela local diverge do upstream | Política conservadora documentada; reason upstream preservado; revalidar limites na integração e tratar lacunas como indisponibilidade. |
 | Classificação AQI incorreta por unidade/média/versão | Usar índice do provedor, referência metodológica datada e catálogo único; não aplicar antigos limiares brutos nem inventar faixas de ammonia/dust/AOD. |
 | Aditivos tornam payload grande | Seleção de variáveis, alternativas limitadas, JSON compacto e benchmark por fixture após todos os metadados. |
-| Docker, autorização ou acesso ao gestor indisponível | Código pode ser validado localmente, mas M4 permanece bloqueado; nunca afirmar imagem atualizada. A ausência de Docker foi observada na campanha anterior e não foi reavaliada nesta emissão. |
+| Docker, autorização ou acesso ao gestor indisponível | Resolvido em 2026-11-06: o executor host entrega build, scan e SBOM sem CLI Docker no agente. A limitação persistente é a ausência de fase de verificação — o executor não roda o smoke nem a conformance do projeto, e por isso as propriedades de runtime do container (transportes HTTP, usuário efetivo, manifesto embutido) ficam sem evidência na imagem candidata. Ver §10.4 do relatório. |
 | Recursos/prompts ocultos pelo proxy | Fixture/cliente MCP suportado e evidência explícita; não atribuir falha de apresentação automaticamente ao servidor. |
 
 Conclusão requer todas as 12 issues com critério atendido ou decisão explícita
@@ -446,9 +446,12 @@ se Bill escolher archive ou readiness ativa, revisar dependências/testes antes
 da execução. Essas ampliações acrescentam políticas de fonte, disponibilidade,
 timeout e integração; não são simples ajustes de texto.
 
-**Próxima ação:** resolver a issue 0028 do Positronic e então retomar R7 pelo
-caminho de manutenção disponibilizado, seguindo o ciclo de imagem/gestor;
-não confundir integração nativa com aceite do container.
+**Próxima ação:** M4 depende de duas decisões de Bill. A primeira é a
+retenção da imagem anterior. A segunda é como fechar a lacuna de verificação
+de runtime do container: executar o smoke e a conformance no host contra a
+candidata pinada, ou acrescentar uma fase de verificação ao executor host.
+Até uma das duas, o aceite declara as verificações 3, 4, 6 e 7 do smoke como
+não executadas, sem afirmar cobertura que não existe.
 
 ## 8. Fontes e verificação desta emissão
 
@@ -528,7 +531,20 @@ diff. Nenhuma issue está resolvida pela criação deste documento.
   `mcp server metadata`, foi reparado e registrado na
   [issue 0029 do Positronic](../../../alternative-positronic/positronic/docs/issues/0029-mcp-metadata-version-flag-corrupts-the-registry.md).
   Evidência completa em [§10 do relatório](2026-11-05-weather-functional-implementation-report.md).
+- **2026-11-06 — varredura funcional completa e avaliação de cobertura.** As
+  nove tools da candidata pinada foram exercitadas pelo agente conectado;
+  `get_details`, `get_air_quality_details`, `get_time`, `get_timezone` e
+  `convert_time` completaram as quatro anteriores. O levantamento do que
+  `scripts/smoke-container.sh` e `scripts/docker-ci-conformance.py` verificam
+  mostrou que a validação funcional cobre o contrato stdio do gateway e o
+  comportamento das tools — com mais profundidade que o smoke — mas não as
+  propriedades de runtime do container: transportes HTTP, usuário efetivo e
+  manifesto embutido não foram verificados nesta candidata. Checagens
+  estáticas fecharam parte da lacuna: label do Dockerfile × tools
+  descobertas, `build_oci_label.py --check` e validade do `mcp.yaml` no
+  repositório. Detalhes em §10.4 do relatório.
 - **Pendências:** decisão de retenção da imagem anterior
   `sha256:680872039a8f530f7feb53610478087c5271d5a5aec451c1f668f799e0e8a0ee`
   (ainda autorizada para rollback; remoção exige lista nominal e autorização
-  específica), fechamento das 12 issues e fechamento formal da issue 0028.
+  específica), decisão sobre como fechar a lacuna de verificação de runtime
+  (§10.4), fechamento das 12 issues e fechamento formal da issue 0028.

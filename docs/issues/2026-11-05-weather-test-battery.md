@@ -4,8 +4,13 @@
 - **Seguimento:** correções implementadas em WX-RF; a candidata 0.10.0
   (`sha256:40fa10fffabb0678fdbf584a3a2d4c6531f633b4f2282ab92b33fbc3568e3b25`)
   foi construída, escaneada sem findings, pinada e validada pelo agente
-  conectado em 2026-11-06. Permanece a decisão de retenção da imagem
-  anterior. Ver [relatório de implementação](../plans/2026-11-05-weather-functional-implementation-report.md).
+  conectado em 2026-11-06, com as **nove** tools exercitadas contra a
+  candidata pinada. Permanece a decisão de retenção da imagem anterior.
+  O levantamento da cobertura do `scripts/smoke-container.sh` e do
+  `scripts/docker-ci-conformance.py` está em §10.4 do
+  [relatório de implementação](../plans/2026-11-05-weather-functional-implementation-report.md):
+  a validação funcional cobre o contrato stdio e o comportamento das tools,
+  mas não as propriedades de runtime do container.
 - **Executado por:** agente `<positronic>`, a pedido do owner
 - **Alvo:** imagem `sha256:680872039a8f530f7feb53610478087c5271d5a5aec451c1f668f799e0e8a0ee`
   (tag `percival-weather-mcp:0.9.0-f62d438`, revisão de origem
@@ -96,6 +101,13 @@ Registrado para evitar retrabalho e para delimitar o que **não** está quebrado
 - medição precisa de latência e de tamanho de payload em bytes;
 - caminhos de código alcançados apenas por cliente (o proxy desta sessão
   rejeitou `variables: ["pm25"]` antes do servidor).
+
+> **Atualizado em 2026-11-06:** o transporte HTTP foi verificado **em fonte**
+> (fixture nativa em loopback, sem bearer 401 e com token 200) e o contrato
+> stdio foi verificado **na candidata pinada**, pelo agente conectado, com as
+> nove tools. Continuam sem verificação **na imagem 0.10.0** as propriedades
+> que exigem executar o contêiner: transportes HTTP, usuário efetivo,
+> manifesto embutido e materialidade da label OCI. Ver §10.4 do relatório.
 
 ## Próxima ação
 

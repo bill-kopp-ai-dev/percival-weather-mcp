@@ -84,7 +84,7 @@ resolvida por contrato de liveness, não por introduzir probes de upstream.
 | Open-Meteo real via MCP nativo | London UK (current/details), São Paulo BR (range/spread), Paris FR (AQ compact/details) aprovados |
 | Geocoding real adicional | Springfield IL → Illinois/US, Washington D.C. → District of Columbia/US; qualificadores regionais nativos preservados |
 | HTTP nativo, loopback/porta efêmera | healthz/health 200; MCP/metrics sem token 401; metrics com token 200; chamada MCP autenticada aprovada |
-| CI GitHub, build/scan/SBOM e MCP de imagem candidata | Não executados; sem imagem candidata para aceitar |
+| CI GitHub, build/scan/SBOM e MCP de imagem candidata | Build, scan, SBOM e validação pelo agente executados em 2026-11-06 — ver §10 |
 
 Evidência bruta do smoke nativo:
 [2026-11-05-weather-functional-native-verification.json](2026-11-05-weather-functional-native-verification.json).
@@ -161,6 +161,10 @@ Positronic e validar funcionalmente pelo agente. Só então decidir aceite,
 promoção/rollback e fechamento das issues. A remoção seletiva depende do
 inventário nominal e da autorização específica prevista no runbook.
 
+> **Atualizado em 2026-11-06:** este passo foi cumprido pelo caminho de
+> manutenção do executor host — ver §10. O item "conformance da imagem"
+> permaneceu em aberto, por limitação desse caminho, e está tratado em §10.4.
+
 ### Seguimento acordado com Bill
 
 A investigação posterior confirmou que o Engine está acessível pela ponte
@@ -170,6 +174,10 @@ de build pelo executor host. A causa e os critérios de solução estão na
 Por instrução de Bill em 2026-11-05, resolver essa issue antes de retomar R7/M4
 e finalizar a tarefa Weather. Não houve nova imagem, promoção ou encerramento
 das issues funcionais por causa deste registro.
+
+> **Atualizado em 2026-11-06:** a issue 0028 foi resolvida com a ponte de
+> manutenção implantada no agente, e R7 foi executado por esse caminho — ver
+> §10. O encerramento das issues funcionais continua dependente de M4.
 
 ## 10. Ciclo de imagem, pin e validação pelo agente conectado — 2026-11-06
 
@@ -233,6 +241,24 @@ continua autorizada e disponível para reversão. Nenhuma imagem foi removida.
 | `weather_get_by_range city="São Paulo, BR", sample_mode="spread"` | identidade `country_code: BR`; 24 pontos, 12 na amostra `spread`; `coverage` com `valid_points`/`missing_points` por variável; segmentos `past_or_present` (24) e `future` (0); `source.data_kind: model` |
 | `weather_get_air_quality city="Paris, FR"` | subíndices do provedor: PM2.5 75 → `Moderate`, O₃ 0 → `Good`; cobertura 120 pontos com 109 válidos e 11 ausentes; amostra compacta de 8 |
 
+As **nove** tools da candidata pinada foram exercitadas. Cinco faltavam no
+primeiro registro e foram completadas em 2026-11-06:
+
+| Verificação | Resultado |
+|---|---|
+| `weather_get_details city="São Paulo, BR", include_forecast=true` | Local correto (id 3448439, `admin1: São Paulo`, `PPLA`); `reference_time`, `valid_time` e `selection_method` presentes; forecast de 24 h |
+| `weather_get_air_quality_details city="Paris, FR"` | `full_data` preservado integralmente (120 pontos, arrays `us_aqi_*` inclusive); subíndices `not_supported` para amônia, poeira e AOD — sem classificação inventada |
+| `weather_get_time timezone="America/Sao_Paulo"` | `2026-11-05T22:51:03-03:00`, coerente com `reference_time` 01:51Z do dia seguinte |
+| `weather_get_timezone timezone="Europe/Berlin"` | `+01:00`, `is_dst: false`, abreviação `CET` |
+| `weather_convert_time` | 12:00Z → 09:00−03:00, diferença −3 h |
+
+Duas observações de qualidade, que são refinamentos e não defeitos:
+
+| Observação | Detalhe |
+|---|---|
+| Alternativas de geocoding ruidosas | `get_details` para "São Paulo, BR" seleciona corretamente a capital (`id` 3448439), mas marca `ambiguous: true` e oferece como alternativas homônimos em Alagoas e Pernambuco. A seleção está certa; a lista de alternativas é ruído, não ajuda de desambiguação |
+| Cobertura desigual de poluentes | A amônia tem 73 pontos válidos e 47 ausentes, contra 109/11 das demais variáveis — disponibilidade real do provedor, reportada honestamente e nunca convertida em zero |
+
 Nenhuma chamada usou o proxy opaco do ambiente: as três passaram pela
 superfície MCP do agente conectado.
 
@@ -259,11 +285,71 @@ A causa foi corrigida no código do agente — opção não reservada
 registrada na [issue 0029 do Positronic](../../../alternative-positronic/positronic/docs/issues/0029-mcp-metadata-version-flag-corrupts-the-registry.md).
 A correção só vale na próxima imagem do agente.
 
-### Estado do aceite
+### 10.4 Cobertura do smoke de container e da conformance
 
+O questionamento de Bill sobre a suficiência da validação funcional levou ao
+levantamento do que `scripts/smoke-container.sh` e
+`scripts/docker-ci-conformance.py` verificam e do que a validação pelo agente
+conectado efetivamente cobre.
+
+O smoke verifica sete propriedades da imagem; a conformance exercita o
+contrato stdio de forma hermética (`--network=none`) e confere o UID efetivo.
+
+| # | Verificação do smoke | Cobertura pela validação do agente | Evidência |
+|---|---|---|---|
+| 1 | Transporte padrão é stdio | **Coberta** | O gestor iniciou a candidata em stdio; o handshake round-tripped e as nove tools responderam |
+| 2 | `tools/list` anuncia as nove tools | **Coberta** | `discover weather` devolve as nove, com os nomes do contrato |
+| 3 | `MCP_TRANSPORT=http` serve `/healthz` e rejeita `/mcp` sem bearer | **Não coberta** | O pin em uso é stdio/bridge; exige execução própria da imagem com `MCP_TRANSPORT=http` e porta publicada |
+| 4 | `MCP_TRANSPORT=http-loopback` serve `/healthz` | **Não coberta** | Exige `docker exec` dentro do container |
+| 5 | Label `io.docker.server.metadata` é JSON com nove tools | **Coberta por construção, não na imagem** | Checagens estáticas abaixo; o gestor não lê a label, logo a descoberta não a exercita |
+| 6 | Container roda como usuário não-root | **Não coberta em runtime** | `USER app` no Dockerfile (linha 90) é evidência estática; o UID efetivo exige execução |
+| 7 | `/mcp/mcp.yaml` embutido é YAML válido | **Não coberta na imagem** | O Dockerfile copia o arquivo do repositório; o repositório foi validado |
+
+Checagens estáticas executadas em 2026-11-06, sobre a fonte que gerou a
+candidata:
+
+| Checagem | Resultado |
+|---|---|
+| `scripts/build_oci_label.py --check` | Aprovado — artefatos gerados e label do Dockerfile coerentes |
+| Label do Dockerfile × `discover weather` | Nomes idênticos: 9 × 9, sem sobra em nenhum lado |
+| Argumentos da label × argumentos aceitos pela candidata pinada | Todos os argumentos usados nas chamadas reais constam da label |
+| `mcp.yaml` (cópia do repositório) | YAML válido, `name: percival-weather-mcp`, `version: 0.10.0`, `transport: stdio` |
+
+Conclusão: **a validação funcional cobre o contrato stdio do gateway e o
+comportamento das tools, com mais profundidade que o smoke, mas não cobre as
+propriedades de runtime do container.** As verificações 3, 4, 6 e 7 — e a
+materialidade da imagem da checagem 5 — exigem executar a imagem, e o caminho
+de manutenção atual não permite: o executor host expõe
+`admitted → snapshot → engine → build → scanner-version → scan → sbom`, sem
+fase de verificação, e não executa o smoke nem a conformance do projeto.
+
+Duas formas de fechar, com custos diferentes:
+
+1. **Fechar para esta candidata** — executar `scripts/smoke-container.sh` e
+   `scripts/docker-ci-conformance.py` no host contra `sha256:40fa10ff…` e
+   anexar a saída ao aceite. Custo: uma sessão com Docker no host; não altera
+   a imagem, o pin nem o código.
+2. **Fechar de forma durável** — acrescentar ao executor host uma fase de
+   verificação que rode o harness de conformance do projeto contra uma imagem
+   pinada, com receita fixa e sem argv livre, produzindo recibo junto do scan
+   e do SBOM. Custo: alteração no Positronic e nova imagem do agente; fecha a
+   lacuna para todos os projetos.
+
+Até uma das duas, o aceite de M4 deve registrar que as verificações 3, 4, 6 e 7
+da candidata 0.10.0 **não** foram executadas, e não afirmar cobertura de
+runtime que não existe.
+
+### Estado do aceite
 R7 está executado para a candidata: construção, scan sem findings, pin,
-configuração preservada e validação funcional pelo agente conectado. M4
-depende ainda da decisão de retenção: a imagem anterior permanece autorizada
-para rollback, e a sua remoção exige a lista nominal e a autorização
-específica previstas no runbook. As 12 issues funcionais permanecem abertas
-até essa decisão, sem mudança de código adicional.
+configuração preservada e validação funcional pelo agente conectado, com as
+nove tools exercitadas. M4 depende ainda da decisão de retenção: a imagem
+anterior permanece autorizada para rollback, e a sua remoção exige a lista
+nominal e a autorização específica previstas no runbook. As 12 issues
+funcionais permanecem abertas até essa decisão, sem mudança de código
+adicional.
+
+A cobertura de runtime do container segue em aberto: as verificações 3, 4, 6 e
+7 do smoke não foram executadas contra esta candidata, por limitação do
+caminho de manutenção atual (§10.4). O aceite deve declarar essa lacuna de
+forma explícita, junto com a escolha entre execução no host e fase de
+verificação no executor.
