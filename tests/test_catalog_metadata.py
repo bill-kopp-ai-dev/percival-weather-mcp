@@ -18,7 +18,6 @@ import re
 from pathlib import Path
 
 import pytest
-import tomllib
 import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -40,8 +39,25 @@ OPENVEX_JUSTIFICATIONS = {
 
 
 def _product_version() -> str:
-    with (REPO_ROOT / "pyproject.toml").open("rb") as handle:
-        return tomllib.load(handle)["project"]["version"]
+    """Read the product version from ``pyproject.toml`` without a TOML parser.
+
+    ``tomllib`` only exists from Python 3.11 and the project supports 3.10,
+    so the one field this module needs is read with a regular expression
+    instead of adding a parser dependency. ``version =`` appears once, under
+    ``[project]``.
+    """
+    text = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    match = re.search(r'^version = "([^"]+)"', text, re.MULTILINE)
+    assert match is not None, "pyproject.toml must declare the product version"
+    return match.group(1)
+
+
+def _product_license() -> str:
+    """Read the declared license from ``pyproject.toml``, the same way."""
+    text = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    match = re.search(r'^license = "([^"]+)"', text, re.MULTILINE)
+    assert match is not None, "pyproject.toml must declare the product license"
+    return match.group(1)
 
 
 @pytest.fixture(scope="module")
@@ -91,6 +107,19 @@ def test_pblabs_extension_matches_the_server_metadata(server_json: dict, pblabs_
     assert pblabs_app["runtime"]["transport"] == "stdio"
     assert pblabs_app["mounts"] == []
     assert pblabs_app["review"]["status"] == "manifest-approved"
+
+
+def test_the_declared_license_is_consistent_everywhere() -> None:
+    """The license declared in the package must match the one the image carries.
+
+    The OCI label is what a registry consumer reads, so a divergence between
+    it and the package metadata would publish a license the project does not
+    hold.
+    """
+    declared = _product_license()
+    label = json.loads((MCP_DIR / "oci-label.json").read_text(encoding="utf-8"))
+    assert label["metadata"]["license"] == declared
+    assert declared == "MIT"
 
 
 def test_docker_mcp_catalog_is_not_a_dependency() -> None:
