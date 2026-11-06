@@ -4,15 +4,15 @@
 **Status:** vigente
 **Decisor:** bill (owner do `percival-weather-mcp`)
 **Registrado por:** agente `<positronic>`, durante a campanha stage-2 (S2-WX)
-**Achado de origem:** F-016 / ação A-011 do
-[plano de remediação stage-2](../../docs/plans/2026-10-27-stage-2-remediation-plan.md)
+**Achado de origem:** F-016 / ação A-011 do plano de remediação stage-2
+(registro interno, não publicado)
 
 ## Contexto
 
 O servidor expõe três endpoints HTTP fora do middleware de autenticação:
 `/healthz`, `/health` e `/metrics`. O bypass foi deliberado — está descrito
-no `README.md` e no `docs/docker-mcp-packaging.md` — para que orquestradores
-e coletores pudessem sondá-los sem possuir o token.
+no `README.md` — para que orquestradores e coletores pudessem sondá-los
+sem possuir o token.
 
 A observação do diagnóstico (F-016) foi que o efeito prático é mais largo
 que o pretendido:

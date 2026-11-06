@@ -31,6 +31,40 @@ the project adheres to [Semantic Versioning](https://semver.org/).
 Image build, connected-agent acceptance and promotion remain separate pending
 runtime verification; this entry does not claim a published release.
 
+### Documentation
+- ``README.md`` now leads with the container image as the primary
+  distribution: a Docker quick start, the image contract (entrypoint,
+  transports, pinning, Compose, OCI label) and Docker-based wiring for
+  OpenCode, Nanobot and the Docker MCP Toolkit. Running from source is
+  documented as the development path. The version banner and the
+  ``:0.9.0`` references were corrected to 0.10.0.
+- Removed the obsolete ``docs/docker-mcp-packaging.md`` (historical note for
+  the Docker MCP Catalog path, superseded by decision ``R-06``) and
+  ``docs/mcp/percival-weather-mcp/server.yaml`` (manifest of the same
+  superseded path). Their live content now lives in the README and in
+  ``docs/mcp/percival-weather-mcp/{server.json,pblabs.app.yaml}``.
+- Added ``docs/README.md``: an index of the documentation tree with the
+  precedence rules between code, generated exports, README, current guides
+  and decision records.
+- ``docs/mcp/percival-weather-mcp/server.json`` and ``pblabs.app.yaml`` now
+  track the 0.10.0 product version, and the extension's lifecycle
+  observations reflect that ``SIGINT`` terminates the stdio server.
+- ``mcp.yaml`` no longer describes ``weather_get_status`` as a readiness
+  check: the tool reports process liveness and identity only.
+- The campaign plans and issue records moved out of the published tree. They
+  document internal process — owners, local paths and cross-repository work —
+  and are of no use to a consumer of the server, so they now live in the
+  gitignored ``internal/`` directory at the repository root. The files remain
+  in the working checkout and in the repository history; ``docs/README.md``
+  states the boundary and the public documents that referenced them now
+  describe them in prose instead of linking.
+- The license is now MIT everywhere. The ``LICENSE`` file replaced the
+  Apache-2.0 text it carried, ``pyproject.toml`` declares
+  ``license = "MIT"`` (PEP 639), and the README and the OCI label already
+  said MIT. The MCP Registry package manifest is unchanged: the registry
+  schema has no ``license`` field, and the OCI label carries the
+  declaration.
+
 ### Added
 - ``scripts/verification/`` now carries the MCP verification harness used by
   the stage-2 remediation campaign (TLS mock of the three Open-Meteo

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Smoke test for percival-weather-mcp:dev
 #
-# Verifies the contract documented in docs/docker-mcp-packaging.md:
+# Verifies the container contract documented in README.md:
 #   1. Container default transport is stdio (gateway mode).
 #   2. The MCP handshake round-trips: initialize -> tools/list.
 #   3. MCP_TRANSPORT=http binds 0.0.0.0:8080 and serves /healthz

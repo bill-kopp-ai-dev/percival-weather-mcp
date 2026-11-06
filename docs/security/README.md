@@ -10,20 +10,42 @@ restricted to the gateway's image ID, not to this server's.
 | File | What it is |
 |---|---|
 | `openvex.json` | OpenVEX document (schema 0.2.0) restricted to the audited image digest, with one statement per CVE triaged by the F3 gate. |
+| `trivy-raw-f62d438-68087203.json` | Raw Trivy output for the 2026-10-31 local candidate scan. |
+
+## Current state — 0.10.0 candidate
+
+The candidate that is live for this product was built on 2026-11-06 from
+commit `875fff909c4786baba87dbf3fad68ca71d566001` (clean tree):
+
+| Field | Value |
+|---|---|
+| Version | 0.10.0 |
+| Image ID | `sha256:40fa10fffabb0678fdbf584a3a2d4c6531f633b4f2282ab92b33fbc3568e3b25` |
+| Scan | **0 findings** at the LOW/MEDIUM/HIGH/CRITICAL gate |
+| Published | No — no registry digest exists yet |
+
+The scan was executed by the maintenance executor (build → scan → SBOM) and
+is not reproducible from this directory as a raw file; the CI job
+(`.github/workflows/ci.yml`, step "Scan the candidate for vulnerabilities")
+reproduces the same gate on every push and fails on any finding.
+
+Because this candidate reports zero findings, no OpenVEX is due for it. The
+document in `openvex.json` stays bound to the older digest below and must not
+be reused for this candidate or for any future published artifact.
 
 ## Scope of the document
 
 The statements cover the CVEs that the F3 triage
-([`docs/issues/closed/2026-10-10-f3-status.md`](../issues/closed/2026-10-10-f3-status.md))
-recorded against the image that was running at the time
+(the closed F3 tracker in the local working records) recorded against the
+image that was running at the time
 (`sha256:e75fdd4abc8a…`, 0 Critical / 44 High). They do **not** restate the
-whole history of the gate: they record, for the current candidate, why those
+whole history of the gate: they record, for the audited candidate, why those
 CVEs do not apply.
 
 Each statement is bound to one product identifier — the audited digest — so
 the document never applies to an image that was not scanned.
 
-## Audited candidate
+## Audited candidate (OpenVEX scope)
 
 | Field | Value |
 |---|---|
@@ -72,11 +94,11 @@ Each statement was checked against the image, not only against the scanner:
   `mount`. None of them provides the privileged mount/nsenter/fstab flow the
   util-linux advisories describe, and the deployed profile runs the rootfs
   read-only with `cap_drop: ALL`, but the owner should know they are there.
-- The image is not published: `docker manifest inspect mcp/percival-weather-mcp`
-  answers `unauthorized`. The `RepoDigest` of a published image will differ
-  from the image ID above, and the OpenVEX will have to be re-issued against
-  the published digest — the statements themselves do not change, only the
-  product identifier.
+- The image is not published: the planned destination `docker.io/pbeanlabs`
+  has no release yet, so no `RepoDigest` exists. The `RepoDigest` of a
+  published image will differ from the image IDs above, and the OpenVEX will
+  have to be re-issued against the published digest — the statements
+  themselves do not change, only the product identifier.
 
 ## Maintenance
 

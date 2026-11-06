@@ -96,7 +96,7 @@ tools:
   - name: weather_convert_time
     description: Convert an ISO 8601 datetime (or "now") between IANA timezones.
   - name: weather_get_status
-    description: Liveness/readiness — name and version of the running server.
+    description: Check process liveness and server identity; upstream readiness is not checked.
 
 prompts:
   - weather_quick_answer

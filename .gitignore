@@ -43,3 +43,8 @@ agents.md
 
 # Local Percival integration working note (not for the public repo)
 docs/percival-integration.md
+
+# Internal working records (not for the public repo).
+# Campaign plans, issue trackers and their evidence live here; they document
+# the owner's internal process and must not be published with the product.
+internal/

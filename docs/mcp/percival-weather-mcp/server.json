@@ -3,7 +3,7 @@
   "name": "io.github.p-bean-labs/percival-weather-mcp",
   "title": "Percival Weather, Air Quality and Time",
   "description": "Weather, air quality and timezone MCP server using public Open-Meteo APIs.",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "repository": {
     "url": "https://github.com/bill-kopp-ai-dev/percival-weather-mcp",
     "source": "github"
@@ -11,8 +11,8 @@
   "packages": [
     {
       "registryType": "oci",
-      "identifier": "docker.io/pbeanlabs/percival-weather-mcp:0.9.0",
-      "version": "0.9.0",
+      "identifier": "docker.io/pbeanlabs/percival-weather-mcp:0.10.0",
+      "version": "0.10.0",
       "transport": {
         "type": "stdio"
       },

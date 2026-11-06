@@ -34,14 +34,18 @@ real token in this document or a committed profile.
 
 ## Distribution status
 
-The Docker MCP Catalog manifest in `docs/mcp/percival-weather-mcp/server.yaml`
-belongs to the superseded Docker Catalog path. The PBLabs extension is
-`manifest-approved` as metadata only; the `server.json` package/release remains
-draft and no catalog entry exists. This approval does not verify the Docker Hub
-namespace claim, publish an image, produce a digest or authorize release.
-Lifecycle observations in the extension are explicitly historical; consult the
-Stage-2 plan for current candidate evidence. Follow that plan's gates before
-publication or deployment.
+The distribution contract is the MCP Registry package in
+`docs/mcp/percival-weather-mcp/server.json` plus the PBLabs operational
+extension in `docs/mcp/percival-weather-mcp/pblabs.app.yaml`. The Docker MCP
+Catalog path is not a dependency and its manifest was removed from this
+checkout (internal decision record `R-06`).
+
+The PBLabs extension is `manifest-approved` as metadata only; the `server.json`
+package/release remains draft and no catalog entry exists. This approval does
+not verify the Docker Hub namespace claim, publish an image, produce a digest
+or authorize release. Lifecycle observations in the extension are explicitly
+historical; consult the Stage-2 plan for current candidate evidence. Follow
+that plan's gates before publication or deployment.
 
 ## Verification boundaries
 

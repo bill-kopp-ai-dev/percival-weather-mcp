@@ -20,7 +20,7 @@
 #
 # Examples:
 #   scripts/docker-build.sh                          # tag: percival-weather-mcp:dev
-#   scripts/docker-build.sh percival-weather-mcp:0.9.0
+#   scripts/docker-build.sh percival-weather-mcp:0.10.0
 #   scripts/docker-build.sh percival-weather-mcp:ci --no-cache
 
 set -eu
