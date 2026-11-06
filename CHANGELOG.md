@@ -107,6 +107,9 @@ runtime verification; this entry does not claim a published release.
   rationale. This replaces a history rewrite as the way to keep internal
   references out of the published repository: the published tree is now
   clean, and a regression that reintroduces one fails the build.
+- The scanner and its test are exempt from the rules by path, because they
+  have to spell the patterns out. The exemption is minimal and asserted by
+  a test, so it cannot widen silently.
 
 ### Changed
 - ``/metrics`` now requires the bearer token whenever one is configured;

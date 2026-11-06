@@ -10,6 +10,10 @@ This script enumerates the tracked files with ``git ls-files`` and applies
 every rule below. A violation makes the script exit non-zero, which is what
 the CI step relies on.
 
+The two files that define and test the rules must spell the patterns out, so
+they are exempt from every rule by path. The exemption is explicit and
+minimal; ``tests/test_leak_scan.py`` asserts that no other path is exempt.
+
 Usage::
 
     python scripts/leak_scan.py            # report and exit 1 on any finding
@@ -27,6 +31,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+
+# The files that spell out the forbidden patterns. They are exempt from every
+# rule: a scanner that flagged its own rule table would fail every build.
+DEFINITION_FILES = frozenset({"scripts/leak_scan.py", "tests/test_leak_scan.py"})
 
 
 @dataclass(frozen=True)
@@ -95,6 +103,8 @@ def is_binary(raw: bytes) -> bool:
 
 def scan_text(path: str, text: str, rules: tuple[Rule, ...]) -> list[Finding]:
     """Apply every rule to one text file and return the violations."""
+    if path in DEFINITION_FILES:
+        return []
     findings: list[Finding] = []
     for rule in rules:
         if path in rule.exempt:

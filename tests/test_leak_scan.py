@@ -83,6 +83,23 @@ def test_the_attribution_map_may_name_the_owner() -> None:
     assert findings == []
 
 
+def test_only_the_rule_definitions_are_exempt_from_every_rule() -> None:
+    """The exemption that covers the rule table itself must stay minimal."""
+    assert {"scripts/leak_scan.py", "tests/test_leak_scan.py"} == leak_scan.DEFINITION_FILES
+    for path in leak_scan.DEFINITION_FILES:
+        assert leak_scan.scan_text(path, "/home/bill/Projects/x\n", leak_scan.RULES) == []
+
+
+def test_a_file_that_is_not_a_definition_is_not_exempt() -> None:
+    """Exemption is by path, not by content: only the two files are exempt."""
+    findings = leak_scan.scan_text(
+        "scripts/other_tool.py",
+        "/home/bill/Projects/x\n",
+        leak_scan.RULES,
+    )
+    assert [finding.rule for finding in findings] == ["absolute-home-path"]
+
+
 def test_the_scan_covers_only_tracked_files(tmp_path: Path) -> None:
     """An ignored file must not be able to fail the gate."""
     subprocess.run(["git", "init", "--quiet", str(tmp_path)], check=True)
