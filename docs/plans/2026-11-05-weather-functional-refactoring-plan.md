@@ -447,11 +447,12 @@ da execução. Essas ampliações acrescentam políticas de fonte, disponibilida
 timeout e integração; não são simples ajustes de texto.
 
 **Próxima ação:** M4 depende de duas decisões de Bill. A primeira é a
-retenção da imagem anterior. A segunda é como fechar a lacuna de verificação
-de runtime do container: executar o smoke e a conformance no host contra a
-candidata pinada, ou acrescentar uma fase de verificação ao executor host.
-Até uma das duas, o aceite declara as verificações 3, 4, 6 e 7 do smoke como
-não executadas, sem afirmar cobertura que não existe.
+retenção da imagem anterior — a promoção da candidata já está efetivada e
+verificada. A segunda é como fechar a lacuna de verificação de runtime do
+container: executar o smoke e a conformance no host contra a candidata
+pinada, ou acrescentar uma fase de verificação ao executor host. Até uma das
+duas, o aceite declara as verificações 3, 4, 6 e 7 do smoke como não
+executadas, sem afirmar cobertura que não existe.
 
 ## 8. Fontes e verificação desta emissão
 
@@ -543,6 +544,19 @@ diff. Nenhuma issue está resolvida pela criação deste documento.
   estáticas fecharam parte da lacuna: label do Dockerfile × tools
   descobertas, `build_oci_label.py --check` e validade do `mcp.yaml` no
   repositório. Detalhes em §10.4 do relatório.
+- **2026-11-06 — promoção verificada e health check.** O caminho do gestor é
+  `update-image` → `configure` → `activate`, e as três etapas já estavam
+  executadas desde o ciclo de imagem. A promoção foi reconfirmada sem mutar
+  estado: `activate weather 7` resolveu a imagem pinada no host e devolveu o
+  servidor inalterado; `show weather` confirma `version 0.10.0`,
+  `imageId sha256:40fa10ff…`, `activated: true`, `scope: global`, revisão 7,
+  configuração revisão 1, zero mounts, env vazio e as nove tools na allowlist;
+  `local-images` confirma a revisão de autorização 7 com a candidata autorizada
+  e a imagem anterior ainda autorizada para rollback. Health check: status de
+  liveness com `Version: 0.10.0`, `get_current` com dados reais de São Paulo
+  e `valid_time`, e `discover` com as nove tools por handshake novo. A
+  candidata é a imagem viva; o que faltava era a evidência registrada. Ver
+  §10.5 do relatório.
 - **Pendências:** decisão de retenção da imagem anterior
   `sha256:680872039a8f530f7feb53610478087c5271d5a5aec451c1f668f799e0e8a0ee`
   (ainda autorizada para rollback; remoção exige lista nominal e autorização

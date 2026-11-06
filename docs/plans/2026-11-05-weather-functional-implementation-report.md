@@ -339,17 +339,42 @@ Até uma das duas, o aceite de M4 deve registrar que as verificações 3, 4, 6 e
 da candidata 0.10.0 **não** foram executadas, e não afirmar cobertura de
 runtime que não existe.
 
+### 10.5 Promoção e health check — 2026-11-06
+
+O caminho de promoção do gestor é `update-image` → `configure` → `activate`.
+As três etapas já tinham sido executadas neste ciclo; a promoção foi
+reconfirmada sem alterar estado.
+
+| Verificação | Resultado |
+|---|---|
+| `activate weather 7` | Resolveu a imagem pinada no host (`checkImage`) e devolveu o servidor inalterado — pinagem válida, revisão preservada em 7 |
+| `show weather` | `version 0.10.0`; `imageId sha256:40fa10ff…`; `activated: true`; `scope: global`; revisão do servidor 7; configuração revisão 1; `configurationId ec08d7f2…`; 0 mounts; env vazio; allowlist com as 9 tools |
+| `local-images` | Revisão de autorização 7; candidata `sha256:40fa10ff…` autorizada em 2026-11-06T01:23:13Z; imagem anterior `sha256:68087203…` segue autorizada para rollback |
+| `weather_get_status` | `Percival Weather MCP Server alive (liveness). Name: percival-weather-mcp Version: 0.10.0. Upstream readiness not checked.` |
+| `weather_get_current city="São Paulo, BR"` | Caminho de dados íntegro: Overcast, 21,1 °C, 86% de umidade, `valid_time 2026-11-06T02:00:00+00:00` (`nearest_hour`), local resolvido `São Paulo, São Paulo, Brazil`; ambiguidade reportada com as alternativas |
+| `discover weather` | 9 tools descobertas por handshake novo |
+
+Nenhum estado foi mutado nesta passagem: `activate` com a revisão corrente e o
+mesmo estado de ativação devolve o servidor inalterado, e a verificação da
+imagem pinada ocorre antes disso. A promoção já estava efetivada — a candidata
+é a imagem viva, em escopo global, com a allowlist das nove tools — e o que
+faltava era a evidência registrada.
+
+Fora do estado promotionado permanecem: a decisão de retenção da imagem
+anterior e a lacuna de verificação de runtime (§10.4).
+
 ### Estado do aceite
 R7 está executado para a candidata: construção, scan sem findings, pin,
-configuração preservada e validação funcional pelo agente conectado, com as
-nove tools exercitadas. M4 depende ainda da decisão de retenção: a imagem
-anterior permanece autorizada para rollback, e a sua remoção exige a lista
-nominal e a autorização específica previstas no runbook. As 12 issues
-funcionais permanecem abertas até essa decisão, sem mudança de código
-adicional.
+configuração preservada, **promoção verificada no gestor** — imagem viva em
+escopo global, allowlist das nove tools —, validação funcional pelo agente
+conectado com as nove tools exercitadas e health check de liveness, dados e
+descoberta. M4 depende ainda da decisão de retenção: a imagem anterior
+permanece autorizada para rollback, e a sua remoção exige a lista nominal e a
+autorização específica previstas no runbook. As 12 issues funcionais
+permanecem abertas até essa decisão, sem mudança de código adicional.
 
-A cobertura de runtime do container segue em aberto: as verificações 3, 4, 6 e
-7 do smoke não foram executadas contra esta candidata, por limitação do
+A cobertura de runtime do container segue em aberto: as verificações 3, 4, 6 e 7
+do smoke não foram executadas contra esta candidata, por limitação do
 caminho de manutenção atual (§10.4). O aceite deve declarar essa lacuna de
 forma explícita, junto com a escolha entre execução no host e fase de
 verificação no executor.
